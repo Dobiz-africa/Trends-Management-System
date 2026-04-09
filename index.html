@@ -317,12 +317,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
         <!-- DASHBOARD -->
         <div id="sc-dashboard" class="screen act">
-          <div class="srow">
-            <div class="sc"><div class="sc-l">Work Orders</div><div class="sc-v" id="d-total">0</div><div class="sc-s">Phase 46 North</div></div>
-            <div class="sc"><div class="sc-l">Issued to Trends</div><div class="sc-v" style="color:var(--gn)" id="d-issued">0</div><div class="sc-s">Ready for VO1</div></div>
-            <div class="sc"><div class="sc-l">In Progress</div><div class="sc-v" style="color:var(--am)" id="d-prog">0</div><div class="sc-s">Awaiting action</div></div>
-            <div class="sc"><div class="sc-l">Claim Value</div><div class="sc-v" style="font-size:1.25rem" id="d-value">P 0</div><div class="sc-s" id="d-claiminfo">—</div></div>
-          </div>
+          <div class="srow" id="dashboardCards" style="display:none">
+  <div class="sc"><div class="sc-l">Work Orders</div><div class="sc-v" id="d-total">0</div><div class="sc-s">Phase 46 North</div></div>
+  <div class="sc"><div class="sc-l">Issued to Trends</div><div class="sc-v" style="color:var(--gn)" id="d-issued">0</div><div class="sc-s">Ready for VO1</div></div>
+  <div class="sc"><div class="sc-l">In Progress</div><div class="sc-v" style="color:var(--am)" id="d-prog">0</div><div class="sc-s">Awaiting action</div></div>
+  <div class="sc"><div class="sc-l">Claim Value</div><div class="sc-v" style="font-size:1.25rem" id="d-value">P 0</div><div class="sc-s" id="d-claiminfo">—</div></div>
+</div>
           <div class="wo-queue">
             <div class="card-hd" style="justify-content:space-between">
               <span style="display:flex;align-items:center;gap:7px">
@@ -494,9 +494,20 @@ function renderDashboard() {
   document.getElementById('d-prog').textContent = prog;
   document.getElementById('d-value').textContent = P(claimVal);
   document.getElementById('d-claiminfo').textContent = `TES-001 · ${issued} job${issued!==1?'s':''}`;
+  
+  // Only show dashboard cards for Admin and BPC
+  const cardsDiv = document.getElementById('dashboardCards');
+  if(currentRole === 'admin' || currentRole === 'bpc') {
+    cardsDiv.style.display = 'grid';
+  } else {
+    cardsDiv.style.display = 'none';
+  }
 
   const list = document.getElementById('dashJobsList');
-  if(!active.length) { list.innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders issued yet</div>`; return; }
+  if(!active.length) { 
+    list.innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders issued yet</div>`; 
+    return; 
+  }
   list.innerHTML = active.map(j => {
     const t = jobTotal(j, j.vo2.items.length ? 'vo2' : 'vo1');
     return `<div class="wq-row">
