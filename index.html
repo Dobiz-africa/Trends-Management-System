@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trends Engineering Services · Document Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── SHELL ─── */
+:root{
+  --bg:#0d1117;--sf:#161b22;--sf2:#1e2333;--sf3:#252d40;
+  --bd:#2c3347;--bd2:#374059;
+  --tx:#dde3f0;--tx2:#8492aa;--tx3:#4e5a72;
+  --am:#f5a623;--am-bg:rgba(245,166,35,.1);--am-b:rgba(245,166,35,.22);
+  --gn:#2ea56e;--gn-bg:rgba(46,165,110,.1);--gn-b:rgba(46,165,110,.22);
+  --rd:#e05252;--rd-bg:rgba(224,82,82,.1);--rd-b:rgba(224,82,82,.22);
+  --bl:#4a8fe8;--bl-bg:rgba(74,143,232,.1);
+  --r:7px;--rs:5px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--sf)}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+/* ─── LOGIN ─── */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse 70% 50% at 50% -10%,rgba(245,166,35,.06),transparent)}
+.lc{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:2.25rem;width:400px}
+.lc-brand{display:flex;align-items:center;gap:11px;margin-bottom:1.75rem}
+.lc-icon{width:38px;height:38px;background:var(--am);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lc-icon svg{width:20px;height:20px;fill:#000}
+.lc-brand h1{font-size:.92rem;font-weight:600;color:var(--tx);line-height:1.25}
+.lc-brand p{font-size:.62rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em}
+.lc hr{border:none;border-top:1px solid var(--bd);margin-bottom:1.4rem}
+.lc label{display:block;font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--tx2);margin-bottom:6px}
+.lc select{width:100%;padding:.65rem .9rem;background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);color:var(--tx);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%238492aa' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px;cursor:pointer}
+.lc select:focus{border-color:var(--am);box-shadow:0 0 0 3px var(--am-bg)}
+.lc select option{background:var(--sf2)}
+.lc-btn{width:100%;margin-top:1.3rem;padding:.7rem;background:var(--am);border:none;border-radius:var(--rs);color:#000;font-family:'Inter',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;transition:.15s}
+.lc-btn:hover{background:#e09500}
+.lc-hint{text-align:center;font-size:.67rem;color:var(--tx3);margin-top:.75rem}
+/* ─── MAIN ─── */
+#mainApp{display:none}
+.shell{display:grid;grid-template-columns:238px 1fr;min-height:100vh}
+.sb{background:var(--sf);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-hd{padding:1rem 1.1rem .85rem;border-bottom:1px solid var(--bd)}
+.sb-brand{display:flex;align-items:center;gap:9px}
+.sb-icon{width:28px;height:28px;background:var(--am);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-icon svg{width:14px;height:14px;fill:#000}
+.sb-brand h1{font-size:.8rem;font-weight:600;color:var(--tx);line-height:1.3}
+.sb-brand p{font-size:.58rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em}
+.sb-role{margin:.8rem 1.1rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.5rem .7rem}
+.sb-rl{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3);margin-bottom:2px}
+.sb-rn{font-size:.8rem;font-weight:600;color:var(--am)}
+.sb-sec{padding:.7rem 1.1rem .18rem;font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);font-weight:600}
+.ni{display:flex;align-items:center;gap:9px;padding:.48rem 1.1rem;font-size:.81rem;color:var(--tx2);cursor:pointer;transition:.1s;border-left:2px solid transparent;margin:1px 0}
+.ni:hover{background:var(--sf2);color:var(--tx)}
+.ni.act{background:var(--am-bg);color:var(--am);border-left-color:var(--am);font-weight:600}
+.ni svg{width:14px;height:14px;flex-shrink:0}
+.nbadge{margin-left:auto;background:var(--am);color:#000;font-size:.58rem;font-weight:700;border-radius:10px;padding:1px 6px;min-width:17px;text-align:center}
+.sb-ft{margin-top:auto;padding:.85rem 1.1rem;border-top:1px solid var(--bd);display:flex;flex-direction:column;gap:6px}
+.sbfbtn{padding:.42rem .7rem;background:transparent;border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx2);font-family:'Inter',sans-serif;font-size:.74rem;cursor:pointer;transition:.12s;display:flex;align-items:center;gap:7px;width:100%}
+.sbfbtn:hover{border-color:var(--am);color:var(--am)}
+.sbfbtn.logout:hover{border-color:var(--rd);color:var(--rd)}
+/* ─── CONTENT AREA ─── */
+.mc{display:flex;flex-direction:column;overflow:hidden}
+.tb{background:var(--sf);border-bottom:1px solid var(--bd);padding:.65rem 1.4rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-t{font-size:.93rem;font-weight:600;color:var(--tx)}
+.tb-m{font-size:.67rem;color:var(--tx3);margin-top:2px}
+.tb-r{font-size:.7rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.3rem .7rem;color:var(--tx2)}
+.tb-r span{color:var(--am);font-weight:600}
+.ca{flex:1;overflow-y:auto;padding:1.35rem}
+/* ─── SCREENS ─── */
+.screen{display:none}.screen.act{display:block}
+/* ─── INBOX ─── */
+.inb-lay{display:grid;grid-template-columns:310px 1fr;gap:1.2rem}
+.inb-list{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.card-hd{padding:.8rem 1rem;border-bottom:1px solid var(--bd);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);display:flex;align-items:center;gap:7px}
+.card-hd svg{width:13px;height:13px}
+.ii{padding:.8rem 1rem;border-bottom:1px solid var(--bd);cursor:pointer;transition:.1s;border-left:3px solid transparent}
+.ii:last-child{border-bottom:none}
+.ii:hover{background:var(--sf2)}
+.ii.sel{background:var(--am-bg);border-left-color:var(--am)}
+.ii-type{font-size:.58rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px}
+.ii-name{font-size:.84rem;font-weight:600;color:var(--tx);margin-bottom:2px}
+.ii-desc{font-size:.72rem;color:var(--tx2);line-height:1.4}
+.ii-foot{margin-top:5px;display:flex;gap:5px}
+.inb-empty{padding:2.5rem 1rem;text-align:center;color:var(--tx3)}
+.inb-empty svg{width:34px;height:34px;margin:0 auto 8px;display:block;opacity:.2}
+.inb-empty strong{font-size:.8rem;color:var(--tx2);display:block;margin-bottom:4px}
+.inb-empty span{font-size:.72rem}
+/* ─── DOC PANE ─── */
+.dp{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);display:flex;flex-direction:column;min-height:540px}
+.dp-hd{padding:.8rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.dp-title{font-size:.88rem;font-weight:600;color:var(--tx)}
+.dp-hd-right{display:flex;gap:7px;align-items:center}
+.dp-body{flex:1;overflow-y:auto;padding:1.1rem}
+.dp-foot{padding:.8rem 1rem;border-top:1px solid var(--bd);background:var(--sf2);display:flex;gap:7px;flex-wrap:wrap}
+.dp-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;height:380px;color:var(--tx3);text-align:center;gap:10px}
+.dp-ph svg{width:44px;height:44px;opacity:.18}
+.dp-ph strong{font-size:.83rem;font-weight:500;color:var(--tx2)}
+.dp-ph span{font-size:.73rem;max-width:230px;line-height:1.5}
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:20px}
+.b-am{background:var(--am-bg);color:var(--am);border:1px solid var(--am-b)}
+.b-gn{background:var(--gn-bg);color:var(--gn);border:1px solid var(--gn-b)}
+.b-rd{background:var(--rd-bg);color:var(--rd);border:1px solid var(--rd-b)}
+.b-bl{background:var(--bl-bg);color:var(--bl);border:1px solid rgba(74,143,232,.22)}
+.b-gy{background:var(--sf3);color:var(--tx2);border:1px solid var(--bd)}
+/* ─── BUTTONS ─── */
+.btn{padding:.45rem .9rem;border:1px solid var(--bd2);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.77rem;font-weight:600;cursor:pointer;transition:.12s;display:inline-flex;align-items:center;gap:5px;letter-spacing:.01em}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.btn-am{background:var(--am);border-color:var(--am);color:#000}
+.btn-am:hover{background:#e09500}
+.btn-gy{background:transparent;color:var(--tx2);border-color:var(--bd2)}
+.btn-gy:hover{background:var(--sf2);color:var(--tx)}
+.btn-gn{background:var(--gn-bg);border-color:var(--gn);color:var(--gn)}
+.btn-gn:hover{background:var(--gn);color:#fff}
+.btn-rd{background:var(--rd-bg);border-color:var(--rd);color:var(--rd)}
+.btn-rd:hover{background:var(--rd);color:#fff}
+.btn-print{background:var(--sf2);border-color:var(--bd2);color:var(--tx2)}
+.btn-print:hover{border-color:var(--tx2);color:var(--tx)}
+/* ─── UI ALERTS ─── */
+.ua{padding:.6rem .85rem;border-radius:var(--rs);font-size:.77rem;margin-bottom:.85rem;display:flex;align-items:flex-start;gap:8px;line-height:1.45}
+.ua svg{width:13px;height:13px;flex-shrink:0;margin-top:2px}
+.ua-am{background:var(--am-bg);border:1px solid var(--am-b);color:#c88000}
+.ua-rd{background:var(--rd-bg);border:1px solid var(--rd-b);color:var(--rd)}
+.ua-gn{background:var(--gn-bg);border:1px solid var(--gn-b);color:var(--gn)}
+.ua-bl{background:var(--bl-bg);border:1px solid rgba(74,143,232,.22);color:var(--bl)}
+.ok-bar{display:flex;align-items:center;gap:8px;padding:.5rem .85rem;background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);color:var(--gn);font-size:.77rem;font-weight:600}
+/* ─── STATS ─── */
+.srow{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.4rem}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem 1.1rem}
+.sc-l{font-size:.62rem;text-transform:uppercase;letter-spacing:.09em;color:var(--tx2);margin-bottom:5px}
+.sc-v{font-size:1.7rem;font-weight:600;color:var(--tx);line-height:1}
+.sc-s{font-size:.67rem;color:var(--tx3);margin-top:3px}
+/* ─── FORM ─── */
+.fg{margin-bottom:.8rem}
+.fg label{display:block;font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.5rem .72rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.84rem;outline:none;transition:.12s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--am);box-shadow:0 0 0 3px var(--am-bg)}
+.fg select option{background:var(--sf2)}
+.fg textarea{resize:vertical;min-height:58px;line-height:1.5}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+/* ─── WO QUEUE (BPC) ─── */
+.wo-queue{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:1rem}
+.wq-row{display:grid;grid-template-columns:90px 1fr 90px 120px 100px 110px;gap:10px;padding:.62rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center;transition:.1s}
+.wq-row:last-child{border-bottom:none}
+.wq-row:hover{background:var(--sf2)}
+.wq-hd{display:grid;grid-template-columns:90px 1fr 90px 120px 100px 110px;gap:10px;padding:.5rem 1rem;background:var(--sf2)}
+.wq-hd span{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600}
+.mono{font-family:'Courier New',monospace;font-size:.78rem;color:var(--tx2)}
+.tag{font-size:.6rem;background:var(--sf3);border:1px solid var(--bd);color:var(--tx2);padding:1px 7px;border-radius:3px;font-weight:600}
+/* ═══════════════════════════
+   PAPER DOCUMENTS
+═══════════════════════════ */
+.paper{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:9pt;padding:22px;border:1px solid #bbb;max-width:100%;line-height:1.45}
+.paper *{box-sizing:border-box}
+/* letterhead */
+.lh-table{width:100%;border-collapse:collapse;margin-bottom:7px}
+.lh-table td{vertical-align:top;padding:1px 3px;font-size:9pt}
+.lh-bpc{font-size:11pt;font-weight:bold}
+.lh-addr{font-size:8.5pt;color:#222}
+.lh-doctitle{font-size:11pt;font-weight:bold;text-align:right}
+.paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
+.paper-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
+/* header details table */
+.hdt{width:100%;border-collapse:collapse;margin-bottom:4px}
+.hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
+.hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
+/* editable field inside paper */
+.ef{display:inline-block;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;min-width:60px}
+.ef:focus{border-bottom-color:#0055cc;background:#fffce8}
+.ef-blue{color:#0055cc}/* user-editable input */
+.ef-calc{color:#555;background:#f8f8f8;pointer-events:none;border-bottom:1px dotted #bbb}/* calculated — read-only */
+/* BOQ table */
+.boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
+.boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}
+.boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
+.boq td.r,.boq th.r{text-align:right}
+.boq td.c,.boq th.c{text-align:center}
+.boq .sub-row td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+.boq .tot-row td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
+.boq .loc-row td{background:#fffbe8}
+/* signature area */
+.sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
+.sig-box{border-top:1px solid #000;padding-top:4px}
+.sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:14px}
+.sig-line{border-bottom:1px solid #aaa;margin-bottom:3px}
+.sig-sub{font-size:7.5pt;color:#666}
+.sig-signed{background:#e8f8ec;border:1px solid #4caf50;border-radius:4px;padding:5px 8px;font-size:8pt;color:#2a7a3a;margin-top:4px}
+.sig-signed strong{display:block;font-size:8.5pt}
+/* PC lines */
+.pc-block{margin:3px 0}
+.pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
+.pc-row .n{width:25px;flex-shrink:0}
+.pc-row .d{flex:1}
+.pc-row .c{width:20px;text-align:right;flex-shrink:0}
+.pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
+.pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
+.pc-row.final{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px;font-size:9pt}
+.pc-row.deduct .v{color:#cc0000}
+.pc-section{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
+/* Tracking table */
+.tr-table{width:100%;border-collapse:collapse;font-size:8pt}
+.tr-table th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:center;font-size:7.5pt}
+.tr-table td{border:1px solid #bbb;padding:5px 6px;vertical-align:middle}
+.tr-table .stage-lbl{font-weight:bold;background:#f5f5f5}
+/* Jobs table */
+.jt{width:100%;border-collapse:collapse;font-size:7.5pt}
+.jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
+.jt td{border:1px solid #bbb;padding:3px 4px}
+.jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+/* Print styles */
+@media print{
+  body{background:#fff}
+  .shell,.sb,.tb,.dp-hd .dp-hd-right,.dp-foot,.inb-list,.ua,.ca{display:none!important}
+  #printArea{display:block!important;padding:0}
+  .paper{border:none;padding:15px}
+  .ef{border-bottom:1px solid #000}
+  .ef-calc{background:none}
+}
+#printArea{display:none}
+/* ─── DIGITAL SIG MODAL ─── */
+#sigModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;align-items:center;justify-content:center}
+#sigModal.open{display:flex}
+.sig-modal-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:1.75rem;width:400px}
+.sig-modal-card h3{font-size:.95rem;font-weight:600;margin-bottom:.3rem}
+.sig-modal-card p{font-size:.78rem;color:var(--tx2);margin-bottom:1.25rem}
+.sig-preview{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.75rem;margin-top:.75rem;margin-bottom:1rem;font-style:italic;color:var(--tx);font-size:.85rem;min-height:40px}
+.sig-modal-btns{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+<div id="printArea"></div>
+
+<!-- ══════ LOGIN ══════ -->
+<div id="loginScreen">
+  <div class="lc">
+    <div class="lc-brand">
+      <div class="lc-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+      <div><h1>Trends Engineering Services</h1><p>Document Management Portal</p></div>
+    </div>
+    <hr>
+    <label>Select your role</label>
+    <select id="loginRole">
+      <option value="">— Choose role —</option>
+      <optgroup label="Botswana Power Corporation">
+        <option value="bpc">BPC</option>
+      </optgroup>
+      <optgroup label="Trends Engineering Services">
+        <option value="admin">Admin</option>
+        <option value="linesman">Linesman</option>
+        <option value="gis">GIS Consultant (External)</option>
+        <option value="teamA">Team A — Shakawe</option>
+        <option value="teamB">Team B — Shakawe</option>
+        <option value="finance">Finance</option>
+      </optgroup>
+    </select>
+    <button class="lc-btn" onclick="doLogin()">Enter Portal →</button>
+    <p class="lc-hint">Demo — no password required</p>
+  </div>
+</div>
+
+<!-- ══════ DIGITAL SIG MODAL ══════ -->
+<div id="sigModal">
+  <div class="sig-modal-card">
+    <h3>Digital Signature</h3>
+    <p>Signing: <strong id="sigDocLabel">—</strong></p>
+    <div class="fg"><label>Full Name</label><input id="sigName" placeholder="Enter your full name"></div>
+    <div class="fg"><label>Designation</label><input id="sigDesig" placeholder="e.g. Project Engineer, BPC"></div>
+    <div class="sig-preview" id="sigPreview">Your signature will appear here</div>
+    <div class="sig-modal-btns">
+      <button class="btn btn-gy" onclick="closeSig()">Cancel</button>
+      <button class="btn btn-am" onclick="confirmSig()">✓ Sign Document</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MAIN APP ══════ -->
+<div id="mainApp">
+  <div class="shell">
+    <aside class="sb">
+      <div class="sb-hd">
+        <div class="sb-brand">
+          <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <div><h1>Trends Engineering</h1><p>Document Portal</p></div>
+        </div>
+      </div>
+      <div class="sb-role"><div class="sb-rl">Logged in as</div><div class="sb-rn" id="sbRn">—</div></div>
+      <div class="sb-sec">Menu</div>
+      <div class="ni act" onclick="nav('dashboard')" id="n-dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+      </div>
+      <div class="ni" onclick="nav('inbox')" id="n-inbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox
+        <span class="nbadge" id="ibadge" style="display:none">0</span>
+      </div>
+      <div class="ni" onclick="nav('woqueue')" id="n-woqueue" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Work Order Queue
+        <span class="nbadge" id="wqbadge">0</span>
+      </div>
+      <div class="ni" onclick="nav('workorders')" id="n-workorders" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>All Work Orders
+      </div>
+      <div class="sb-ft">
+        <button class="sbfbtn logout" onclick="doLogout()">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out
+        </button>
+      </div>
+    </aside>
+    <div class="mc">
+      <div class="tb">
+        <div><div class="tb-t" id="tbt">Dashboard</div><div class="tb-m">Trends Engineering Services (PTY) Ltd</div></div>
+        <div class="tb-r">Phase <span>46</span> — Free Connections North · TES-001</div>
+      </div>
+      <div class="ca">
+
+        <!-- DASHBOARD -->
+        <div id="sc-dashboard" class="screen act">
+          <div class="srow">
+            <div class="sc"><div class="sc-l">Work Orders</div><div class="sc-v" id="d-total">0</div><div class="sc-s">Phase 46 North</div></div>
+            <div class="sc"><div class="sc-l">Issued to Trends</div><div class="sc-v" style="color:var(--gn)" id="d-issued">0</div><div class="sc-s">Ready for VO1</div></div>
+            <div class="sc"><div class="sc-l">In Progress</div><div class="sc-v" style="color:var(--am)" id="d-prog">0</div><div class="sc-s">Awaiting action</div></div>
+            <div class="sc"><div class="sc-l">Claim Value</div><div class="sc-v" style="font-size:1.25rem" id="d-value">P 0</div><div class="sc-s" id="d-claiminfo">—</div></div>
+          </div>
+          <div class="wo-queue">
+            <div class="card-hd" style="justify-content:space-between">
+              <span style="display:flex;align-items:center;gap:7px">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+                Active Jobs
+              </span>
+            </div>
+            <div class="wq-hd"><span>WO No.</span><span>Customer</span><span>Town</span><span>VO1 Total</span><span>Stage</span><span>Status</span></div>
+            <div id="dashJobsList"></div>
+          </div>
+        </div>
+
+        <!-- INBOX -->
+        <div id="sc-inbox" class="screen">
+          <div class="inb-lay">
+            <div class="inb-list">
+              <div class="card-hd">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+                Inbox
+              </div>
+              <div id="inboxList"></div>
+            </div>
+            <div class="dp" id="docPane">
+              <div class="dp-hd">
+                <div class="dp-title" id="docTitle">Document Viewer</div>
+                <div class="dp-hd-right">
+                  <span class="badge b-gy" id="docBadge">—</span>
+                  <button class="btn btn-print" id="btnPrint" style="display:none" onclick="printDoc()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print
+                  </button>
+                </div>
+              </div>
+              <div class="dp-body" id="docBody">
+                <div class="dp-ph">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  <strong>No document selected</strong>
+                  <span>Select an item from your inbox to view it</span>
+                </div>
+              </div>
+              <div class="dp-foot" id="docFoot" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BPC WO QUEUE -->
+        <div id="sc-woqueue" class="screen">
+          <div class="ua ua-bl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Select one or more work orders and click <strong>Issue to Trends Engineering</strong>. Trends Admin will receive them and create VO1 documents for each.
+          </div>
+          <div class="wo-queue">
+            <div class="card-hd" style="justify-content:space-between">
+              <span style="display:flex;align-items:center;gap:7px">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                Work Order Queue — Ready to Issue
+              </span>
+              <button class="btn btn-am" onclick="issueSelected()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Issue Selected to Trends
+              </button>
+            </div>
+            <div style="display:grid;grid-template-columns:32px 90px 1fr 90px 120px 100px 110px;gap:10px;padding:.5rem 1rem;background:var(--sf2)">
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600"></span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">WO No.</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Estimated Cost</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Type</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Status</span>
+            </div>
+            <div id="woQueueList"></div>
+          </div>
+        </div>
+
+        <!-- ALL WORK ORDERS (admin) -->
+        <div id="sc-workorders" class="screen">
+          <div class="wo-queue">
+            <div class="card-hd">All Work Orders — Phase 46 North</div>
+            <div class="wq-hd"><span>WO No.</span><span>Customer</span><span>Town</span><span>VO1 Total</span><span>Stage</span><span>Status</span></div>
+            <div id="allWOList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   DATA — BPC Work Order Pool
+═══════════════════════════════════════════ */
+const WO_POOL = [
+  { wo:'448223', customer:'Ratanang Mahupe',    location:'Kauxwi, Modubana',  type:'U/G Conn',  estCost:16261 },
+  { wo:'446197', customer:'Thimothiyo Popego',  location:'Shakawe',           type:'U/G Conn',  estCost:16261 },
+  { wo:'448224', customer:'Maria Koloi',        location:'Shakawe',           type:'U/G Conn',  estCost:16261 },
+  { wo:'441033', customer:'Goitseone Molefe',   location:'Ncaang',            type:'U/G Conn',  estCost:15940 },
+  { wo:'441034', customer:'Keatlaretse Molefe', location:'Ncaang',            type:'U/G Conn',  estCost:15940 },
+  { wo:'449501', customer:'Diatsha Mbwedze',    location:'Sepopa',            type:'OHL 400V',  estCost:38200 },
+  { wo:'449502', customer:'Samarambo Mayira',   location:'Ngarange',          type:'OHL 400V',  estCost:41500 },
+  { wo:'449503', customer:'Sekonja Kanyota',    location:'Mohembo East',      type:'U/G Conn',  estCost:16261 },
+  { wo:'449504', customer:'Edward Njwaki',       location:'Shakawe',           type:'OHL 400V',  estCost:36800 },
+  { wo:'449505', customer:'Movanje Mokokwa',    location:'Samochima',         type:'U/G Conn',  estCost:17100 },
+];
+
+// Active jobs (issued WOs with workflow state)
+let jobs = {};          // keyed by WO number
+let selWOs = new Set(); // BPC queue selection
+
+let currentRole = '';
+let selInboxId = null;
+let currentDocAction = null;
+let currentDocWO = null;
+let sigCallback = null;
+
+const roleNames = { bpc:'BPC', admin:'Admin', linesman:'Linesman', gis:'GIS Consultant', teamA:'Team A — Shakawe', teamB:'Team B — Shakawe', finance:'Finance' };
+
+// ──────────────────────────────
+// Job state machine
+function newJob(woData) {
+  return {
+    ...woData,
+    stage: 'issued',        // issued | vo1_created | linesman | vo2_pending | vo2_bpc | gis | wi_issued | executing | completed | annexure | payment_ready | payment_signed
+    vo1: { items: [
+      { desc:'Service Conn; 230V; 60A; Single Phase; U/G', unit:'Ea', qty:1, rate:11987.42 },
+      { desc:'GIS RATE-Service connections',               unit:'Ea.', qty:1, rate:593.59 }
+    ], locFactor:29.25, startDate:'', compDate:'' },
+    vo2: { items: [], locFactor:29.25, markup:10, startDate:'', compDate:'' },
+    fieldData: {},
+    gisData: {},
+    sigs: {},
+  };
+}
+
+function jobTotal(job, which) {
+  const items = which === 'vo2' ? job.vo2.items : job.vo1.items;
+  const lf = which === 'vo2' ? job.vo2.locFactor : job.vo1.locFactor;
+  const mk = which === 'vo2' ? job.vo2.markup : 0;
+  const sub = items.reduce((s,i) => s + (parseFloat(i.qty)||0)*(parseFloat(i.rate)||0), 0);
+  const loc = sub * (lf/100);
+  const markup = (sub+loc)*(mk/100);
+  return { sub, loc, markup, total: sub+loc+markup };
+}
+
+const fmt = n => 'P ' + (n||0).toLocaleString('en-BW',{minimumFractionDigits:2,maximumFractionDigits:2});
+const P = n => 'P ' + (n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+
+/* ═══ RENDER HELPERS ═══ */
+function stageLabel(s) {
+  const m = { issued:'Received',vo1_created:'VO1 Created',linesman:'Linesman Sent',vo2_pending:'Creating VO2',vo2_bpc:'BPC Review',gis:'GIS Assigned',wi_issued:'Works Instruction',executing:'Executing',completed:'Work Done',annexure:'Claim Prep',payment_ready:'Payment Cert',payment_signed:'Paid' };
+  return m[s] || s;
+}
+function stageBadge(s) {
+  if(['payment_signed'].includes(s)) return 'b-gn';
+  if(['executing','wi_issued','gis','payment_ready','annexure'].includes(s)) return 'b-bl';
+  if(['vo2_bpc'].includes(s)) return 'b-rd';
+  return 'b-am';
+}
+
+function renderDashboard() {
+  const active = Object.values(jobs);
+  const issued = active.length;
+  const prog = active.filter(j=>j.stage !== 'payment_signed').length;
+  const claimVal = active.reduce((s,j)=>{
+    const t = jobTotal(j, j.vo2.items.length ? 'vo2' : 'vo1');
+    return s + t.total;
+  },0);
+  document.getElementById('d-total').textContent = WO_POOL.length;
+  document.getElementById('d-issued').textContent = issued;
+  document.getElementById('d-prog').textContent = prog;
+  document.getElementById('d-value').textContent = P(claimVal);
+  document.getElementById('d-claiminfo').textContent = `TES-001 · ${issued} job${issued!==1?'s':''}`;
+
+  const list = document.getElementById('dashJobsList');
+  if(!active.length) { list.innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders issued yet</div>`; return; }
+  list.innerHTML = active.map(j => {
+    const t = jobTotal(j, j.vo2.items.length ? 'vo2' : 'vo1');
+    return `<div class="wq-row">
+      <span class="mono">${j.wo}</span>
+      <span>${j.customer}</span>
+      <span class="tag">${j.location.split(',')[0]}</span>
+      <span class="mono">${P(t.total)}</span>
+      <span style="font-size:.75rem;color:var(--tx2)">${stageLabel(j.stage)}</span>
+      <span class="badge ${stageBadge(j.stage)}">${j.stage==='payment_signed'?'✓ Paid':'Active'}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ═══ BPC WO QUEUE ═══ */
+function renderWOQueue() {
+  const pending = WO_POOL.filter(w => !jobs[w.wo]);
+  document.getElementById('wqbadge').textContent = pending.length;
+  if(!pending.length) {
+    document.getElementById('woQueueList').innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">All work orders have been issued</div>`;
+    return;
+  }
+  document.getElementById('woQueueList').innerHTML = pending.map(w => `
+    <div class="wq-row" style="grid-template-columns:32px 90px 1fr 90px 120px 100px 110px" onclick="toggleWO('${w.wo}')">
+      <span><input type="checkbox" id="chk-${w.wo}" ${selWOs.has(w.wo)?'checked':''} onclick="toggleWO('${w.wo}',event)" style="cursor:pointer;width:15px;height:15px;accent-color:var(--am)"></span>
+      <span class="mono">${w.wo}</span>
+      <span>${w.customer}</span>
+      <span class="tag">${w.location.split(',')[0]}</span>
+      <span class="mono">${P(w.estCost)}</span>
+      <span class="tag">${w.type}</span>
+      <span class="badge b-gy">Pending Issue</span>
+    </div>
+  `).join('');
+}
+function toggleWO(wo, e) {
+  if(e) e.stopPropagation();
+  if(selWOs.has(wo)) selWOs.delete(wo); else selWOs.add(wo);
+  renderWOQueue();
+}
+function issueSelected() {
+  if(!selWOs.size){ alert('Select at least one work order first'); return; }
+  selWOs.forEach(wo => {
+    const data = WO_POOL.find(w=>w.wo===wo);
+    if(data) jobs[wo] = newJob(data);
+  });
+  const count = selWOs.size;
+  selWOs.clear();
+  renderWOQueue();
+  renderInbox();
+  renderDashboard();
+  showAlert(`${count} work order${count>1?'s':''} issued to Trends Engineering. Admin will receive them in their inbox.`);
+}
+function showAlert(msg) {
+  const a = document.createElement('div');
+  a.className = 'ua ua-gn';
+  a.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:50;max-width:380px;box-shadow:0 4px 20px rgba(0,0,0,.4)';
+  a.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>${msg}`;
+  document.body.appendChild(a);
+  setTimeout(()=>a.remove(), 3500);
+}
+
+/* ═══ INBOX ═══ */
+function getInbox() {
+  const items = [];
+  const active = Object.values(jobs);
+  if(currentRole === 'admin') {
+    active.filter(j=>j.stage==='issued').forEach(j =>
+      items.push({ id:'recv_'+j.wo, wo:j.wo, name:'Work Order — WO '+j.wo, desc:j.customer+' · '+j.location, badge:'New WO', bc:'b-gn', action:'recv_wo' })
+    );
+    active.filter(j=>j.stage==='linesman').forEach(j =>
+      items.push({ id:'fieldrev_'+j.wo, wo:j.wo, name:'Field Report — WO '+j.wo, desc:'Review linesman measurements from '+j.customer, badge:'For Review', bc:'b-bl', action:'review_field' })
+    );
+    active.filter(j=>j.stage==='vo2_pending').forEach(j =>
+      items.push({ id:'vo2c_'+j.wo, wo:j.wo, name:'Create VO2 — WO '+j.wo, desc:'Complete variation order for '+j.customer, badge:'Action Required', bc:'b-am', action:'create_vo2' })
+    );
+    active.filter(j=>j.stage==='gis').forEach(j =>
+      items.push({ id:'wi_'+j.wo, wo:j.wo, name:'Issue Works Instruction — WO '+j.wo, desc:'GIS approved — issue instruction to team', badge:'Ready', bc:'b-gn', action:'issue_wi' })
+    );
+    active.filter(j=>j.stage==='completed').forEach(j =>
+      items.push({ id:'ann_'+j.wo, wo:j.wo, name:'Prepare Claim Docs — WO '+j.wo, desc:'Work complete — prepare annexure for '+j.customer, badge:'Action Required', bc:'b-am', action:'create_annexure' })
+    );
+  }
+  if(currentRole === 'bpc') {
+    active.filter(j=>j.stage==='vo2_bpc').forEach(j =>
+      items.push({ id:'vo2bpc_'+j.wo, wo:j.wo, name:'VO2 Review — WO '+j.wo, desc:'VO2 exceeds VO1 — '+j.customer+' · approval required', badge:'Action Required', bc:'b-rd', action:'review_vo2_bpc' })
+    );
+    active.filter(j=>j.stage==='gis').forEach(j =>
+      items.push({ id:'gisbpc_'+j.wo, wo:j.wo, name:'GIS Report — WO '+j.wo, desc:'Review geo-analysis for '+j.customer, badge:'For Review', bc:'b-bl', action:'review_gis' })
+    );
+    active.filter(j=>j.stage==='payment_ready').forEach(j =>
+      items.push({ id:'pcbpc_'+j.wo, wo:j.wo, name:'Payment Certificate — WO '+j.wo, desc:'Sign off to release payment for '+j.customer, badge:'Sign Required', bc:'b-am', action:'sign_pc' })
+    );
+  }
+  if(currentRole === 'linesman') {
+    active.filter(j=>j.stage==='vo1_created').forEach(j =>
+      items.push({ id:'field_'+j.wo, wo:j.wo, name:'Field Assignment — WO '+j.wo, desc:j.customer+' · '+j.location, badge:'Dispatched', bc:'b-am', action:'submit_field' })
+    );
+  }
+  if(currentRole === 'gis') {
+    active.filter(j=>['vo2_pending','vo1_created'].includes(j.stage)&&Object.keys(j.fieldData).length).forEach(j =>
+      items.push({ id:'gis_'+j.wo, wo:j.wo, name:'GIS Assignment — WO '+j.wo, desc:j.customer+' · '+j.location, badge:'Assigned', bc:'b-am', action:'submit_gis' })
+    );
+    active.filter(j=>j.stage==='gis').forEach(j =>
+      items.push({ id:'gis2_'+j.wo, wo:j.wo, name:'GIS Assignment — WO '+j.wo, desc:j.customer+' · '+j.location, badge:'In Progress', bc:'b-am', action:'submit_gis' })
+    );
+  }
+  if(currentRole==='teamA'||currentRole==='teamB') {
+    active.filter(j=>j.stage==='wi_issued').forEach(j =>
+      items.push({ id:'exec_'+j.wo, wo:j.wo, name:'Works Instruction — WO '+j.wo, desc:j.customer+' · '+j.location, badge:'Active', bc:'b-gn', action:'execute_work' })
+    );
+  }
+  if(currentRole === 'finance') {
+    active.filter(j=>j.stage==='annexure').forEach(j =>
+      items.push({ id:'pc_'+j.wo, wo:j.wo, name:'Generate Payment Certificate', desc:'Compile claim for '+j.customer, badge:'Ready', bc:'b-gn', action:'create_pc' })
+    );
+  }
+  return items;
+}
+
+function renderInbox() {
+  const items = getInbox();
+  const cnt = items.length;
+  const badge = document.getElementById('ibadge');
+  badge.style.display = cnt ? 'inline-block':'none'; badge.textContent = cnt;
+  const list = document.getElementById('inboxList');
+  if(!items.length) {
+    list.innerHTML = `<div class="inb-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg><strong>Inbox empty</strong><span>No documents require your action</span></div>`;
+    return;
+  }
+  list.innerHTML = items.map(i=>`<div class="ii${selInboxId===i.id?' sel':''}" onclick="selDoc('${i.id}','${i.action}','${i.wo}')">
+    <div class="ii-type">WO ${i.wo}</div>
+    <div class="ii-name">${i.name}</div>
+    <div class="ii-desc">${i.desc}</div>
+    <div class="ii-foot"><span class="badge ${i.bc}">${i.badge}</span></div>
+  </div>`).join('');
+}
+
+function selDoc(id, action, wo) {
+  selInboxId = id; currentDocAction = action; currentDocWO = wo;
+  renderInbox();
+  document.getElementById('btnPrint').style.display = 'inline-flex';
+  const job = jobs[wo];
+  const titles = {
+    recv_wo:'Works Valuation · WO '+wo, review_field:'Field Report · WO '+wo,
+    create_vo2:'Variation Order (VO2) · WO '+wo, review_vo2_bpc:'VO2 BPC Review · WO '+wo,
+    submit_field:'Field Measurement Report · WO '+wo, submit_gis:'GIS Geo-Analysis · WO '+wo,
+    review_gis:'GIS Report · WO '+wo, issue_wi:'Works Instruction · WO '+wo,
+    execute_work:'Works Instruction · WO '+wo, create_annexure:'Annexure · WO '+wo,
+    create_pc:'Payment Certificate · TES-001', sign_pc:'Payment Certificate · TES-001',
+  };
+  const bds = {
+    recv_wo:'b-am', review_field:'b-bl', create_vo2:'b-am', review_vo2_bpc:'b-rd',
+    submit_field:'b-am', submit_gis:'b-am', review_gis:'b-bl', issue_wi:'b-gn',
+    execute_work:'b-gn', create_annexure:'b-am', create_pc:'b-gn', sign_pc:'b-am',
+  };
+  document.getElementById('docTitle').textContent = titles[action] || action;
+  const b = document.getElementById('docBadge'); b.className = 'badge '+(bds[action]||'b-gy'); b.textContent = action;
+  document.getElementById('docBody').innerHTML = buildDoc(action, job);
+  document.getElementById('docFoot').style.display = 'flex';
+  document.getElementById('docFoot').innerHTML = buildFoot(action, job);
+}
+
+/* ═══════════════════════════════
+   DOCUMENT BUILDERS
+═══════════════════════════════ */
+function lh(doctitle) {
+  return `<table class="lh-table"><tr>
+    <td style="width:58%"><div class="lh-bpc">BOTSWANA POWER CORPORATION</div>
+    <div class="lh-addr">P. O. Box 48 &nbsp;&nbsp;&nbsp; Tel &nbsp; 3607000</div>
+    <div class="lh-addr">Gaborone &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Fax &nbsp; 3607731</div></td>
+    <td style="width:42%"><div class="lh-doctitle">${doctitle}</div></td>
+  <tr></table><hr>`;
+}
+function sigBox(job, key) {
+  const s = job.sigs[key];
+  if(s) return `<div class="sig-signed"><strong>✓ Signed by: ${s.name}</strong>${s.desig ? ' · '+s.desig : ''}<br><span style="font-size:7.5pt">${s.date}</span></div>`;
+  return `<div class="sig-line"></div><div class="sig-sub">Signature / Date</div>`;
+}
+
+function buildDoc(action, job) {
+  if(!job) return '<p style="color:var(--tx2);padding:1rem">Job not found.</p>';
+  switch(action) {
+    case 'recv_wo': return docWorksValuation(job, false);
+    case 'create_vo2': return docVariationOrder(job);
+    case 'review_vo2_bpc': return docVO2BPCReview(job);
+    case 'submit_field': return docFieldReport(job, true);
+    case 'review_field': return docFieldReport(job, false);
+    case 'submit_gis': case 'review_gis': return docGIS(job, action==='submit_gis');
+    case 'issue_wi': case 'execute_work': return docWorksInstruction(job);
+    case 'create_annexure': return docAnnexure(job);
+    case 'create_pc': case 'sign_pc': return docPaymentCert(job, action==='sign_pc');
+    default: return '<p style="padding:1rem;color:var(--tx2)">Document not available.</p>';
+  }
+}
+
+function docWorksValuation(job, vo2mode) {
+  const t = jobTotal(job,'vo1');
+  const rows = job.vo1.items.map((it,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><input class="ef ef-blue" value="${it.desc}" style="width:95%" onchange="job_update_vo1_desc('${job.wo}',${i},this.value)"></td>
+    <td class="c"><input class="ef ef-blue" value="${it.unit}" style="width:40px" onchange="job_update_vo1_unit('${job.wo}',${i},this.value)"></td>
+    <td class="r"><input class="ef ef-blue" value="${it.qty}" style="width:40px;text-align:right" onchange="job_update_vo1_qty('${job.wo}',${i},this.value)"></td>
+    <td class="r"><input class="ef ef-blue" value="${it.rate.toFixed(2)}" style="width:72px;text-align:right" onchange="job_update_vo1_rate('${job.wo}',${i},this.value)"></td>
+    <td class="r ef-calc" id="vo1-val-${job.wo}-${i}" style="font-size:8.5pt">${(parseFloat(it.qty)*parseFloat(it.rate)).toFixed(2)}</td>
+   </tr>`).join('');
+  const locAmt = t.sub*(job.vo1.locFactor/100);
+  return `<div class="paper">
+  ${lh('Works Valuation')}
+  <table class="hdt">
+    <tr><td class="lbl">BPC W/O No. :</td><td>${job.wo}</td><td class="lbl">BPC Project No. :</td><td>${job.wo}</td></tr>
+    <tr><td class="lbl">Contract :</td><td colspan="3">FREE CONNECTIONS PHASE 46 PROJECT</td></tr>
+    <tr><td class="lbl">Contractor :</td><td colspan="3">Trends Engineering Services (PTY) Ltd</td></tr>
+    <tr><td class="lbl">Project Title :</td><td><input class="ef ef-blue" value="${job.customer}" onchange="jobs['${job.wo}'].customer=this.value" style="width:95%"></td><td class="lbl">Location Factor :</td><td><input class="ef ef-blue" value="${job.vo1.locFactor}" style="width:40px" onchange="job_update_lf1('${job.wo}',this.value)">%</td></tr>
+    <tr><td class="lbl">Location :</td><td><input class="ef ef-blue" value="${job.location}" onchange="jobs['${job.wo}'].location=this.value" style="width:95%"></td><td></td><td></td></tr>
+    <tr><td class="lbl">Cust. Payment Date :</td><td><input class="ef ef-blue" value="${job.vo1.startDate||''}" type="date" onchange="jobs['${job.wo}'].vo1.startDate=this.value"></td><td class="lbl">Wayleave :</td><td>BPC</td></tr>
+   </table>
+  <hr>
+  <span class="paper-grey">VO1 — Bill of Quantities</span>
+  <div style="font-size:7.5pt;color:#555;margin-bottom:4px"></div>
+  <table class="boq">
+    <thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:48px">UNIT</th><th class="r" style="width:55px">QTY</th><th class="r" style="width:78px">RATE/UNIT</th><th class="r" style="width:88px">VALUE (BWP)</th></tr></thead>
+    <tbody id="vo1rows-${job.wo}">${rows}</tbody>
+   </table>
+  <div style="margin-top:5px;display:flex;gap:6px">
+    <button onclick="addVO1Row('${job.wo}')" style="font-size:8pt;padding:2px 8px;cursor:pointer;background:#f0f0f0;border:1px solid #bbb;font-family:Arial">+ Add row</button>
+  </div>
+  <div style="margin-top:6px;background:#f8f8f8;border:1px solid #ddd;padding:6px 8px">
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:2px 0"><span>Subtotal</span><span id="vo1-sub-${job.wo}">${t.sub.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:2px 0;background:#fffbe8"><span>Location Factor (${job.vo1.locFactor}%)</span><span id="vo1-loc-${job.wo}">${locAmt.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:9pt;padding:4px 0;border-top:1.5px solid #000;margin-top:2px"><span>TOTAL (VO1)</span><span id="vo1-total-${job.wo}">${t.total.toFixed(2)}</span></div>
+  </div>
+  <div class="sig-area">
+    <div class="sig-box"><div class="sig-lbl">Contractor</div>${sigBox(job,'vo1_contractor')}</div>
+    <div class="sig-box"><div class="sig-lbl">BPC Representative</div>${sigBox(job,'vo1_bpc')}</div>
+  </div>
+  </div>`;
+}
+
+function docVariationOrder(job) {
+  if(!job.vo2.items.length) job.vo2.items = job.vo1.items.map(i=>({...i}));
+  const t = jobTotal(job,'vo2');
+  const rows = job.vo2.items.map((it,i)=>`<tr>
+    <td>${i+1}.0</td>
+    <td><input class="ef ef-blue" value="${it.desc}" onchange="job_vo2_desc('${job.wo}',${i},this.value)" style="width:95%"></td>
+    <td class="c"><input class="ef ef-blue" value="${it.unit}" style="width:40px" onchange="job_vo2_unit('${job.wo}',${i},this.value)"></td>
+    <td class="r"><input class="ef ef-blue" value="${it.qty}" style="width:40px;text-align:right" onchange="job_vo2_qty('${job.wo}',${i},this.value)"></td>
+    <td class="r"><input class="ef ef-blue" value="${it.rate.toFixed?it.rate.toFixed(2):it.rate}" style="width:72px;text-align:right" onchange="job_vo2_rate('${job.wo}',${i},this.value)"></td>
+    <td class="r" id="vo2-val-${job.wo}-${i}">${((parseFloat(it.qty)||0)*(parseFloat(it.rate)||0)).toFixed(2)}</td>
+   </tr>`).join('');
+  const t1 = jobTotal(job,'vo1');
+  const diff = t.total - t1.total;
+  const warn = diff > 0;
+  return `<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">VARIATION ORDER</div>
+  <table class="hdt">
+    <tr><td class="lbl">PROJECT TITLE:</td><td>${job.customer}</td><td class="lbl">PHASE:</td><td>46</div></td></tr>
+    <tr><td class="lbl">LOCATION:</td><td>${job.location}</td><td class="lbl">BPC W/O No.:</td><td>${job.wo}</td></tr>
+    <tr><td class="lbl">CONTRACT No.:</td><td>FREE CONNECTIONS PHASE 46</div></td><td class="lbl">SOURCE:</div><td>230V</div></td></tr>
+    <tr><td class="lbl">Location Factor:</div><td><input class="ef ef-blue" value="${job.vo2.locFactor}" style="width:40px" onchange="job_vo2_lf('${job.wo}',this.value)">%</div></td>
+    <td class="lbl">Markup:</div><td><input class="ef ef-blue" value="${job.vo2.markup}" style="width:40px" onchange="job_vo2_mk('${job.wo}',this.value)">%</div></td></tr>
+   </table>
+  <hr>
+  <div style="font-size:7.5pt;color:#555;margin-bottom:4px"></div>
+  <table class="boq">
+    <thead><tr><th style="width:38px">ITEM No.</th><th>DESCRIPTION</th><th class="c" style="width:48px">UNITS</th><th class="r" style="width:50px">QTY</th><th class="r" style="width:78px">UNIT COST</th><th class="r" style="width:90px">TOTAL (BWP)</th></tr></thead>
+    <tbody id="vo2rows-${job.wo}">${rows}</tbody>
+   </table>
+  <div style="margin-top:5px;display:flex;gap:6px">
+    <button onclick="addVO2Row('${job.wo}')" style="font-size:8pt;padding:2px 8px;cursor:pointer;background:#f0f0f0;border:1px solid #bbb;font-family:Arial">+ Add row</button>
+  </div>
+  <div style="margin-top:6px;background:#f8f8f8;border:1px solid #ddd;padding:6px 8px">
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:2px 0;background:#fffbe8"><span>Location Factor (${job.vo2.locFactor}%)</span><span id="vo2-loc-${job.wo}">${t.loc.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:2px 0"><span>SUB TOTAL</span><span id="vo2-sub-${job.wo}">${(t.sub+t.loc).toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:2px 0"><span>Markup @ ${job.vo2.markup}%</span><span id="vo2-mk-${job.wo}">${t.markup.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:9pt;padding:4px 0;border-top:2px solid #000;margin-top:2px"><span>TOTAL (BWP)</span><span id="vo2-total-${job.wo}">${t.total.toFixed(2)}</span></div>
+  </div>
+  ${warn ? `<div style="background:#fff3cd;border:1px solid #f0a500;padding:5px 8px;margin-top:6px;font-size:8pt;color:#7a4f00">⚠ VO2 total (P ${t.total.toFixed(2)}) exceeds VO1 (P ${t1.total.toFixed(2)}) by P ${diff.toFixed(2)}. BPC evaluation required.</div>` : `<div style="background:#d9f7e8;border:1px solid #4caf50;padding:5px 8px;margin-top:6px;font-size:8pt;color:#1a5c30">✓ VO2 within VO1 budget. Can proceed.</div>`}
+  <div class="sig-area">
+    <div class="sig-box"><div class="sig-lbl">Prepared by (Admin)</div>${sigBox(job,'vo2_admin')}</div>
+    <div class="sig-box"><div class="sig-lbl">BPC Representative</div>${sigBox(job,'vo2_bpc')}</div>
+  </div>
+  </div>`;
+}
+
+function docVO2BPCReview(job) {
+  const t1 = jobTotal(job,'vo1'), t2 = jobTotal(job,'vo2');
+  return `<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">VARIATION ORDER — BPC REVIEW</div>
+  <table class="hdt"><tr><td class="lbl">PROJECT:</div><td>${job.customer}</div></td><td class="lbl">WO:</div><td>${job.wo}</div></td></tr></table>
+  <hr>
+  <table class="boq">
+    <thead><tr><th>Description</th><th class="r">VO1 Value</th><th class="r">VO2 Value</th><th class="r">Difference</th></tr></thead>
+    <tbody>
+      ${job.vo2.items.map(it=>{
+        const v1item = job.vo1.items.find(i=>i.desc===it.desc);
+        const v1v = v1item ? (parseFloat(v1item.qty)*parseFloat(v1item.rate)) : 0;
+        const v2v = (parseFloat(it.qty)||0)*(parseFloat(it.rate)||0);
+        const d = v2v - v1v;
+        return `<tr><td>${it.desc}</td><td class="r">${v1item?v1v.toFixed(2):'—'}</td><td class="r">${v2v.toFixed(2)}</td><td class="r" style="color:${d>0?'#c00':d<0?'green':'#555'}">${d>0?'+':''}${d.toFixed(2)}</div></td>`;
+      }).join('')}
+      <tr><td>Location Factor</div><td><td class="r">${t1.loc.toFixed(2)}</div><td><td class="r">${t2.loc.toFixed(2)}</div><td><td class="r" style="color:${t2.loc>t1.loc?'#c00':'green'}">${(t2.loc-t1.loc)>=0?'+':('')}${(t2.loc-t1.loc).toFixed(2)}</div></td></tr>
+      <tr class="sub-row"><td><strong>VO1 TOTAL</strong></td><td class="r" colspan="3"><strong>P ${t1.total.toFixed(2)}</strong></div></td></tr>
+      <tr class="tot-row"><td><strong>VO2 TOTAL</strong></td><td class="r" colspan="3"><strong>P ${t2.total.toFixed(2)}</strong></div></td></tr>
+    </tbody>
+   </table>
+  <div style="background:#fff3cd;border:1px solid #f0a500;padding:6px 8px;margin-top:6px;font-size:8.5pt">
+    ⚠ Difference: <strong>P ${(t2.total-t1.total).toFixed(2)}</strong>. Review and sign to approve or reject.
+  </div>
+  <div class="sig-area">
+    <div class="sig-box"><div class="sig-lbl">BPC Project Engineer</div>${sigBox(job,'vo2_bpc_approve')}</div>
+    <div class="sig-box"><div class="sig-lbl">BPC Senior Project Engineer</div>${sigBox(job,'vo2_bpc_senior')}</div>
+  </div>
+  </div>`;
+}
+
+function docFieldReport(job, editable) {
+  const fd = job.fieldData || {};
+  const hasSubmitted = fd.submitted;
+  return `<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">FIELD MEASUREMENT REPORT</div>
+  <table class="hdt">
+    <tr><td class="lbl">BPC W/O No. :</div><td>${job.wo}</div></td><td class="lbl">Customer :</div><td>${job.customer}</div></td></tr>
+    <tr><td colspan="4"><span class="lbl">Location :</span> ${job.location}</div></td></tr>
+   </table><hr>
+  ${hasSubmitted ? 
+    `<div style="background:#d9f7e8;border:1px solid #4caf50;padding:5px 8px;margin-bottom:8px;font-size:8pt">✓ Measurements and drawings already submitted to Admin</div>
+     <table class="boq"><tbody>
+        <tr><td style="width:180px;font-weight:bold">Airdac Length (m)</div><td>${fd.airdac || '—'}</div></td></tr>
+        <tr><td style="font-weight:bold">ABC Cable (m)</div><td>${fd.abc || '—'}</div></td></tr>
+        <tr><td style="font-weight:bold">No. of Poles</div><td>${fd.poles || '—'}</div></td></tr>
+        <tr><td style="font-weight:bold">Site Conditions</div><td>${fd.notes || '—'}</div></td></tr>
+        <tr><td style="font-weight:bold">Drawing/Photo</div><td>${fd.drawing ? '📎 ' + fd.drawing : '—'}</div></td></tr>
+     </tbody><td>` :
+    `<div class="ua ua-bl" style="margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+     Go to site, take measurements and photos. Upload them below.</div>
+     <table class="boq"><tbody>
+        <tr><td style="width:180px;font-weight:bold">Airdac Length (m)</div><td><input type="text" id="f_airdac" placeholder="e.g. 45" style="width:150px"></div></td></tr>
+        <tr><td style="font-weight:bold">ABC Cable (m)</div><td><input type="text" id="f_abc" placeholder="e.g. 30" style="width:150px"></div></td></tr>
+        <tr><td style="font-weight:bold">No. of Poles</div><td><input type="text" id="f_poles" placeholder="e.g. 3" style="width:150px"></div></td></tr>
+        <tr><td style="font-weight:bold">Site Conditions / Notes</div><td><textarea id="f_notes" rows="2" style="width:100%"></textarea></div></td></tr>
+        <tr><td style="font-weight:bold">Upload Drawing/Photo</div><td><input type="file" id="f_drawing" accept="image/*,application/pdf"></div></td></tr>
+     </tbody><td>`}
+  <div class="sig-area">
+    <div class="sig-box"><div class="sig-lbl">Linesman</div>${sigBox(job,'field_linesman')}</div>
+    <div class="sig-box"><div class="sig-lbl">Admin (Received)</div>${sigBox(job,'field_admin')}</div>
+  </div>
+  </div>`;
+}
+
+function docGIS(job, editable) {
+  const g = job.gisData;
+  return `<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">GEO-ANALYSIS REPORT</div>
+  <table class="hdt">
+    <tr><td class="lbl">BPC W/O No. :</div><td>${job.wo}</div></td><td class="lbl">Customer :</div><td>${job.customer}</div></td></tr>
+    <tr><td colspan="4"><span class="lbl">Location :</span> ${job.location}</div></td></tr>
+   </table><hr>
+  <table class="boq"><tbody>
+    <tr><td style="width:160px;font-weight:bold">Latitude</div><td>${editable?`<input class="ef ef-blue" id="g_lat" value="${g.lat||''}" placeholder="-18.3667">`:(g.lat||'—')}</div></td></tr>
+    <tr><td style="font-weight:bold">Longitude</div><td>${editable?`<input class="ef ef-blue" id="g_lng" value="${g.lng||''}" placeholder="21.8500">`:(g.lng||'—')}</div></td></tr>
+    <tr><td style="font-weight:bold">Erf / Plot No.</div><td>${editable?`<input class="ef ef-blue" id="g_erf" value="${g.erf||''}" placeholder="e.g. Erf 1234">`:(g.erf||'—')}</div></td></tr>
+    <tr><td style="font-weight:bold">Soil Type</div><td>${editable?`<input class="ef ef-blue" id="g_soil" value="${g.soil||''}" placeholder="e.g. Sandy loam">`:(g.soil||'—')}</div></td></tr>
+    <tr><td style="font-weight:bold">Findings</div><td>${editable?`<textarea class="ef ef-blue" id="g_findings" style="width:95%;min-height:50px">${g.findings||''}</textarea>`:(g.findings||'—')}</div></td></tr>
+    <tr><td style="font-weight:bold">Recommendations</div><td>${editable?`<textarea class="ef ef-blue" id="g_recs" style="width:95%;min-height:40px">${g.recs||''}</textarea>`:(g.recs||'—')}</div></td></tr>
+  </tbody></table>
+  <div class="sig-area">
+    <div class="sig-box"><div class="sig-lbl">GIS Consultant</div>${sigBox(job,'gis_consultant')}</div>
+    <div class="sig-box"><div class="sig-lbl">BPC Representative</div>${sigBox(job,'gis_bpc')}</div>
+  </div>
+  </div>`;
+}
+
+function docWorksInstruction(job) {
+  const t1 = jobTotal(job,'vo1'), t2 = jobTotal(job,'vo2');
+  const finalCost = t2.total > 0 ? t2.total : t1.total;
+  return `<div class="paper">
+  ${lh('Works Instruction')}
+  <table class="hdt">
+    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Contract Details</div></tr>
+    <tr><td class="lbl">Contract :</div><td><td colspan="2">FREE CONNECTIONS PHASE 46 PROJECT</div><td><span class="lbl">BPC Contract No. :</span> 2000921000</div></tr>
+    <tr><td class="lbl">Contractor :</div><td><td colspan="3">Trends Engineering Services (PTY) Ltd</div></td></tr>
+    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px;margin-top:4px">Work Details</div></tr>
+    <tr><td class="lbl">BPC W/O No. :</div><td>${job.wo}</div><td><td class="lbl">Location Factor :</div><td>29.25</div></td></tr>
+    <tr><td class="lbl">Project Title :</div><td>${job.customer}</div><td></div><td></div></td></tr>
+    <tr><td class="lbl">Location :</div><td>${job.location}</div><td></div><td></div></td></tr>
+    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Commencement of Works</div></tr>
+    <tr><td class="lbl">Agreed Start Date :</div><td><input class="ef ef-blue" type="date" value="${job.vo1.startDate||''}" onchange="jobs['${job.wo}'].vo1.startDate=this.value"></div>
+      <td class="lbl">Initial W/O Cost:</div><td style="font-weight:bold">P ${t1.total.toFixed(2)}</div></td></tr>
+    <tr><td class="lbl">Agreed Completion :</div><td><input class="ef ef-blue" type="date" value="${job.vo1.compDate||''}" onchange="jobs['${job.wo}'].vo1.compDate=this.value"></div>
+      <td class="lbl">Penalty/Delay:</div><td>0</div></td></tr>
+    <tr><td class="lbl">% Complete :</div><td>100%</div><td></div><td></div></td></tr>
+    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Completion of Works</div></tr>
+    <tr><td class="lbl">Actual Completion :</div><td><input class="ef ef-blue" type="date" value="${job.vo1.compDate||''}" onchange="jobs['${job.wo}'].vo1.compDate=this.value"></div>
+      <td class="lbl">Final W/O Cost:</div><td style="font-weight:bold">P ${finalCost.toFixed(2)}</div></td></tr>
+    <tr><td class="lbl">Reason for Delay :</div><td>NIL</div><td><td class="lbl">Final V/O No:</div><td>2</div></td></tr>
+    <tr><td class="lbl">Penalty Deduction :</div><td>0</div><td><td class="lbl">Interim Payments:</div><td>0</div></td></tr>
+   </table>
+  <div class="sig-area">
+    <div class="sig-box"><div class="sig-lbl">BPC (Issued by)</div>${sigBox(job,'wi_bpc')}</div>
+    <div class="sig-box"><div class="sig-lbl">Contractor (Received by)</div>${sigBox(job,'wi_contractor')}</div>
+  </div>
+  </div>`;
+}
+
+function docAnnexure(job) {
+  const active = Object.values(jobs).filter(j=>['completed','annexure','payment_ready','payment_signed'].includes(j.stage));
+  const totalClaim = active.reduce((s,j)=>{const t=jobTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  return `<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;margin-bottom:4px">ANNEXURE TO PAYMENT CERTIFICATE</div><hr>
+  <table class="hdt">
+    <tr><td class="lbl">Payment Certificate:</div><td>TES-001</div><td><td class="lbl">Date:</div><td><input class="ef ef-blue" type="date" value="${new Date().toISOString().slice(0,10)}"></div></td></tr>
+    <tr><td class="lbl">Contract:</div><td>Free Connections Projects — North</div><td></div><td></div></td></tr>
+    <tr><td class="lbl">Employer:</div><td>Botswana Power Corporation</div><td></div><td></div></td></tr>
+    <tr><td class="lbl">Contractor:</div><td><td colspan="3">Trends Engineering Services (PTY) Ltd</div></td></tr>
+   </table><hr>
+  <table class="jt">
+    <thead><tr><th>ITEM</th><th>PROJECT No.</th><th>VENDOR NAME</th><th>VENDOR No.</th><th>AMOUNT (BWP)</th><th>% COMPLETE</th><th>PHASE</th><th>INVOICE No.</th><th>LOCATION</th><th>COMPLETION</th></tr></thead>
+    <tbody>
+      ${active.map((j,i)=>{const t=jobTotal(j,j.vo2.items.length?'vo2':'vo1');return`<tr>
+        <td>${i+1}</div><td>${j.wo}</div><td>Trends Engineering Services (PTY) Ltd</div><td>103913</div><td style="text-align:right">P ${t.total.toFixed(2)}</div><td style="text-align:center">100%</div><td style="text-align:center">46</div><td>134-2025</div><td>${j.location.split(',')[0]}</div><td>${j.vo1.compDate||'—'}</div>
+      </div>`;}).join('')}
+      <tr class="tot"><td colspan="4" style="text-align:right">TOTAL CLAIM</div><td style="text-align:right;font-weight:bold">P ${totalClaim.toFixed(2)}</div><td colspan="5"> </div></tr>
+    </tbody>
+   </table>
+  <div class="sig-area">
+    <div class="sig-box"><div class="sig-lbl">Prepared by (Admin)</div>${sigBox(job,'annex_admin')}</div>
+    <div class="sig-box"><div class="sig-lbl">Certified by (Finance)</div>${sigBox(job,'annex_finance')}</div>
+  </div>
+  </div>`;
+}
+
+function docPaymentCert(job, bpcView) {
+  const active = Object.values(jobs).filter(j=>['completed','annexure','payment_ready','payment_signed'].includes(j.stage));
+  const gross = active.reduce((s,j)=>{const t=jobTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const ret = gross * 0.05, wht = gross * 0.03, net = gross - ret - wht;
+  return `<div class="paper">
+  <div style="font-size:12pt;font-weight:bold;text-align:center;margin-bottom:5px">PAYMENT CERTIFICATE</div><hr>
+  <table class="hdt">
+    <tr><td class="lbl">Reference No.</div><td>TES-001</div><td><td class="lbl">Date:</div><td><input class="ef ef-blue" type="date" value="${new Date().toISOString().slice(0,10)}"></div></td></tr>
+    <tr><td class="lbl">Certificate No.</div><td>TES-001</div><td></div><td></div></td></tr>
+    <tr><td class="lbl">Project</div><td>Free Connections Projects — North</div><td></div><td></div></td></tr>
+    <tr><td class="lbl">Employer</div><td>Botswana Power Corporation</div><td></div><td></div></td></tr>
+    <tr><td class="lbl">Contractor</div><td><td colspan="3">Trends Engineering Services (PTY) Ltd</div></td></tr>
+   </table><hr>
+  <span class="pc-section">Contract Statement</span>
+  <div class="pc-block">
+    <div class="pc-row"><div class="n"></div><div class="d">Original Approved Contract Value</div><div class="c">P</div><div class="v">${gross.toFixed(2)}</div></div>
+    <div class="pc-row"><div class="n"></div><div class="d">Value of Work Completed To Date</div><div class="c">P</div><div class="v">${gross.toFixed(2)}</div></div>
+    <div class="pc-row"><div class="n"></div><div class="d">Less Previous Payments</div><div class="c">P</div><div class="v">0.00</div></div>
+  </div>
+  <span class="pc-section">Amount Certified To Date</span>
+  <div class="pc-block">
+    <div class="pc-row"><div class="n">1.</div><div class="d">Value of Work Completed (see Annexure)</div><div class="c">P</div><div class="v">${gross.toFixed(2)}</div></div>
+    <div class="pc-row"><div class="n">2.</div><div class="d">Value of Interim Work previously certified</div><div class="c">P</div><div class="v">0.00</div></div>
+    <div class="pc-row"><div class="n">3.</div><div class="d">Interim Value of work completed</div><div class="c">P</div><div class="v">0.00</div></div>
+    <div class="pc-row"><div class="n">4.</div><div class="d">Sub total of Work completed</div><div class="c">P</div><div class="v">${gross.toFixed(2)}</div></div>
+    <div class="pc-row"><div class="n">5.</div><div class="d">Plus VAT @ 14%</div><div class="c">P</div><div class="v">0.00</div></div>
+    <div class="pc-row sub"><div class="n">6.</div><div class="d">Total Valuation Certified To Date</div><div class="c">P</div><div class="v">${gross.toFixed(2)}</div></div>
+  </div>
+  <span class="pc-section">Deductions</span>
+  <div class="pc-block">
+    <div class="pc-row deduct"><div class="n">7.</div><div class="d">Less Retention (5% of Value of Work Completed)</div><div class="c">P</div><div class="v">(${ret.toFixed(2)})</div></div>
+    <div class="pc-row deduct"><div class="n">8.</div><div class="d">Less Withholding Tax @ 3% of Value</div><div class="c">P</div><div class="v">(${wht.toFixed(2)})</div></div>
+    <div class="pc-row"><div class="n">9.</div><div class="d">Less Retention (10% of Interim)</div><div class="c">P</div><div class="v">0.00</div></div>
+    <div class="pc-row sub"><div class="n">10.</div><div class="d">Sub-Total — Sum Items 7–9</div><div class="c">P</div><div class="v">(${(ret+wht).toFixed(2)})</div></div>
+  </div>
+  <span class="pc-section">Amount Due</span>
+  <div class="pc-row final"><div class="n">11.</div><div class="d">Item 6 — Item 10</div><div class="c">P</div><div class="v">${net.toFixed(2)}</div></div>
+  <div style="margin-top:5px;font-size:8pt;font-style:italic">(${numToWords(net)})</div>
+  <div style="margin-top:8px;font-size:8pt">Remarks: <input class="ef ef-blue" placeholder="______________________" style="width:300px"></div>
+  <div class="sig-area">
+    <div class="sig-box"><div class="sig-lbl">Prepared by Finance</div>${sigBox(job,'pc_finance')}</div>
+    <div class="sig-box"><div class="sig-lbl">${bpcView?'BPC Approval (your signature required)':'BPC Approval'}</div>${sigBox(job,'pc_bpc')}</div>
+  </div>
+  </div>`;
+}
+
+function numToWords(n) {
+  const major = Math.floor(n), minor = Math.round((n-major)*100);
+  return `${major.toLocaleString()} Pula${minor?', '+minor+' thebe':''}`;
+}
+
+/* ═══ LIVE RECALC ═══ */
+function recalcVO1(wo) {
+  const job = jobs[wo]; if(!job) return;
+  let sub = 0;
+  job.vo1.items.forEach((it,i)=>{
+    const v = (parseFloat(it.qty)||0)*(parseFloat(it.rate)||0);
+    sub += v;
+    const el = document.getElementById(`vo1-val-${wo}-${i}`);
+    if(el) el.textContent = v.toFixed(2);
+  });
+  const loc = sub*(job.vo1.locFactor/100);
+  const total = sub+loc;
+  const set = (id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set(`vo1-sub-${wo}`, sub.toFixed(2));
+  set(`vo1-loc-${wo}`, loc.toFixed(2));
+  set(`vo1-total-${wo}`, total.toFixed(2));
+}
+function recalcVO2(wo) {
+  const job = jobs[wo]; if(!job) return;
+  let sub = 0;
+  job.vo2.items.forEach((it,i)=>{
+    const v = (parseFloat(it.qty)||0)*(parseFloat(it.rate)||0);
+    sub += v;
+    const el = document.getElementById(`vo2-val-${wo}-${i}`);
+    if(el) el.textContent = v.toFixed(2);
+  });
+  const loc = sub*(job.vo2.locFactor/100);
+  const mk = (sub+loc)*(job.vo2.markup/100);
+  const total = sub+loc+mk;
+  const set = (id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set(`vo2-loc-${wo}`, loc.toFixed(2));
+  set(`vo2-sub-${wo}`, (sub+loc).toFixed(2));
+  set(`vo2-mk-${wo}`, mk.toFixed(2));
+  set(`vo2-total-${wo}`, total.toFixed(2));
+}
+// VO1 field updaters
+function job_update_vo1_desc(wo,i,v){jobs[wo].vo1.items[i].desc=v;}
+function job_update_vo1_unit(wo,i,v){jobs[wo].vo1.items[i].unit=v;}
+function job_update_vo1_qty(wo,i,v){jobs[wo].vo1.items[i].qty=parseFloat(v)||0;recalcVO1(wo);}
+function job_update_vo1_rate(wo,i,v){jobs[wo].vo1.items[i].rate=parseFloat(v)||0;recalcVO1(wo);}
+function job_update_lf1(wo,v){jobs[wo].vo1.locFactor=parseFloat(v)||0;recalcVO1(wo);}
+// VO2 field updaters
+function job_vo2_desc(wo,i,v){jobs[wo].vo2.items[i].desc=v;}
+function job_vo2_unit(wo,i,v){jobs[wo].vo2.items[i].unit=v;}
+function job_vo2_qty(wo,i,v){jobs[wo].vo2.items[i].qty=parseFloat(v)||0;recalcVO2(wo);}
+function job_vo2_rate(wo,i,v){jobs[wo].vo2.items[i].rate=parseFloat(v)||0;recalcVO2(wo);}
+function job_vo2_lf(wo,v){jobs[wo].vo2.locFactor=parseFloat(v)||0;recalcVO2(wo);}
+function job_vo2_mk(wo,v){jobs[wo].vo2.markup=parseFloat(v)||0;recalcVO2(wo);}
+
+function addVO1Row(wo) {
+  jobs[wo].vo1.items.push({desc:'New Item',unit:'Ea',qty:1,rate:0});
+  selDoc(selInboxId, currentDocAction, wo);
+}
+function addVO2Row(wo) {
+  jobs[wo].vo2.items.push({desc:'New Item',unit:'Ea',qty:1,rate:0});
+  selDoc(selInboxId, currentDocAction, wo);
+}
+
+/* ═══ ACTION BUTTONS ═══ */
+function buildFoot(action, job) {
+  const btn = (cls,icon,txt,fn) => `<button class="btn ${cls}" onclick="${fn}">${icon} ${txt}</button>`;
+  const s = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">`;
+  const chk = s+'<polyline points="20 6 9 17 4 12"/></svg>';
+  const x = s+'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+  const send = s+'<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+  const pen = s+'<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+  if(!job) return '';
+  switch(action) {
+    case 'recv_wo': return btn('btn-gn',chk,'Approve VO1 & Dispatch Linesman',`doAction('dispatch','${job.wo}')`)+btn('btn-gy',pen,'Sign VO1',`openSig('vo1_bpc','Works Valuation · WO ${job.wo}','${job.wo}')`);
+    case 'create_vo2': return btn('btn-am',chk,'Save VO2',`doAction('save_vo2','${job.wo}')`)+btn('btn-gy',pen,'Sign VO2',`openSig('vo2_admin','Variation Order · WO ${job.wo}','${job.wo}')`);
+    case 'review_vo2_bpc': return btn('btn-gn',chk,'Approve — Proceed',`doAction('approve_vo2_bpc','${job.wo}')`)+btn('btn-rd',x,'Reject — Revise',`doAction('reject','${job.wo}')`)+btn('btn-gy',pen,'Sign',`openSig('vo2_bpc_approve','VO2 Review · WO ${job.wo}','${job.wo}')`);
+    case 'submit_field': return btn('btn-am',send,'Submit to Admin',`doAction('submit_field','${job.wo}')`)+btn('btn-gy',pen,'Sign',`openSig('field_linesman','Field Report · WO ${job.wo}','${job.wo}')`);
+    case 'review_field': return btn('btn-gn',chk,'Accept & Create VO2',`doAction('accept_field','${job.wo}')`)+btn('btn-gy',pen,'Sign Received',`openSig('field_admin','Field Report · WO ${job.wo}','${job.wo}')`);
+    case 'submit_gis': return btn('btn-am',send,'Submit to BPC',`doAction('submit_gis','${job.wo}')`)+btn('btn-gy',pen,'Sign',`openSig('gis_consultant','GIS Report · WO ${job.wo}','${job.wo}')`);
+    case 'review_gis': return btn('btn-gn',chk,'Accept GIS Report',`doAction('accept_gis','${job.wo}')`)+btn('btn-gy',pen,'Sign',`openSig('gis_bpc','GIS Report · WO ${job.wo}','${job.wo}')`);
+    case 'issue_wi': return btn('btn-am',send,'Issue to Team',`doAction('issue_wi','${job.wo}')`)+btn('btn-gy',pen,'Sign WI',`openSig('wi_bpc','Works Instruction · WO ${job.wo}','${job.wo}')`);
+    case 'execute_work': return btn('btn-gn',chk,'Mark Work Complete',`doAction('complete_work','${job.wo}')`)+btn('btn-gy',pen,'Sign Received',`openSig('wi_contractor','Works Instruction · WO ${job.wo}','${job.wo}')`);
+    case 'create_annexure': return btn('btn-am',send,'Finalise & Send to Finance',`doAction('create_annexure','${job.wo}')`)+btn('btn-gy',pen,'Sign Annexure',`openSig('annex_admin','Annexure · WO ${job.wo}','${job.wo}')`);
+    case 'create_pc': return btn('btn-am','💰','Generate & Send to BPC',`doAction('create_pc','${job.wo}')`)+btn('btn-gy',pen,'Sign',`openSig('pc_finance','Payment Certificate','${job.wo}')`);
+    case 'sign_pc': return btn('btn-gn',pen,'Sign Payment Certificate',`doAction('sign_pc','${job.wo}')`)+btn('btn-rd',x,'Reject',`doAction('reject','${job.wo}')`);
+  }
+  return '';
+}
+
+function doAction(action, wo) {
+  const job = jobs[wo]; if(!job) return;
+  switch(action) {
+    case 'dispatch': job.stage = 'vo1_created'; doneMsg('VO1 approved. Linesman dispatched to WO '+wo); break;
+    case 'submit_field':
+      const fileInput = document.getElementById('f_drawing');
+      const fileName = fileInput && fileInput.files[0] ? fileInput.files[0].name : 'Drawing_' + wo + '.jpg';
+      job.fieldData = {
+        airdac: document.getElementById('f_airdac')?.value || '',
+        abc: document.getElementById('f_abc')?.value || '',
+        poles: document.getElementById('f_poles')?.value || '',
+        notes: document.getElementById('f_notes')?.value || '',
+        drawing: fileName,
+        submitted: true
+      };
+      job.stage = 'vo2_pending';
+      doneMsg('✓ Measurements and drawings submitted to Admin. They will now create VO2.');
+      break;
+    case 'accept_field': job.stage = 'vo2_pending'; doneMsg('Field report accepted. Admin can now create VO2'); break;
+    case 'save_vo2':
+      const t1 = jobTotal(job,'vo1'), t2 = jobTotal(job,'vo2');
+      if(t2.total <= t1.total) { job.stage = 'gis'; doneMsg('VO2 saved (within budget). GIS consultant can now proceed.'); }
+      else { job.stage = 'vo2_bpc'; doneMsg('VO2 exceeds VO1 — sent to BPC for evaluation.'); }
+      break;
+    case 'approve_vo2_bpc': job.stage = 'gis'; doneMsg('VO2 approved by BPC. GIS consultant notified.'); break;
+    case 'submit_gis':
+      job.gisData = {
+        lat: document.getElementById('g_lat')?.value, lng: document.getElementById('g_lng')?.value,
+        erf: document.getElementById('g_erf')?.value, soil: document.getElementById('g_soil')?.value,
+        findings: document.getElementById('g_findings')?.value, recs: document.getElementById('g_recs')?.value,
+      };
+      job.stage = 'gis'; doneMsg('GIS report submitted to BPC'); break;
+    case 'accept_gis': job.stage = 'wi_issued'; doneMsg('GIS accepted. Admin to issue Works Instruction.'); break;
+    case 'issue_wi': job.stage = 'executing'; doneMsg('Works Instruction issued to field team.'); break;
+    case 'complete_work': job.stage = 'completed'; doneMsg('Work marked complete. Admin to prepare claim documents.'); break;
+    case 'create_annexure': job.stage = 'annexure'; doneMsg('Annexure finalised. Sent to Finance.'); break;
+    case 'create_pc': Object.values(jobs).filter(j=>j.stage==='annexure').forEach(j=>j.stage='payment_ready'); doneMsg('Payment Certificate generated. Sent to BPC for signature.'); break;
+    case 'sign_pc': job.stage = 'payment_signed'; openSig('pc_bpc','Payment Certificate','${wo}'); break;
+    case 'reject': doneMsg('Document rejected — party notified.'); break;
+  }
+  renderInbox(); renderDashboard();
+}
+
+function doneMsg(msg) {
+  document.getElementById('docFoot').innerHTML = `<div class="ok-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>${msg}</div>`;
+  setTimeout(()=>{ document.getElementById('docFoot').innerHTML = buildFoot(currentDocAction, jobs[currentDocWO]||null); },3000);
+}
+
+/* ═══ DIGITAL SIGNATURE ═══ */
+function openSig(key, docLabel, wo) {
+  currentDocWO = wo;
+  document.getElementById('sigDocLabel').textContent = docLabel;
+  document.getElementById('sigName').value = '';
+  document.getElementById('sigDesig').value = defaultDesig();
+  document.getElementById('sigPreview').textContent = 'Enter your name above';
+  document.getElementById('sigModal').className = 'open';
+  sigCallback = (name, desig) => {
+    if(jobs[wo]) {
+      jobs[wo].sigs[key] = { name, desig, date: new Date().toLocaleDateString('en-BW',{day:'2-digit',month:'short',year:'numeric'}) };
+      selDoc(selInboxId, currentDocAction, wo);
+    }
+  };
+  document.getElementById('sigName').oninput = function() {
+    document.getElementById('sigPreview').textContent = this.value + (document.getElementById('sigDesig').value ? '\n'+document.getElementById('sigDesig').value : '') + '\n' + new Date().toLocaleDateString('en-BW');
+  };
+}
+function defaultDesig() {
+  const m = { bpc:'BPC Engineer', admin:'Admin · Trends Engineering', linesman:'Linesman', gis:'GIS Consultant', teamA:'Field Supervisor · Team A', teamB:'Field Supervisor · Team B', finance:'Finance Officer' };
+  return m[currentRole] || '';
+}
+function confirmSig() {
+  const name = document.getElementById('sigName').value.trim();
+  if(!name){ document.getElementById('sigName').style.borderColor='var(--rd)'; return; }
+  if(sigCallback) sigCallback(name, document.getElementById('sigDesig').value.trim());
+  closeSig();
+  showAlert('Document signed by '+name);
+}
+function closeSig() { document.getElementById('sigModal').className = ''; }
+
+/* ═══ PRINT ═══ */
+function printDoc() {
+  const body = document.getElementById('docBody').innerHTML;
+  const pa = document.getElementById('printArea');
+  pa.innerHTML = body; pa.style.display = 'block';
+  window.print();
+  setTimeout(()=>{ pa.innerHTML=''; pa.style.display='none'; }, 1000);
+}
+
+/* ═══ NAVIGATION ═══ */
+function nav(screen) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('act'));
+  document.getElementById('sc-'+screen).classList.add('act');
+  const titles = { dashboard:'Dashboard', inbox:'Inbox', woqueue:'Work Order Queue', workorders:'All Work Orders' };
+  document.getElementById('tbt').textContent = titles[screen] || screen;
+  document.getElementById('n-'+screen)?.classList.add('act');
+  if(screen==='inbox') renderInbox();
+  if(screen==='dashboard') renderDashboard();
+  if(screen==='woqueue') renderWOQueue();
+  if(screen==='workorders') renderAllWO();
+}
+
+function renderAllWO() {
+  const rows = Object.values(jobs);
+  document.getElementById('allWOList').innerHTML = rows.length
+    ? rows.map(j=>{const t=jobTotal(j,j.vo2.items.length?'vo2':'vo1');return`<div class="wq-row"><span class="mono">${j.wo}</span><span>${j.customer}</span><span class="tag">${j.location.split(',')[0]}</span><span class="mono">${P(t.total)}</span><span style="font-size:.75rem;color:var(--tx2)">${stageLabel(j.stage)}</span><span class="badge ${stageBadge(j.stage)}">${j.stage==='payment_signed'?'✓ Paid':'Active'}</span></div>`;}).join('')
+    : `<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders yet — BPC must issue them first</div>`;
+}
+
+/* ═══ LOGIN / LOGOUT ═══ */
+function doLogin() {
+  const r = document.getElementById('loginRole').value;
+  if(!r){ document.getElementById('loginRole').style.borderColor='var(--rd)'; return; }
+  currentRole = r;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('sbRn').textContent = roleNames[r];
+  document.getElementById('n-woqueue').style.display = (r==='bpc') ? 'flex':'none';
+  document.getElementById('n-workorders').style.display = (r==='admin') ? 'flex':'none';
+  renderDashboard(); renderInbox();
+}
+function doLogout() {
+  currentRole=''; selInboxId=null; currentDocAction=null; currentDocWO=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('mainApp').style.display='none';
+}
+</script>
+</body>
+</html>
