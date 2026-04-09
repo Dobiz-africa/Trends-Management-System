@@ -1,0 +1,1 @@
+# Trends-Management-System
