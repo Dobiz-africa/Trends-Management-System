@@ -210,6 +210,20 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
 .jt td{border:1px solid #bbb;padding:3px 4px}
 .jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+/* ─── RATES AUTOCOMPLETE ─── */
+.ac-wrap{position:relative;width:100%}
+.ac-input{width:100%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none}
+.ac-input:focus{border-bottom-color:#0055cc;background:#fffce8}
+.ac-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #bbb;border-top:none;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:999;max-height:220px;overflow-y:auto;border-radius:0 0 4px 4px}
+.ac-item{padding:5px 8px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-family:Arial,sans-serif;font-size:8pt}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.focused{background:#fffce8}
+.ac-item-desc{font-weight:600;color:#111;line-height:1.3}
+.ac-item-meta{display:flex;gap:10px;margin-top:2px;font-size:7.5pt;color:#666}
+.ac-item-rate{color:#0a5c2e;font-weight:600}
+.ac-item-unit{color:#555}
+.ac-item-cat{background:#e8f0ff;color:#2a5aa0;padding:1px 5px;border-radius:2px;font-size:7pt;font-weight:600}
+.ac-empty{padding:8px;font-size:8pt;color:#999;font-family:Arial,sans-serif;text-align:center}
 /* Print styles */
 @media print{
   body{background:#fff}
@@ -425,6 +439,83 @@ const WO_POOL = [
   { wo:'449503', customer:'Sekonja Kanyota',    location:'Mohembo East',      type:'U/G Conn',  estCost:16261 },
   { wo:'449504', customer:'Edward Njwaki',       location:'Shakawe',           type:'OHL 400V',  estCost:36800 },
   { wo:'449505', customer:'Movanje Mokokwa',    location:'Samochima',         type:'U/G Conn',  estCost:17100 },
+];
+
+/* ═══════════════════════════════════════════
+   RATES DATABASE
+   Source: BPC Rates Sheet — highlighted items only
+   highlighted = items marked for Phase 46 Free Connections
+═══════════════════════════════════════════ */
+const RATES_DB = [
+  // ── UNDERGROUND SERVICE CONNECTIONS ──
+  { desc:'Service Conn; 230V; 60A; Single Phase; U/G',         unit:'Ea',  rate:11987.42, cat:'U/G Service Connection' },
+  { desc:'Service Conn; 230V; 80A; Single Phase; U/G',         unit:'Ea',  rate:13240.10, cat:'U/G Service Connection' },
+  { desc:'Service Conn; 400V; 100A; Three Phase; U/G',         unit:'Ea',  rate:18540.00, cat:'U/G Service Connection' },
+  { desc:'Service Conn; 400V; 60A; Three Phase; U/G',          unit:'Ea',  rate:15320.50, cat:'U/G Service Connection' },
+  { desc:'Service Conn; 230V; 60A; Single Phase; Overhead',    unit:'Ea',  rate:8760.00,  cat:'OH Service Connection' },
+  { desc:'Service Conn; 230V; 80A; Single Phase; Overhead',    unit:'Ea',  rate:9840.00,  cat:'OH Service Connection' },
+
+  // ── OVERHEAD LINES ──
+  { desc:'OHL; 400V; 50mm2; 4core; ABC',                       unit:'M',   rate:254.11,   cat:'Overhead Line' },
+  { desc:'OHL; 400V; 95mm2; 4core; ABC',                       unit:'M',   rate:312.40,   cat:'Overhead Line' },
+  { desc:'OHL; 400V; 35mm2; 4core; ABC',                       unit:'M',   rate:198.60,   cat:'Overhead Line' },
+  { desc:'OHL; 11kV; 50mm2; 3core; XLPE',                      unit:'M',   rate:520.00,   cat:'Overhead Line' },
+  { desc:'OHL; 11kV; 95mm2; 3core; XLPE',                      unit:'M',   rate:680.00,   cat:'Overhead Line' },
+
+  // ── UNDERGROUND CABLES ──
+  { desc:'U/G Cable; 400V; 50mm2; 4core; XLPE',                unit:'M',   rate:285.30,   cat:'Underground Cable' },
+  { desc:'U/G Cable; 400V; 95mm2; 4core; XLPE',                unit:'M',   rate:365.80,   cat:'Underground Cable' },
+  { desc:'U/G Cable; 400V; 185mm2; 4core; XLPE',               unit:'M',   rate:480.00,   cat:'Underground Cable' },
+  { desc:'U/G Cable; 11kV; 95mm2; 3core; XLPE',                unit:'M',   rate:625.00,   cat:'Underground Cable' },
+  { desc:'U/G Cable Trench; Excavation & Reinstatement',        unit:'M',   rate:95.40,    cat:'Underground Cable' },
+
+  // ── POLES & STRUCTURES ──
+  { desc:'Pole Protector; Supply & Install; 9m Woodpole',       unit:'Ea',  rate:639.17,   cat:'Poles & Structures' },
+  { desc:'Pole Protector; Supply & Install; 11m Woodpole',      unit:'Ea',  rate:780.00,   cat:'Poles & Structures' },
+  { desc:'Woodpole; 9m; Class 3; Supply & Erect',              unit:'Ea',  rate:4200.00,  cat:'Poles & Structures' },
+  { desc:'Woodpole; 11m; Class 3; Supply & Erect',             unit:'Ea',  rate:5400.00,  cat:'Poles & Structures' },
+  { desc:'Concrete Pole; 9m; Supply & Erect',                  unit:'Ea',  rate:6800.00,  cat:'Poles & Structures' },
+  { desc:'Stay Wire Assembly; Supply & Install',                unit:'Ea',  rate:1240.00,  cat:'Poles & Structures' },
+  { desc:'Cross Arm; Timber; Supply & Install',                 unit:'Ea',  rate:380.00,   cat:'Poles & Structures' },
+
+  // ── TRANSFORMERS ──
+  { desc:'Transformer; 50kVA; 11kV/400V; Supply & Install',    unit:'Ea',  rate:48000.00, cat:'Transformers' },
+  { desc:'Transformer; 100kVA; 11kV/400V; Supply & Install',   unit:'Ea',  rate:72000.00, cat:'Transformers' },
+  { desc:'Transformer; 200kVA; 11kV/400V; Supply & Install',   unit:'Ea',  rate:110000.00,cat:'Transformers' },
+  { desc:'Transformer Plinth; Supply & Construct',             unit:'Ea',  rate:8500.00,  cat:'Transformers' },
+  { desc:'Transformer Fencing; Supply & Erect',                unit:'Ea',  rate:12000.00, cat:'Transformers' },
+
+  // ── METERING & PROTECTION ──
+  { desc:'Meter Box; Surface Mount; Supply & Install',          unit:'Ea',  rate:1840.00,  cat:'Metering' },
+  { desc:'Meter Box; Flush Mount; Supply & Install',            unit:'Ea',  rate:2100.00,  cat:'Metering' },
+  { desc:'Energy Meter; Single Phase; Supply & Install',        unit:'Ea',  rate:980.00,   cat:'Metering' },
+  { desc:'Energy Meter; Three Phase; Supply & Install',         unit:'Ea',  rate:1450.00,  cat:'Metering' },
+  { desc:'Cut Out; 60A; Supply & Install',                      unit:'Ea',  rate:420.00,   cat:'Metering' },
+  { desc:'Cut Out; 100A; Supply & Install',                     unit:'Ea',  rate:560.00,   cat:'Metering' },
+
+  // ── GIS RATES ──
+  { desc:'GIS RATE-Service connections',                        unit:'Ea',  rate:593.59,   cat:'GIS' },
+  { desc:'GIS RATE-Overhead Line',                              unit:'Ea',  rate:850.00,   cat:'GIS' },
+  { desc:'GIS RATE-Transformer installation',                   unit:'Ea',  rate:1200.00,  cat:'GIS' },
+  { desc:'GIS Data Processing; Per work order',                 unit:'Ea',  rate:2100.00,  cat:'GIS' },
+
+  // ── CIVIL WORKS ──
+  { desc:'Excavation; Rock; Per m3',                            unit:'m3',  rate:480.00,   cat:'Civil Works' },
+  { desc:'Excavation; Normal Soil; Per m3',                     unit:'m3',  rate:180.00,   cat:'Civil Works' },
+  { desc:'Concrete; Blinding; 50mm',                            unit:'m3',  rate:2200.00,  cat:'Civil Works' },
+  { desc:'Backfilling & Compaction',                            unit:'M',   rate:65.00,    cat:'Civil Works' },
+  { desc:'Cable Sand Bedding; Per metre',                       unit:'M',   rate:38.00,    cat:'Civil Works' },
+  { desc:'Reinstatement; Tar Road',                             unit:'M',   rate:420.00,   cat:'Civil Works' },
+  { desc:'Reinstatement; Gravel Road',                          unit:'M',   rate:85.00,    cat:'Civil Works' },
+
+  // ── MISCELLANEOUS ──
+  { desc:'Cable Markers; Supply & Install',                     unit:'Ea',  rate:95.00,    cat:'Miscellaneous' },
+  { desc:'Warning Tape; Yellow; Per metre',                     unit:'M',   rate:12.00,    cat:'Miscellaneous' },
+  { desc:'Duct; 110mm; Supply & Install',                       unit:'M',   rate:145.00,   cat:'Miscellaneous' },
+  { desc:'Termination Kit; LV; Supply & Install',               unit:'Ea',  rate:1200.00,  cat:'Miscellaneous' },
+  { desc:'Termination Kit; HV; Supply & Install',               unit:'Ea',  rate:4800.00,  cat:'Miscellaneous' },
+  { desc:'Joint; LV Cable; Supply & Install',                   unit:'Ea',  rate:2400.00,  cat:'Miscellaneous' },
+  { desc:'Transport & Sundries; Per work order',                unit:'Ea',  rate:1500.00,  cat:'Miscellaneous' },
 ];
 
 // Active jobs (issued WOs with workflow state)
@@ -706,10 +797,10 @@ function docWorksValuation(job, vo2mode) {
   const t = jobTotal(job,'vo1');
   const rows = job.vo1.items.map((it,i)=>`<tr>
     <td>${i+1}</td>
-    <td><input class="ef ef-blue" value="${it.desc}" style="width:95%" onchange="job_update_vo1_desc('${job.wo}',${i},this.value)"></td>
-    <td class="c"><input class="ef ef-blue" value="${it.unit}" style="width:40px" onchange="job_update_vo1_unit('${job.wo}',${i},this.value)"></td>
+    <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
+    <td class="c"><input class="ef ef-blue" id="vo1-unit-${job.wo}-${i}" value="${it.unit}" style="width:40px" onchange="job_update_vo1_unit('${job.wo}',${i},this.value)"></td>
     <td class="r"><input class="ef ef-blue" value="${it.qty}" style="width:40px;text-align:right" onchange="job_update_vo1_qty('${job.wo}',${i},this.value)"></td>
-    <td class="r"><input class="ef ef-blue" value="${it.rate.toFixed(2)}" style="width:72px;text-align:right" onchange="job_update_vo1_rate('${job.wo}',${i},this.value)"></td>
+    <td class="r"><input class="ef ef-blue" id="vo1-rate-${job.wo}-${i}" value="${it.rate.toFixed(2)}" style="width:72px;text-align:right" onchange="job_update_vo1_rate('${job.wo}',${i},this.value)"></td>
     <td class="r ef-calc" id="vo1-val-${job.wo}-${i}" style="font-size:8.5pt">${(parseFloat(it.qty)*parseFloat(it.rate)).toFixed(2)}</td>
    </tr>`).join('');
   const locAmt = t.sub*(job.vo1.locFactor/100);
@@ -725,7 +816,7 @@ function docWorksValuation(job, vo2mode) {
    </table>
   <hr>
   <span class="paper-grey">VO1 — Bill of Quantities</span>
-  <div style="font-size:7.5pt;color:#555;margin-bottom:4px"></div>
+  <div style="font-size:7.5pt;color:#0055cc;margin-bottom:4px;padding:3px 5px;background:#f0f5ff;border:1px solid #c8d8ff;border-radius:3px">💡 Click any description field and start typing to search the BPC Rates Sheet — rate and unit auto-fill when you select a service</div>
   <table class="boq">
     <thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:48px">UNIT</th><th class="r" style="width:55px">QTY</th><th class="r" style="width:78px">RATE/UNIT</th><th class="r" style="width:88px">VALUE (BWP)</th></tr></thead>
     <tbody id="vo1rows-${job.wo}">${rows}</tbody>
@@ -750,10 +841,10 @@ function docVariationOrder(job) {
   const t = jobTotal(job,'vo2');
   const rows = job.vo2.items.map((it,i)=>`<tr>
     <td>${i+1}.0</td>
-    <td><input class="ef ef-blue" value="${it.desc}" onchange="job_vo2_desc('${job.wo}',${i},this.value)" style="width:95%"></td>
-    <td class="c"><input class="ef ef-blue" value="${it.unit}" style="width:40px" onchange="job_vo2_unit('${job.wo}',${i},this.value)"></td>
+    <td style="min-width:200px">${acInput(job.wo,'vo2',i)}</td>
+    <td class="c"><input class="ef ef-blue" id="vo2-unit-${job.wo}-${i}" value="${it.unit}" style="width:40px" onchange="job_vo2_unit('${job.wo}',${i},this.value)"></td>
     <td class="r"><input class="ef ef-blue" value="${it.qty}" style="width:40px;text-align:right" onchange="job_vo2_qty('${job.wo}',${i},this.value)"></td>
-    <td class="r"><input class="ef ef-blue" value="${it.rate.toFixed?it.rate.toFixed(2):it.rate}" style="width:72px;text-align:right" onchange="job_vo2_rate('${job.wo}',${i},this.value)"></td>
+    <td class="r"><input class="ef ef-blue" id="vo2-rate-${job.wo}-${i}" value="${it.rate.toFixed?it.rate.toFixed(2):it.rate}" style="width:72px;text-align:right" onchange="job_vo2_rate('${job.wo}',${i},this.value)"></td>
     <td class="r" id="vo2-val-${job.wo}-${i}">${((parseFloat(it.qty)||0)*(parseFloat(it.rate)||0)).toFixed(2)}</td>
    </tr>`).join('');
   const t1 = jobTotal(job,'vo1');
@@ -769,7 +860,7 @@ function docVariationOrder(job) {
     <td class="lbl">Markup:</div><td><input class="ef ef-blue" value="${job.vo2.markup}" style="width:40px" onchange="job_vo2_mk('${job.wo}',this.value)">%</div></td></tr>
    </table>
   <hr>
-  <div style="font-size:7.5pt;color:#555;margin-bottom:4px"></div>
+  <div style="font-size:7.5pt;color:#0055cc;margin-bottom:4px;padding:3px 5px;background:#f0f5ff;border:1px solid #c8d8ff;border-radius:3px">💡 Click any description field and start typing to search the BPC Rates Sheet — rate and unit auto-fill when you select a service</div>
   <table class="boq">
     <thead><tr><th style="width:38px">ITEM No.</th><th>DESCRIPTION</th><th class="c" style="width:48px">UNITS</th><th class="r" style="width:50px">QTY</th><th class="r" style="width:78px">UNIT COST</th><th class="r" style="width:90px">TOTAL (BWP)</th></tr></thead>
     <tbody id="vo2rows-${job.wo}">${rows}</tbody>
@@ -1180,6 +1271,110 @@ function renderAllWO() {
   document.getElementById('allWOList').innerHTML = rows.length
     ? rows.map(j=>{const t=jobTotal(j,j.vo2.items.length?'vo2':'vo1');return`<div class="wq-row"><span class="mono">${j.wo}</span><span>${j.customer}</span><span class="tag">${j.location.split(',')[0]}</span><span class="mono">${P(t.total)}</span><span style="font-size:.75rem;color:var(--tx2)">${stageLabel(j.stage)}</span><span class="badge ${stageBadge(j.stage)}">${j.stage==='payment_signed'?'✓ Paid':'Active'}</span></div>`;}).join('')
     : `<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders yet — BPC must issue them first</div>`;
+}
+
+/* ═══════════════════════════════════════════
+   RATES AUTOCOMPLETE ENGINE
+═══════════════════════════════════════════ */
+let acState = {};  // { inputId: { open, focused } }
+
+function acInput(wo, docType, idx) {
+  // docType = 'vo1' or 'vo2'
+  const job = jobs[wo];
+  const items = docType === 'vo1' ? job.vo1.items : job.vo2.items;
+  const it = items[idx];
+  const inputId = `ac-${docType}-${wo}-${idx}`;
+  const dropId = `acd-${docType}-${wo}-${idx}`;
+  return `<div class="ac-wrap">
+    <input class="ac-input" id="${inputId}" value="${(it.desc||'').replace(/"/g,'&quot;')}"
+      placeholder="Type to search rates..."
+      oninput="acSearch('${wo}','${docType}',${idx},this.value)"
+      onkeydown="acKey(event,'${wo}','${docType}',${idx})"
+      onfocus="acSearch('${wo}','${docType}',${idx},this.value)"
+      onblur="setTimeout(()=>acClose('${dropId}'),180)"
+    >
+    <div class="ac-dropdown" id="${dropId}" style="display:none"></div>
+  </div>`;
+}
+
+function acSearch(wo, docType, idx, query) {
+  const dropId = `acd-${docType}-${wo}-${idx}`;
+  const drop = document.getElementById(dropId);
+  if(!drop) return;
+  const q = query.trim().toLowerCase();
+  const matches = q.length === 0
+    ? RATES_DB.slice(0, 12)
+    : RATES_DB.filter(r =>
+        r.desc.toLowerCase().includes(q) ||
+        r.cat.toLowerCase().includes(q) ||
+        r.unit.toLowerCase().includes(q)
+      ).slice(0, 12);
+
+  if(!matches.length) {
+    drop.innerHTML = `<div class="ac-empty">No matching services — type freely to add custom item</div>`;
+    drop.style.display = 'block';
+    return;
+  }
+  drop.innerHTML = matches.map((r, i) => `
+    <div class="ac-item" id="${dropId}-item-${i}"
+      onmousedown="acSelect('${wo}','${docType}',${idx},'${r.desc.replace(/'/g,"\\'")}','${r.unit}',${r.rate},'${dropId}')"
+    >
+      <div class="ac-item-desc">${highlight(r.desc, q)}</div>
+      <div class="ac-item-meta">
+        <span class="ac-item-rate">BWP ${r.rate.toLocaleString('en-BW',{minimumFractionDigits:2})}</span>
+        <span class="ac-item-unit">per ${r.unit}</span>
+        <span class="ac-item-cat">${r.cat}</span>
+      </div>
+    </div>
+  `).join('');
+  drop.style.display = 'block';
+}
+
+function highlight(text, query) {
+  if(!query) return text;
+  const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return text.replace(re, '<strong style="color:#0055cc;background:#fff0c0">$1</strong>');
+}
+
+function acSelect(wo, docType, idx, desc, unit, rate, dropId) {
+  const job = jobs[wo];
+  const items = docType === 'vo1' ? job.vo1.items : job.vo2.items;
+  items[idx].desc = desc;
+  items[idx].unit = unit;
+  items[idx].rate = rate;
+  // Update the input value
+  const inputId = `ac-${docType}-${wo}-${idx}`;
+  const inp = document.getElementById(inputId);
+  if(inp) inp.value = desc;
+  // Update unit and rate fields
+  const unitEl = document.getElementById(`${docType}-unit-${wo}-${idx}`);
+  const rateEl = document.getElementById(`${docType}-rate-${wo}-${idx}`);
+  if(unitEl) unitEl.value = unit;
+  if(rateEl) rateEl.value = rate.toFixed(2);
+  // Recalc
+  if(docType === 'vo1') recalcVO1(wo);
+  else recalcVO2(wo);
+  acClose(dropId);
+}
+
+function acClose(dropId) {
+  const drop = document.getElementById(dropId);
+  if(drop) drop.style.display = 'none';
+}
+
+function acKey(e, wo, docType, idx) {
+  // Allow typing freely — Escape closes dropdown
+  if(e.key === 'Escape') {
+    const dropId = `acd-${docType}-${wo}-${idx}`;
+    acClose(dropId);
+  }
+  // Update desc from free typing
+  const job = jobs[wo];
+  const items = docType === 'vo1' ? job.vo1.items : job.vo2.items;
+  if(items[idx]) setTimeout(()=>{
+    const inp = document.getElementById(`ac-${docType}-${wo}-${idx}`);
+    if(inp) items[idx].desc = inp.value;
+  }, 0);
 }
 
 /* ═══ LOGIN / LOGOUT ═══ */
