@@ -1,498 +1,2097 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trends Engineering - Database Schema Design</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0d1117;
-            color: #e6edf3;
-            padding: 2rem;
-            line-height: 1.5;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #f5a623;
-        }
-        .subtitle {
-            color: #8b949e;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #2c3347;
-            padding-bottom: 1rem;
-        }
-        .schema-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .card {
-            background: #161b22;
-            border: 1px solid #2c3347;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .card-header {
-            background: #1e2333;
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid #2c3347;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .card-header h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #f5a623;
-        }
-        .card-header .table-name {
-            font-family: 'Courier New', monospace;
-            font-size: 0.7rem;
-            background: #2d1c00;
-            color: #f5a623;
-            padding: 2px 8px;
-            border-radius: 20px;
-        }
-        .card-body {
-            padding: 1.25rem;
-        }
-        .field-list {
-            list-style: none;
-        }
-        .field-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 8px 0;
-            border-bottom: 1px solid #2c3347;
-            font-size: 0.85rem;
-        }
-        .field-item:last-child {
-            border-bottom: none;
-        }
-        .field-name {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-            min-width: 130px;
-            color: #79c0ff;
-        }
-        .field-type {
-            min-width: 90px;
-            color: #a5d6ff;
-            font-size: 0.75rem;
-        }
-        .field-desc {
-            color: #8b949e;
-            font-size: 0.75rem;
-            flex: 1;
-        }
-        .pk {
-            background: #2ea56e20;
-            color: #2ea56e;
-            padding: 1px 6px;
-            border-radius: 10px;
-            font-size: 0.65rem;
-            margin-left: 6px;
-        }
-        .fk {
-            background: #f5a62320;
-            color: #f5a623;
-            padding: 1px 6px;
-            border-radius: 10px;
-            font-size: 0.65rem;
-            margin-left: 6px;
-        }
-        .relationship {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px dashed #2c3347;
-            font-size: 0.75rem;
-            color: #8b949e;
-        }
-        .relationship span {
-            color: #f5a623;
-        }
-        .er-diagram {
-            background: #161b22;
-            border: 1px solid #2c3347;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 1rem;
-            overflow-x: auto;
-        }
-        .er-diagram pre {
-            font-family: 'Courier New', monospace;
-            font-size: 0.7rem;
-            color: #8b949e;
-            line-height: 1.6;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            font-weight: 600;
-        }
-        .badge-admin { background: #f5a62320; color: #f5a623; }
-        .badge-finance { background: #2ea56e20; color: #2ea56e; }
-        .badge-gis { background: #4a8fe820; color: #4a8fe8; }
-        .badge-md { background: #e0525220; color: #e05252; }
-        .section-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 1.5rem 0 1rem 0;
-            color: #f5a623;
-        }
-        .note {
-            background: #1e2333;
-            border-left: 3px solid #f5a623;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            font-size: 0.85rem;
-            color: #8b949e;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trends Engineering Services · Document Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--sf:#161b22;--sf2:#1e2333;--sf3:#252d40;
+  --bd:#2c3347;--bd2:#374059;
+  --tx:#dde3f0;--tx2:#8492aa;--tx3:#4e5a72;
+  --am:#f5a623;--am-bg:rgba(245,166,35,.1);--am-b:rgba(245,166,35,.22);
+  --gn:#2ea56e;--gn-bg:rgba(46,165,110,.1);--gn-b:rgba(46,165,110,.22);
+  --rd:#e05252;--rd-bg:rgba(224,82,82,.1);--rd-b:rgba(224,82,82,.22);
+  --bl:#4a8fe8;--bl-bg:rgba(74,143,232,.1);--bl-b:rgba(74,143,232,.22);
+  --r:7px;--rs:5px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--sf)}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+
+/* LOGIN */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse 70% 50% at 50% -10%,rgba(245,166,35,.06),transparent)}
+.lc{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:2.25rem;width:400px}
+.lc-brand{display:flex;align-items:center;gap:11px;margin-bottom:1.75rem}
+.lc-icon{width:38px;height:38px;background:var(--am);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lc-icon svg{width:20px;height:20px;fill:#000}
+.lc-brand h1{font-size:.92rem;font-weight:600;color:var(--tx);line-height:1.25}
+.lc-brand p{font-size:.62rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em}
+.lc hr{border:none;border-top:1px solid var(--bd);margin-bottom:1.4rem}
+.lc label{display:block;font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--tx2);margin-bottom:6px}
+.lc select{width:100%;padding:.65rem .9rem;background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);color:var(--tx);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%238492aa' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px;cursor:pointer}
+.lc select:focus{border-color:var(--am);box-shadow:0 0 0 3px var(--am-bg)}
+.lc select option{background:var(--sf2)}
+.lc-btn{width:100%;margin-top:1.3rem;padding:.7rem;background:var(--am);border:none;border-radius:var(--rs);color:#000;font-family:'Inter',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;transition:.15s}
+.lc-btn:hover{background:#e09500}
+.lc-hint{text-align:center;font-size:.67rem;color:var(--tx3);margin-top:.75rem}
+.lc-roles{margin-top:1.1rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.7rem .9rem}
+.lc-role-row{display:flex;align-items:flex-start;gap:8px;padding:3px 0;font-size:.72rem}
+.lc-role-name{color:var(--am);font-weight:600;min-width:90px}
+.lc-role-desc{color:var(--tx3);line-height:1.4}
+
+/* SHELL */
+#mainApp{display:none}
+.shell{display:grid;grid-template-columns:242px 1fr;min-height:100vh}
+.sb{background:var(--sf);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-hd{padding:1rem 1.1rem .85rem;border-bottom:1px solid var(--bd)}
+.sb-brand{display:flex;align-items:center;gap:9px}
+.sb-icon{width:28px;height:28px;background:var(--am);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-icon svg{width:14px;height:14px;fill:#000}
+.sb-brand h1{font-size:.8rem;font-weight:600;color:var(--tx);line-height:1.3}
+.sb-brand p{font-size:.58rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em}
+.sb-role{margin:.8rem 1.1rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.5rem .7rem}
+.sb-rl{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3);margin-bottom:2px}
+.sb-rn{font-size:.8rem;font-weight:600;color:var(--am)}
+.sb-sec{padding:.7rem 1.1rem .18rem;font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);font-weight:600}
+.ni{display:flex;align-items:center;gap:9px;padding:.48rem 1.1rem;font-size:.81rem;color:var(--tx2);cursor:pointer;transition:.1s;border-left:2px solid transparent;margin:1px 0}
+.ni:hover{background:var(--sf2);color:var(--tx)}
+.ni.act{background:var(--am-bg);color:var(--am);border-left-color:var(--am);font-weight:600}
+.ni svg{width:14px;height:14px;flex-shrink:0}
+.nbadge{margin-left:auto;background:var(--am);color:#000;font-size:.58rem;font-weight:700;border-radius:10px;padding:1px 6px;min-width:17px;text-align:center}
+.sb-ft{margin-top:auto;padding:.85rem 1.1rem;border-top:1px solid var(--bd);display:flex;flex-direction:column;gap:6px}
+.sbfbtn{padding:.42rem .7rem;background:transparent;border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx2);font-family:'Inter',sans-serif;font-size:.74rem;cursor:pointer;transition:.12s;display:flex;align-items:center;gap:7px;width:100%}
+.sbfbtn:hover{border-color:var(--am);color:var(--am)}
+.sbfbtn.logout:hover{border-color:var(--rd);color:var(--rd)}
+
+/* TOPBAR */
+.mc{display:flex;flex-direction:column;overflow:hidden}
+.tb{background:var(--sf);border-bottom:1px solid var(--bd);padding:.65rem 1.4rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-t{font-size:.93rem;font-weight:600;color:var(--tx)}
+.tb-m{font-size:.67rem;color:var(--tx3);margin-top:2px}
+.tb-r{display:flex;align-items:center;gap:.6rem}
+.tb-tag{font-size:.7rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.3rem .7rem;color:var(--tx2)}
+.tb-tag span{color:var(--am);font-weight:600}
+/* NOTIF */
+.notif-wrap{position:relative}
+.nbell{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.3rem .52rem;cursor:pointer;display:flex;align-items:center;color:var(--tx2);transition:.12s;position:relative}
+.nbell:hover{border-color:var(--am);color:var(--am)}
+.nbell svg{width:15px;height:15px}
+.npip{position:absolute;top:3px;right:3px;width:7px;height:7px;background:var(--rd);border-radius:50%;border:2px solid var(--sf);display:none}
+.npip.on{display:block}
+.npanel{position:absolute;top:calc(100% + 8px);right:0;width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:200;display:none}
+.npanel.open{display:block}
+.npanel-hd{padding:.65rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.npanel-hd span{font-size:.75rem;font-weight:600;color:var(--tx)}
+.npanel-hd button{font-size:.65rem;color:var(--tx3);background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif}
+.npanel-hd button:hover{color:var(--am)}
+.nitem{padding:.6rem 1rem;border-bottom:1px solid var(--bd);cursor:pointer;transition:.1s;display:flex;gap:8px}
+.nitem:last-child{border-bottom:none}
+.nitem:hover{background:var(--sf2)}
+.nitem.unread{border-left:3px solid var(--am);padding-left:calc(1rem - 3px)}
+.nitem.read{border-left:3px solid transparent;padding-left:calc(1rem - 3px);opacity:.6}
+.ndot{width:6px;height:6px;border-radius:50%;background:var(--am);flex-shrink:0;margin-top:5px}
+.ndot.read{background:transparent}
+.nmsg{font-size:.77rem;color:var(--tx);line-height:1.4}
+.nts{font-size:.63rem;color:var(--tx3);margin-top:2px}
+.n-empty{padding:1.5rem;text-align:center;color:var(--tx3);font-size:.78rem}
+
+/* CONTENT */
+.ca{flex:1;overflow-y:auto;padding:1.35rem}
+.screen{display:none}.screen.act{display:block}
+
+/* STATS */
+.srow{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.4rem}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem 1.1rem}
+.sc-l{font-size:.62rem;text-transform:uppercase;letter-spacing:.09em;color:var(--tx2);margin-bottom:5px}
+.sc-v{font-size:1.7rem;font-weight:600;color:var(--tx);line-height:1}
+.sc-s{font-size:.67rem;color:var(--tx3);margin-top:3px}
+
+/* CARDS */
+.crd{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:1rem}
+.crd-hd{padding:.8rem 1rem;border-bottom:1px solid var(--bd);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);display:flex;align-items:center;justify-content:space-between;gap:7px}
+.crd-hd-l{display:flex;align-items:center;gap:7px}
+.crd-hd svg{width:13px;height:13px;flex-shrink:0}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:20px}
+.b-am{background:var(--am-bg);color:var(--am);border:1px solid var(--am-b)}
+.b-gn{background:var(--gn-bg);color:var(--gn);border:1px solid var(--gn-b)}
+.b-rd{background:var(--rd-bg);color:var(--rd);border:1px solid var(--rd-b)}
+.b-bl{background:var(--bl-bg);color:var(--bl);border:1px solid var(--bl-b)}
+.b-gy{background:var(--sf3);color:var(--tx2);border:1px solid var(--bd)}
+
+/* BUTTONS */
+.btn{padding:.45rem .9rem;border:1px solid var(--bd2);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.77rem;font-weight:600;cursor:pointer;transition:.12s;display:inline-flex;align-items:center;gap:5px;letter-spacing:.01em}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.btn-am{background:var(--am);border-color:var(--am);color:#000}.btn-am:hover{background:#e09500}
+.btn-gy{background:transparent;color:var(--tx2);border-color:var(--bd2)}.btn-gy:hover{background:var(--sf2);color:var(--tx)}
+.btn-gn{background:var(--gn-bg);border-color:var(--gn);color:var(--gn)}.btn-gn:hover{background:var(--gn);color:#fff}
+.btn-rd{background:var(--rd-bg);border-color:var(--rd);color:var(--rd)}.btn-rd:hover{background:var(--rd);color:#fff}
+.btn-bl{background:var(--bl-bg);border-color:var(--bl);color:var(--bl)}.btn-bl:hover{background:var(--bl);color:#fff}
+.btn-sm{padding:.3rem .65rem;font-size:.72rem}
+.btn-print{background:var(--sf2);border-color:var(--bd2);color:var(--tx2)}.btn-print:hover{border-color:var(--tx2);color:var(--tx)}
+
+/* ALERTS */
+.ua{padding:.6rem .85rem;border-radius:var(--rs);font-size:.77rem;margin-bottom:.85rem;display:flex;align-items:flex-start;gap:8px;line-height:1.45}
+.ua svg{width:13px;height:13px;flex-shrink:0;margin-top:2px}
+.ua-am{background:var(--am-bg);border:1px solid var(--am-b);color:#c88000}
+.ua-gn{background:var(--gn-bg);border:1px solid var(--gn-b);color:var(--gn)}
+.ua-bl{background:var(--bl-bg);border:1px solid var(--bl-b);color:var(--bl)}
+.ok-bar{display:flex;align-items:center;gap:8px;padding:.5rem .85rem;background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);color:var(--gn);font-size:.77rem;font-weight:600}
+
+/* FORMS */
+.fg{margin-bottom:.8rem}
+.fg label{display:block;font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.5rem .72rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.84rem;outline:none;transition:.12s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--am);box-shadow:0 0 0 3px var(--am-bg)}
+.fg select option{background:var(--sf2)}
+.fg textarea{resize:vertical;min-height:58px;line-height:1.5}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem}
+
+/* TABLES */
+.mono{font-family:'Courier New',monospace;font-size:.78rem;color:var(--tx2)}
+.tag{font-size:.6rem;background:var(--sf3);border:1px solid var(--bd);color:var(--tx2);padding:1px 7px;border-radius:3px;font-weight:600}
+.tbl-row{display:grid;gap:10px;padding:.62rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center;transition:.1s}
+.tbl-row:last-child{border-bottom:none}
+.tbl-row:hover{background:var(--sf2)}
+.tbl-row.clickable{cursor:pointer}
+.tbl-hd{display:grid;gap:10px;padding:.5rem 1rem;background:var(--sf2)}
+.tbl-hd span{font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600}
+.jobs-cols{grid-template-columns:90px 1fr 90px 120px 90px 110px}
+
+/* PROGRESS */
+.prog-w{background:var(--sf3);border-radius:3px;height:4px;overflow:hidden;margin-top:4px}
+.prog-b{height:100%;background:var(--am);border-radius:3px;transition:width .4s}
+
+/* JOB DETAIL */
+.jd-hdr{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1.1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:1rem}
+.jd-wo{font-family:'Courier New',monospace;font-size:1.1rem;font-weight:600;color:var(--am)}
+.jd-lay{display:grid;grid-template-columns:1fr 320px;gap:1rem}
+
+/* PIPELINE */
+.pipe-step{display:flex;align-items:flex-start;gap:10px;padding:.55rem .75rem;border-radius:var(--rs);margin-bottom:2px}
+.pipe-step:hover{background:var(--sf2)}
+.pipe-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--bd2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.55rem;font-weight:700;margin-top:1px}
+.pipe-dot.done{background:var(--gn);border-color:var(--gn);color:#fff}
+.pipe-dot.active{background:var(--am);border-color:var(--am);color:#000;animation:pulse 2s ease-in-out infinite}
+.pipe-dot.pending{border-color:var(--bd2);color:var(--tx3)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--am-bg)}50%{box-shadow:0 0 0 5px transparent}}
+.pipe-info{flex:1;min-width:0}
+.pipe-lbl{font-size:.8rem;font-weight:500}
+.pipe-lbl.done{color:var(--tx2)}.pipe-lbl.active{color:var(--tx);font-weight:600}.pipe-lbl.pending{color:var(--tx3)}
+.pipe-date{font-size:.67rem;color:var(--tx3);margin-top:1px}
+.pipe-actions{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+
+/* DOCUMENT CARDS (in job detail) */
+.doc-card{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.75rem 1rem;margin-bottom:.6rem}
+.doc-card-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.doc-card-icon{width:28px;height:28px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.8rem}
+.doc-card-icon.generated{background:var(--bl-bg);border:1px solid var(--bl-b);color:var(--bl)}
+.doc-card-icon.uploaded{background:var(--gn-bg);border:1px solid var(--gn-b);color:var(--gn)}
+.doc-card-icon.pending{background:var(--sf3);border:1px solid var(--bd);color:var(--tx3)}
+.doc-card-name{font-size:.82rem;font-weight:600;color:var(--tx);flex:1}
+.doc-card-btns{display:flex;gap:5px;flex-wrap:wrap}
+
+/* SCAN UPLOAD */
+.scan-done{background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:var(--gn);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.scan-done strong{font-size:.72rem}
+.scan-upload-label{display:inline-flex;align-items:center;gap:5px;padding:.3rem .65rem;background:transparent;border:1px solid var(--am-b);border-radius:var(--rs);color:var(--am);font-size:.72rem;font-weight:600;cursor:pointer;transition:.12s}
+.scan-upload-label:hover{background:var(--am-bg)}
+
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:1.75rem;width:460px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:.95rem;font-weight:600;color:var(--tx);margin-bottom:.25rem}
+.modal p{font-size:.78rem;color:var(--tx2);margin-bottom:1.25rem}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:.85rem;border-top:1px solid var(--bd)}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;padding:.6rem 1rem;border-radius:var(--r);font-size:.78rem;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slu .2s ease;max-width:380px}
+.toast svg{width:14px;height:14px;flex-shrink:0}
+.toast-gn{background:#0f2d1c;border:1px solid var(--gn-b);color:var(--gn)}
+.toast-rd{background:#2d0f0f;border:1px solid var(--rd-b);color:var(--rd)}
+.toast-am{background:#2d1c00;border:1px solid var(--am-b);color:var(--am)}
+@keyframes slu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAPER DOCS */
+.paper{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:9pt;padding:22px;border:1px solid #bbb;line-height:1.45}
+.paper *{box-sizing:border-box}
+.paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
+.lh-t{width:100%;border-collapse:collapse;margin-bottom:7px}
+.lh-t td{vertical-align:top;padding:1px 3px;font-size:9pt}
+.lh-bpc{font-size:11pt;font-weight:bold}
+.lh-addr{font-size:8.5pt;color:#222}
+.lh-title{font-size:11pt;font-weight:bold;text-align:right}
+.p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
+.hdt{width:100%;border-collapse:collapse;margin-bottom:4px}
+.hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
+.hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
+.ef{display:inline-block;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;min-width:60px}
+.ef:focus{border-bottom-color:#0055cc;background:#fffce8}
+.ef-b{color:#0055cc}
+.ef-c{color:#555;background:#f8f8f8;pointer-events:none;border-bottom:1px dotted #bbb}
+.boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
+.boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}
+.boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
+.boq td.r,.boq th.r{text-align:right}
+.boq td.c,.boq th.c{text-align:center}
+.boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+.boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
+.boq .lrow td{background:#fffbe8}
+/* sig area — blank lines for hand signing */
+.sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
+.sig-area-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:14px}
+.sig-box{border-top:1px solid #000;padding-top:4px}
+.sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}
+.sig-line{border-bottom:1px solid #aaa;margin-bottom:3px;height:22px}
+.sig-sub{font-size:7.5pt;color:#666}
+/* payment cert */
+.pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
+.pc-row .n{width:25px;flex-shrink:0}
+.pc-row .d{flex:1}
+.pc-row .c{width:20px;text-align:right;flex-shrink:0}
+.pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
+.pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
+.pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px;font-size:9pt}
+.pc-row.ded .v{color:#cc0000}
+.pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
+/* jobs table */
+.jt{width:100%;border-collapse:collapse;font-size:7.5pt}
+.jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
+.jt td{border:1px solid #bbb;padding:3px 4px}
+.jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+/* autocomplete */
+.ac-wrap{position:relative;width:100%}
+.ac-in{width:100%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none}
+.ac-in:focus{border-bottom-color:#0055cc;background:#fffce8}
+.ac-dd{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #bbb;border-top:none;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:999;max-height:220px;overflow-y:auto;border-radius:0 0 4px 4px}
+.ac-it{padding:5px 8px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-family:Arial,sans-serif;font-size:8pt}
+.ac-it:last-child{border-bottom:none}
+.ac-it:hover{background:#fffce8}
+.ac-desc{font-weight:600;color:#111;line-height:1.3}
+.ac-meta{display:flex;gap:10px;margin-top:2px;font-size:7.5pt;color:#666}
+.ac-rate{color:#0a5c2e;font-weight:600}
+.ac-cat{background:#e8f0ff;color:#2a5aa0;padding:1px 5px;border-radius:2px;font-size:7pt;font-weight:600}
+.ac-empty{padding:8px;font-size:8pt;color:#999;font-family:Arial,sans-serif;text-align:center}
+
+@media print{
+  body{background:#fff}
+  .shell,.sb,.tb,.ca,.overlay{display:none!important}
+  #printArea{display:block!important;padding:0}
+  .paper{border:none;padding:15px}
+  .ef-b{border-bottom:1px solid #000}
+  .ef-c{background:none}
+  .sig-line{border-bottom:1px solid #000}
+}
+#printArea{display:none}
+</style>
 </head>
 <body>
-<div class="container">
-    <h1>📊 Trends Engineering · Database Schema Design</h1>
-    <div class="subtitle">PostgreSQL / Supabase Schema for Work Order & Claim Management System</div>
+<div id="printArea"></div>
 
-    <!-- ERD Visual -->
-    <div class="er-diagram">
-        <pre style="margin:0; font-family:'Courier New',monospace; font-size:11px; line-height:1.4;">
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│     users       │     │   work_orders   │     │   documents     │
-├─────────────────┤     ├─────────────────┤     ├─────────────────┤
-│ id (PK)         │─────│ id (PK)         │─────│ id (PK)         │
-│ name            │     │ wo_number (UNIQ)│     │ work_order_id   │
-│ email           │     │ customer_name   │     │ document_type   │
-│ role            │     │ location        │     │ file_url        │
-│ team            │     │ phase           │     │ data (JSONB)    │
-│ is_active       │     │ location_factor │     │ created_by      │
-│ created_at      │     │ markup          │     │ signed_by       │
-└─────────────────┘     │ current_stage   │     │ signed_at       │
-                        │ status          │     │ created_at      │
-                        │ lsm_notified_at │     └─────────────────┘
-                        │ teams_notified_at│            │
-                        │ work_complete_at │            │
-                        │ gis_notified_at  │            │
-                        │ claim_submitted_at│           │
-                        │ created_at       │            │
-                        │ created_by       │            │
-                        └─────────────────┘            │
-                               │                        │
-                               ▼                        ▼
-                        ┌─────────────────┐     ┌─────────────────┐
-                        │  line_items     │     │  signatures     │
-                        ├─────────────────┤     ├─────────────────┤
-                        │ id (PK)         │     │ id (PK)         │
-                        │ document_id (FK)│─────│ document_id (FK)│
-                        │ rate_id (FK)    │     │ user_id (FK)    │
-                        │ description     │     │ signature_field │
-                        │ unit            │     │ signed_at       │
-                        │ quantity        │     │ ip_address      │
-                        │ rate            │     └─────────────────┘
-                        │ value           │
-                        └─────────────────┘
-                               │
-                               ▼
-                        ┌─────────────────┐     ┌─────────────────┐
-                        │     rates       │     │  notifications  │
-                        ├─────────────────┤     ├─────────────────┤
-                        │ id (PK)         │     │ id (PK)         │
-                        │ description     │     │ user_id (FK)    │
-                        │ unit            │     │ work_order_id   │
-                        │ rate            │     │ type            │
-                        │ category        │     │ message         │
-                        │ is_active       │     │ is_read         │
-                        │ effective_date  │     │ created_at      │
-                        └─────────────────┘     └─────────────────┘
-                        </pre>
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="lc">
+    <div class="lc-brand">
+      <div class="lc-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+      <div><h1>Trends Engineering Services</h1><p>Document Management Portal</p></div>
     </div>
-
-    <!-- Tables Grid -->
-    <div class="schema-grid">
-        
-        <!-- Users Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2>👤 Users</h2>
-                <span class="table-name">users</span>
-            </div>
-            <div class="card-body">
-                <ul class="field-list">
-                    <li class="field-item"><span class="field-name">id</span><span class="field-type">UUID</span><span class="field-desc">Primary key<span class="pk">PK</span></span></li>
-                    <li class="field-item"><span class="field-name">name</span><span class="field-type">VARCHAR(100)</span><span class="field-desc">Full name</span></li>
-                    <li class="field-item"><span class="field-name">email</span><span class="field-type">VARCHAR(255)</span><span class="field-desc">Unique email address</span></li>
-                    <li class="field-item"><span class="field-name">role</span><span class="field-type">ENUM</span><span class="field-desc">admin, finance, gis, md</span></li>
-                    <li class="field-item"><span class="field-name">team</span><span class="field-type">VARCHAR(50)</span><span class="field-desc">Team A, Team B, Mochudi (nullable)</span></li>
-                    <li class="field-item"><span class="field-name">is_active</span><span class="field-type">BOOLEAN</span><span class="field-desc">Default true</span></li>
-                    <li class="field-item"><span class="field-name">created_at</span><span class="field-type">TIMESTAMP</span><span class="field-desc">Default now()</span></li>
-                </ul>
-                <div class="relationship">🔗 <span>work_orders</span> (issued_by) · <span>documents</span> (created_by) · <span>signatures</span> (user_id)</div>
-            </div>
-        </div>
-
-        <!-- Work Orders Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2>📋 Work Orders</h2>
-                <span class="table-name">work_orders</span>
-            </div>
-            <div class="card-body">
-                <ul class="field-list">
-                    <li class="field-item"><span class="field-name">id</span><span class="field-type">UUID</span><span class="field-desc">Primary key<span class="pk">PK</span></span></li>
-                    <li class="field-item"><span class="field-name">wo_number</span><span class="field-type">VARCHAR(50)</span><span class="field-desc">BPC Work Order number (unique)<span class="pk">UNIQUE</span></span></li>
-                    <li class="field-item"><span class="field-name">customer_name</span><span class="field-type">VARCHAR(255)</span><span class="field-desc">Customer full name</span></li>
-                    <li class="field-item"><span class="field-name">location</span><span class="field-type">VARCHAR(255)</span><span class="field-desc">Town / Village / Ward</span></li>
-                    <li class="field-item"><span class="field-name">connection_type</span><span class="field-type">VARCHAR(50)</span><span class="field-desc">U/G Conn, OHL 400V, etc.</span></li>
-                    <li class="field-item"><span class="field-name">phase</span><span class="field-type">VARCHAR(10)</span><span class="field-desc">Phase 46, 47, etc.</span></li>
-                    <li class="field-item"><span class="field-name">location_factor</span><span class="field-type">DECIMAL(5,2)</span><span class="field-desc">Default 29.25%</span></li>
-                    <li class="field-item"><span class="field-name">markup</span><span class="field-type">DECIMAL(5,2)</span><span class="field-desc">Default 12.5%</span></li>
-                    <li class="field-item"><span class="field-name">current_stage</span><span class="field-type">ENUM</span><span class="field-desc">wo_received, vo1_created, linesman_sent, field_received, vo2_created, teams_notified, work_complete, gis_notified, gis_complete, claim_docs_ready, claim_submitted</span></li>
-                    <li class="field-item"><span class="field-name">claim_ref</span><span class="field-type">VARCHAR(50)</span><span class="field-desc">Certificate reference (TES-001, etc.)</span></li>
-                    <li class="field-item"><span class="field-name">created_by</span><span class="field-type">UUID</span><span class="field-desc">Admin who created<span class="fk">FK → users</span></span></li>
-                    <li class="field-item"><span class="field-name">created_at</span><span class="field-type">TIMESTAMP</span><span class="field-desc">Default now()</span></li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Documents Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2>📄 Documents</h2>
-                <span class="table-name">documents</span>
-            </div>
-            <div class="card-body">
-                <ul class="field-list">
-                    <li class="field-item"><span class="field-name">id</span><span class="field-type">UUID</span><span class="field-desc">Primary key<span class="pk">PK</span></span></li>
-                    <li class="field-item"><span class="field-name">work_order_id</span><span class="field-type">UUID</span><span class="field-desc">Associated work order<span class="fk">FK → work_orders</span></span></li>
-                    <li class="field-item"><span class="field-name">document_type</span><span class="field-type">ENUM</span><span class="field-desc">bpc_wo, vo1, vo2, field_report, works_instruction, gis_report, annexure, payment_cert, invoice, list_of_jobs</span></li>
-                    <li class="field-item"><span class="field-name">file_url</span><span class="field-type">TEXT</span><span class="field-desc">Supabase storage path</span></li>
-                    <li class="field-item"><span class="field-name">data</span><span class="field-type">JSONB</span><span class="field-desc">Structured document data (line items, calculations)</span></li>
-                    <li class="field-item"><span class="field-name">status</span><span class="field-type">ENUM</span><span class="field-desc">pending, scanned, signed, submitted</span></li>
-                    <li class="field-item"><span class="field-name">created_by</span><span class="field-type">UUID</span><span class="field-desc">Creator<span class="fk">FK → users</span></span></li>
-                    <li class="field-item"><span class="field-name">signed_by</span><span class="field-type">UUID</span><span class="field-desc">Signer (hand signature recorded)<span class="fk">FK → users</span></span></li>
-                    <li class="field-item"><span class="field-name">signed_at</span><span class="field-type">TIMESTAMP</span><span class="field-desc">When hand signature was scanned</span></li>
-                    <li class="field-item"><span class="field-name">created_at</span><span class="field-type">TIMESTAMP</span><span class="field-desc">Default now()</span></li>
-                </ul>
-                <div class="relationship">🔗 <span>line_items</span> (document_id) · <span>signatures</span> (document_id)</div>
-            </div>
-        </div>
-
-        <!-- Line Items Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2>📝 Line Items</h2>
-                <span class="table-name">document_line_items</span>
-            </div>
-            <div class="card-body">
-                <ul class="field-list">
-                    <li class="field-item"><span class="field-name">id</span><span class="field-type">UUID</span><span class="field-desc">Primary key<span class="pk">PK</span></span></li>
-                    <li class="field-item"><span class="field-name">document_id</span><span class="field-type">UUID</span><span class="field-desc">Parent document<span class="fk">FK → documents</span></span></li>
-                    <li class="field-item"><span class="field-name">rate_id</span><span class="field-type">UUID</span><span class="field-desc">Reference to rate (optional)<span class="fk">FK → rates</span></span></li>
-                    <li class="field-item"><span class="field-name">description</span><span class="field-type">TEXT</span><span class="field-desc">Service description</span></li>
-                    <li class="field-item"><span class="field-name">unit</span><span class="field-type">VARCHAR(20)</span><span class="field-desc">Ea, M, m3, etc.</span></li>
-                    <li class="field-item"><span class="field-name">quantity</span><span class="field-type">DECIMAL(10,2)</span><span class="field-desc">Quantity</span></li>
-                    <li class="field-item"><span class="field-name">rate</span><span class="field-type">DECIMAL(12,2)</span><span class="field-desc">Unit rate</span></li>
-                    <li class="field-item"><span class="field-name">value</span><span class="field-type">DECIMAL(12,2)</span><span class="field-desc">Auto-calculated (qty × rate)</span></li>
-                    <li class="field-item"><span class="field-name">sort_order</span><span class="field-type">INT</span><span class="field-desc">Display order</span></li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Rates Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2>💰 Rates Sheet</h2>
-                <span class="table-name">rates</span>
-            </div>
-            <div class="card-body">
-                <ul class="field-list">
-                    <li class="field-item"><span class="field-name">id</span><span class="field-type">UUID</span><span class="field-desc">Primary key<span class="pk">PK</span></span></li>
-                    <li class="field-item"><span class="field-name">description</span><span class="field-type">TEXT</span><span class="field-desc">Service description (autocomplete search)</span></li>
-                    <li class="field-item"><span class="field-name">unit</span><span class="field-type">VARCHAR(20)</span><span class="field-desc">Ea, M, m3, etc.</span></li>
-                    <li class="field-item"><span class="field-name">rate</span><span class="field-type">DECIMAL(12,2)</span><span class="field-desc">Unit rate in BWP</span></li>
-                    <li class="field-item"><span class="field-name">category</span><span class="field-type">VARCHAR(50)</span><span class="field-desc">U/G Service Connection, Overhead Line, etc.</span></li>
-                    <li class="field-item"><span class="field-name">is_active</span><span class="field-type">BOOLEAN</span><span class="field-desc">Only active rates shown in autocomplete</span></li>
-                    <li class="field-item"><span class="field-name">effective_date</span><span class="field-type">DATE</span><span class="field-desc">When rate became effective</span></li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Notifications Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2>🔔 Notifications</h2>
-                <span class="table-name">notifications</span>
-            </div>
-            <div class="card-body">
-                <ul class="field-list">
-                    <li class="field-item"><span class="field-name">id</span><span class="field-type">UUID</span><span class="field-desc">Primary key<span class="pk">PK</span></span></li>
-                    <li class="field-item"><span class="field-name">user_id</span><span class="field-type">UUID</span><span class="field-desc">Recipient<span class="fk">FK → users</span></span></li>
-                    <li class="field-item"><span class="field-name">work_order_id</span><span class="field-type">UUID</span><span class="field-desc">Related work order<span class="fk">FK → work_orders</span></span></li>
-                    <li class="field-item"><span class="field-name">type</span><span class="field-type">VARCHAR(50)</span><span class="field-desc">gis_assignment, claim_ready, vo2_review, etc.</span></li>
-                    <li class="field-item"><span class="field-name">message</span><span class="field-type">TEXT</span><span class="field-desc">Notification message</span></li>
-                    <li class="field-item"><span class="field-name">is_read</span><span class="field-type">BOOLEAN</span><span class="field-desc">Default false</span></li>
-                    <li class="field-item"><span class="field-name">created_at</span><span class="field-type">TIMESTAMP</span><span class="field-desc">Default now()</span></li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Scans/Uploads Table -->
-        <div class="card">
-            <div class="card-header">
-                <h2>📎 Scans / Uploads</h2>
-                <span class="table-name">scans</span>
-            </div>
-            <div class="card-body">
-                <ul class="field-list">
-                    <li class="field-item"><span class="field-name">id</span><span class="field-type">UUID</span><span class="field-desc">Primary key<span class="pk">PK</span></span></li>
-                    <li class="field-item"><span class="field-name">document_id</span><span class="field-type">UUID</span><span class="field-desc">Related document<span class="fk">FK → documents</span></span></li>
-                    <li class="field-item"><span class="field-name">file_url</span><span class="field-type">TEXT</span><span class="field-desc">Supabase storage path</span></li>
-                    <li class="field-item"><span class="field-name">file_name</span><span class="field-type">VARCHAR(255)</span><span class="field-desc">Original filename</span></li>
-                    <li class="field-item"><span class="field-name">uploaded_by</span><span class="field-type">UUID</span><span class="field-desc">Who uploaded<span class="fk">FK → users</span></span></li>
-                    <li class="field-item"><span class="field-name">uploaded_at</span><span class="field-type">TIMESTAMP</span><span class="field-desc">Default now()</span></li>
-                </ul>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Role-Based Access Control -->
-    <div class="section-title">🔐 Role-Based Access Control (RLS Policies)</div>
-    <div class="schema-grid">
-        <div class="card">
-            <div class="card-header"><h2>🛡️ Admin</h2></div>
-            <div class="card-body">
-                <p style="font-size:0.85rem; margin-bottom:0.75rem;">Full access to:</p>
-                <ul style="margin-left:1.25rem; font-size:0.8rem; color:#8b949e;">
-                    <li>Create/Read/Update/Delete work orders</li>
-                    <li>Create VO1, VO2 documents</li>
-                    <li>Record all external actions (linesman, teams, GIS notification)</li>
-                    <li>Upload signed scans for all document types</li>
-                    <li>Mark claim as submitted to BPC</li>
-                    <li>Manage rates sheet (activate/deactivate rates)</li>
-                </ul>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><h2>💰 Finance</h2></div>
-            <div class="card-body">
-                <p style="font-size:0.85rem; margin-bottom:0.75rem;">Limited access to:</p>
-                <ul style="margin-left:1.25rem; font-size:0.8rem; color:#8b949e;">
-                    <li>View jobs where stage = gis_complete</li>
-                    <li>Select jobs for claim batch</li>
-                    <li>Generate Annexure, Payment Certificate, Invoice, List of Jobs Done</li>
-                    <li>Upload signed scans for claim documents</li>
-                    <li><span class="badge badge-finance">No pipeline view</span> <span class="badge badge-finance">No activity log</span></li>
-                </ul>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><h2>📍 GIS Consultant</h2></div>
-            <div class="card-body">
-                <p style="font-size:0.85rem; margin-bottom:0.75rem;">Limited access to:</p>
-                <ul style="margin-left:1.25rem; font-size:0.8rem; color:#8b949e;">
-                    <li>View only jobs where stage = gis_notified</li>
-                    <li>Fill in GIS report form</li>
-                    <li>Print GIS report → hand sign → scan → upload</li>
-                    <li>Submit GIS report (advances stage to gis_complete)</li>
-                    <li><span class="badge badge-gis">Only GIS stages visible</span> <span class="badge badge-gis">Only GIS report document</span></li>
-                </ul>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><h2>👑 Managing Director</h2></div>
-            <div class="card-body">
-                <p style="font-size:0.85rem; margin-bottom:0.75rem;">Full oversight access:</p>
-                <ul style="margin-left:1.25rem; font-size:0.8rem; color:#8b949e;">
-                    <li>See ALL work orders with progress percentage</li>
-                    <li>Full workflow pipeline for each job (all 11 stages)</li>
-                    <li>Download ALL documents (scans and generated)</li>
-                    <li>Activity log visible (every action tracked)</li>
-                    <li>Print claim package to take to BPC</li>
-                    <li><span class="badge badge-md">Read-only</span> <span class="badge badge-md">No editing</span></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stage Flow -->
-    <div class="section-title">🔄 Workflow Stages (11 Steps)</div>
-    <div class="note">
-        1. Work Order Received from BPC → 2. VO1 Created → 3. VO1 Sent to Linesman → 4. Field Findings Received → 5. VO2 Created → 6. Teams Notified → 7. Work Complete → 8. GIS Notified → 9. GIS Report Uploaded → 10. Claim Documents Generated → 11. Claim Submitted to BPC
-    </div>
-
-    <!-- Document Types -->
-    <div class="section-title">📑 Document Types & Ownership</div>
-    <div class="schema-grid">
-        <div class="card">
-            <div class="card-header"><h2>Generated by Admin</h2></div>
-            <div class="card-body">
-                <ul style="font-size:0.8rem; color:#8b949e; list-style:disc; margin-left:1.25rem;">
-                    <li>Works Valuation (VO1)</li>
-                    <li>Variation Order (VO2)</li>
-                    <li>Field Report (entered from linesman findings)</li>
-                    <li>Works Instruction</li>
-                </ul>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><h2>Generated by GIS</h2></div>
-            <div class="card-body">
-                <ul style="font-size:0.8rem; color:#8b949e; list-style:disc; margin-left:1.25rem;">
-                    <li>GIS Geo-Analysis Report</li>
-                </ul>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><h2>Generated by Finance</h2></div>
-            <div class="card-body">
-                <ul style="font-size:0.8rem; color:#8b949e; list-style:disc; margin-left:1.25rem;">
-                    <li>Annexure to Payment Certificate</li>
-                    <li>Payment Certificate</li>
-                    <li>Invoice</li>
-                    <li>List of Jobs Done</li>
-                </ul>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header"><h2>Uploaded by Anyone</h2></div>
-            <div class="card-body">
-                <ul style="font-size:0.8rem; color:#8b949e; list-style:disc; margin-left:1.25rem;">
-                    <li>BPC Work Order (original scan)</li>
-                    <li>All hand-signed document scans</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Summary -->
-    <div class="section-title">📌 Schema Summary</div>
-    <div class="note">
-        <strong>Total Tables:</strong> 7 (users, work_orders, documents, document_line_items, rates, notifications, scans)<br>
-        <strong>Primary Keys:</strong> UUID for all tables (Supabase native)<br>
-        <strong>Foreign Keys:</strong> work_orders.created_by → users.id, documents.work_order_id → work_orders.id, documents.created_by → users.id, document_line_items.document_id → documents.id, etc.<br>
-        <strong>RLS Enabled:</strong> Row Level Security policies per role<br>
-        <strong>Storage:</strong> Supabase Storage for PDF/image uploads (scans)<br>
-        <strong>Real-time:</strong> Supabase Realtime for notifications
-    </div>
+    <hr>
+    <label>Select your role to sign in</label>
+    <select id="loginRole">
+      <option value="">— Choose role —</option>
+      <option value="admin">Admin</option>
+      <option value="finance">Finance</option>
+      <option value="gis">GIS Consultant</option>
+      <option value="md">Managing Director</option>
+    </select>
+    <button class="lc-btn" onclick="doLogin()">Enter Portal →</button>
+    <p class="lc-hint">No password required · Demo mode</p>
+  </div>
 </div>
+
+<!-- ADD WORK ORDER MODAL -->
+<div id="addWOModal" class="overlay">
+  <div class="modal">
+    <h3>Add New Work Order</h3>
+    <p>Enter details from the BPC work order email</p>
+    <div class="fr2">
+      <div class="fg"><label>WO Number *</label><input id="nw-num" placeholder="e.g. 449600"></div>
+      <div class="fg"><label>Connection Type *</label>
+        <select id="nw-type">
+          <option value="">— Select —</option>
+          <option value="U/G Conn">U/G Connection (Single Phase)</option>
+          <option value="U/G 3-Phase">U/G Connection (Three Phase)</option>
+          <option value="OHL 400V">Overhead Line 400V</option>
+          <option value="OHL 11kV">Overhead Line 11kV</option>
+          <option value="Transformer">Transformer</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Customer Name *</label><input id="nw-cust" placeholder="e.g. Kealeboga Motshabi"></div>
+    <div class="fr2">
+      <div class="fg"><label>Town / Location *</label><input id="nw-loc" placeholder="e.g. Shakawe, Gauxa Ward"></div>
+      <div class="fg"><label>Phase</label><input id="nw-phase" placeholder="e.g. 46" value="46"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>Location Factor (%)</label><input id="nw-lf" type="number" value="29.25" step="0.01"></div>
+      <div class="fg"><label>Markup (%)</label><input id="nw-mk" type="number" value="12.5" step="0.1"></div>
+    </div>
+    <div class="fg"><label>Upload BPC Work Order Scan (optional)</label>
+      <input type="file" id="nw-scan" accept="image/*,application/pdf" style="background:transparent;color:var(--tx2);border:none;padding:0;font-size:.8rem">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-gy" onclick="closeModal('addWOModal')">Cancel</button>
+      <button class="btn btn-am" onclick="saveNewWO()">Add Work Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECORD ACTION MODAL -->
+<div id="recordModal" class="overlay">
+  <div class="modal">
+    <h3 id="rec-title">Record Action</h3>
+    <p id="rec-desc">Record this external step</p>
+    <div class="fg"><label>Date *</label><input type="date" id="rec-date"></div>
+    <div class="fg"><label id="rec-extra-label" style="display:none">Details</label><input id="rec-extra" placeholder="" style="display:none"></div>
+    <div class="fg"><label>Notes (optional)</label><textarea id="rec-notes" placeholder="Any additional notes..."></textarea></div>
+    <div class="modal-btns">
+      <button class="btn btn-gy" onclick="closeModal('recordModal')">Cancel</button>
+      <button class="btn btn-am" onclick="confirmRecord()">Save Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW DOCUMENT MODAL (paper doc viewer) -->
+<div id="docModal" class="overlay" onclick="if(event.target===this)closeModal('docModal')">
+  <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;width:min(860px,95vw);max-height:90vh;display:flex;flex-direction:column">
+    <div style="padding:.8rem 1.25rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <span style="font-size:.9rem;font-weight:600;color:var(--tx)" id="docModalTitle">Document</span>
+      <div style="display:flex;gap:7px;align-items:center">
+        <button class="btn btn-print btn-sm" onclick="printModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print
+        </button>
+        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal')">✕ Close</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:1.25rem" id="docModalBody"></div>
+    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--bd);background:var(--sf2);display:flex;gap:7px;flex-wrap:wrap" id="docModalFoot"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp">
+  <div class="shell">
+    <aside class="sb">
+      <div class="sb-hd">
+        <div class="sb-brand">
+          <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <div><h1>Trends Engineering</h1><p>Document Portal</p></div>
+        </div>
+      </div>
+      <div class="sb-role"><div class="sb-rl">Logged in as</div><div class="sb-rn" id="sbRn">—</div></div>
+      <div class="sb-sec">Navigation</div>
+      <div class="ni act" onclick="nav('dashboard')" id="n-dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+      </div>
+      <div class="ni" onclick="nav('jobs')" id="n-jobs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Work Orders
+      </div>
+      <div class="ni" onclick="nav('inbox')" id="n-inbox" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox
+        <span class="nbadge" id="ibadge" style="display:none">0</span>
+      </div>
+      <div class="ni" onclick="nav('claims')" id="n-claims" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Claim Batch
+      </div>
+      <div class="ni" onclick="nav('rates')" id="n-rates" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Rates Sheet
+      </div>
+      <div class="ni" onclick="nav('jobdetail')" id="n-jobdetail" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Job Detail
+      </div>
+      <div class="sb-ft">
+        <button class="sbfbtn logout" onclick="doLogout()">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <div class="mc">
+      <div class="tb">
+        <div><div class="tb-t" id="tbt">Dashboard</div><div class="tb-m">Trends Engineering Services (PTY) Ltd</div></div>
+        <div class="tb-r">
+          <div class="tb-tag">Phase <span id="phaseTag">46</span> · TES-001</div>
+          <div class="notif-wrap">
+            <button class="nbell" onclick="toggleNotif()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              <div class="npip" id="npip"></div>
+            </button>
+            <div class="npanel" id="npanel">
+              <div class="npanel-hd"><span>Notifications</span><button onclick="markAllRead()">Mark all read</button></div>
+              <div id="nlist"><div class="n-empty">No notifications</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ca">
+
+        <!-- DASHBOARD -->
+        <div id="sc-dashboard" class="screen act">
+
+          <!-- ADMIN DASHBOARD -->
+          <div id="dash-admin" style="display:none">
+            <div class="srow">
+              <div class="sc"><div class="sc-l">Total Work Orders</div><div class="sc-v" id="a-total">0</div><div class="sc-s">This phase</div></div>
+              <div class="sc"><div class="sc-l">Awaiting Your Action</div><div class="sc-v" style="color:var(--rd)" id="a-action">0</div><div class="sc-s">Need you now</div></div>
+              <div class="sc"><div class="sc-l">In Progress</div><div class="sc-v" style="color:var(--am)" id="a-prog">0</div><div class="sc-s">External parties</div></div>
+              <div class="sc"><div class="sc-l">Total Claim Value</div><div class="sc-v" style="font-size:1.15rem" id="a-val">P 0</div><div class="sc-s">All active jobs</div></div>
+            </div>
+            <!-- Tasks needing admin action now -->
+            <div class="crd" style="margin-bottom:1rem">
+              <div class="crd-hd" style="justify-content:space-between">
+                <div class="crd-hd-l">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  Requires Your Action
+                </div>
+                <button class="btn btn-am btn-sm" onclick="openModal('addWOModal')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order
+                </button>
+              </div>
+              <div id="a-tasks"></div>
+            </div>
+            <!-- Waiting on external parties -->
+            <div class="crd">
+              <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Waiting on External Parties</div></div>
+              <div id="a-waiting"></div>
+            </div>
+          </div>
+
+          <!-- FINANCE DASHBOARD -->
+          <div id="dash-finance" style="display:none">
+            <div class="srow">
+              <div class="sc"><div class="sc-l">Ready for Claim Docs</div><div class="sc-v" style="color:var(--am)" id="f-ready">0</div><div class="sc-s">GIS report received</div></div>
+              <div class="sc"><div class="sc-l">Docs Generated</div><div class="sc-v" style="color:var(--gn)" id="f-done">0</div><div class="sc-s">Sent to admin</div></div>
+              <div class="sc"><div class="sc-l">Total Net Payable</div><div class="sc-v" style="font-size:1.1rem" id="f-net">P 0</div><div class="sc-s">After retention &amp; WHT</div></div>
+              <div class="sc"><div class="sc-l">Submitted to BPC</div><div class="sc-v" style="color:var(--bl)" id="f-sub">0</div><div class="sc-s">Claims closed</div></div>
+            </div>
+            <div class="crd" style="margin-bottom:1rem">
+              <div class="crd-hd" style="justify-content:space-between">
+                <div class="crd-hd-l">📋 Jobs Ready — Generate Claim Documents</div>
+                <button class="btn btn-am btn-sm" onclick="nav('claims')">Open Claim Batch →</button>
+              </div>
+              <div id="f-tasks"></div>
+            </div>
+            <div class="crd">
+              <div class="crd-hd">Already Processed</div>
+              <div id="f-processed"></div>
+            </div>
+          </div>
+
+          <!-- GIS DASHBOARD -->
+          <div id="dash-gis" style="display:none">
+            <div class="srow">
+              <div class="sc"><div class="sc-l">Assigned to You</div><div class="sc-v" style="color:var(--am)" id="g-assigned">0</div><div class="sc-s">Awaiting your report</div></div>
+              <div class="sc"><div class="sc-l">Reports Submitted</div><div class="sc-v" style="color:var(--gn)" id="g-done">0</div><div class="sc-s">Completed</div></div>
+              <div class="sc"><div class="sc-l">Locations</div><div class="sc-v" style="font-size:1rem" id="g-locs">—</div><div class="sc-s">Assigned areas</div></div>
+            </div>
+            <div class="ua ua-am"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              For each assigned job: click <strong>Open Job</strong> → fill in the GIS report form → print &amp; hand-sign → scan → upload signed scan → click <strong>Submit GIS Report</strong>.
+            </div>
+            <div class="crd" style="margin-bottom:1rem">
+              <div class="crd-hd">📍 Your Current Assignments</div>
+              <div id="g-current"></div>
+            </div>
+            <div class="crd">
+              <div class="crd-hd" style="color:var(--gn)">✓ Completed Reports</div>
+              <div id="g-completed"></div>
+            </div>
+          </div>
+
+          <!-- MD DASHBOARD -->
+          <div id="dash-md" style="display:none">
+            <div class="srow">
+              <div class="sc"><div class="sc-l">Total Jobs</div><div class="sc-v" id="m-total">0</div><div class="sc-s">All work orders</div></div>
+              <div class="sc"><div class="sc-l">In Pipeline</div><div class="sc-v" style="color:var(--am)" id="m-active">0</div><div class="sc-s">Not yet claimed</div></div>
+              <div class="sc"><div class="sc-l">Docs Ready</div><div class="sc-v" style="color:var(--gn)" id="m-docs">0</div><div class="sc-s">Ready to submit</div></div>
+              <div class="sc"><div class="sc-l">Total Value</div><div class="sc-v" style="font-size:1.1rem" id="m-val">P 0</div><div class="sc-s">Gross claim value</div></div>
+            </div>
+            <!-- Who is currently doing what -->
+            <div class="crd" style="margin-bottom:1rem">
+              <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Currently Active — Who Is Doing What</div></div>
+              <div id="m-whoswhat"></div>
+            </div>
+            <!-- All jobs overview -->
+            <div class="crd">
+              <div class="crd-hd" style="justify-content:space-between">
+                <div class="crd-hd-l">All Work Orders — Full Overview</div>
+                <span style="font-size:.7rem;color:var(--tx3)">Click any row to see documents</span>
+              </div>
+              <div style="display:grid;grid-template-columns:80px 1fr 80px 100px 1fr 80px;gap:10px;padding:.5rem 1rem;background:var(--sf2)">
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">WO No.</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Value</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Current Stage</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Docs Ready</span>
+              </div>
+              <div id="m-alljobs"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- WORK ORDERS LIST -->
+        <div id="sc-jobs" class="screen">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <span style="font-size:.88rem;font-weight:600;color:var(--tx)">All Work Orders</span>
+            <div id="jobs-add-btn"></div>
+          </div>
+          <div class="crd">
+            <div class="tbl-hd jobs-cols"><span>WO No.</span><span>Customer</span><span>Town</span><span>VO Value</span><span>Stage</span><span>Status</span></div>
+            <div id="jobsList"></div>
+          </div>
+        </div>
+
+        <!-- INBOX (Admin/Finance/GIS) -->
+        <div id="sc-inbox" class="screen">
+          <div class="ua ua-am"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Click a task to open the job detail for that work order.
+          </div>
+          <div class="crd"><div id="inboxList"></div></div>
+        </div>
+
+        <!-- CLAIM BATCH (Finance) -->
+        <div id="sc-claims" class="screen">
+          <div class="ua ua-bl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Select completed jobs to include in this claim. Then generate Annexure, Payment Certificate, and Invoice as a batch.
+          </div>
+          <div class="crd">
+            <div class="crd-hd" style="justify-content:space-between">
+              <div class="crd-hd-l">Completed Jobs — Ready for Claim</div>
+              <div style="display:flex;gap:7px;align-items:center">
+                <input id="certInput" placeholder="Cert No. e.g. TES-001" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.78rem;outline:none;width:130px">
+                <button class="btn btn-am btn-sm" onclick="generateClaimDocs()">Generate Claim Documents</button>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:32px 90px 1fr 90px 130px 90px;gap:10px;padding:.5rem 1rem;background:var(--sf2)">
+              <span></span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">WO No.</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">VO2 Value</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Completed</span>
+            </div>
+            <div id="claimsList"></div>
+          </div>
+          <div id="claimSummary" style="margin-top:.5rem"></div>
+        </div>
+
+        <!-- RATES -->
+        <div id="sc-rates" class="screen">
+          <div class="ua ua-am"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Active rates appear in VO autocomplete. Toggle to control visibility.
+          </div>
+          <div class="crd">
+            <div class="crd-hd" style="justify-content:space-between">
+              <div class="crd-hd-l">BPC Rates Schedule</div>
+              <input id="rateSearch" placeholder="Search..." oninput="renderRates(this.value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;width:180px">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 80px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Description</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Unit</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Rate (BWP)</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Category</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Active</span>
+            </div>
+            <div id="ratesList"></div>
+          </div>
+        </div>
+
+        <!-- ACTIVITY LOG -->
+        <div id="sc-actlog" class="screen">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <span style="font-size:.88rem;font-weight:600">Activity Log</span>
+            <select id="logFilter" onchange="renderActLog(this.value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.35rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none">
+              <option value="">All</option><option value="Admin">Admin</option><option value="Finance">Finance</option><option value="GIS">GIS</option><option value="MD">MD</option>
+            </select>
+          </div>
+          <div class="crd" style="max-height:72vh;overflow-y:auto"><div id="actLogList"></div></div>
+        </div>
+
+        <!-- JOB DETAIL -->
+        <div id="sc-jobdetail" class="screen">
+          <button onclick="goBackFromDetail()" style="background:transparent;border:1px solid var(--bd);border-radius:var(--rs);padding:.35rem .75rem;color:var(--tx2);font-family:'Inter',sans-serif;font-size:.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:1rem;transition:.12s" onmouseover="this.style.borderColor='var(--am)';this.style.color='var(--am)'" onmouseout="this.style.borderColor='var(--bd)';this.style.color='var(--tx2)'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg>Back to Work Orders
+          </button>
+          <div class="jd-hdr" id="jdHeader"></div>
+          <div class="jd-lay">
+            <div>
+              <!-- PIPELINE + ACTIONS -->
+              <div class="crd" style="margin-bottom:1rem">
+                <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Workflow Pipeline</div></div>
+                <div id="jdPipeline" style="padding:.5rem .25rem"></div>
+              </div>
+              <!-- DOCUMENTS FOR MD / DOWNLOAD PANEL -->
+              <div class="crd" id="jdDocsPanel">
+                <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Documents</div><span class="badge b-gy" id="jdDocsCount">0 ready</span></div>
+                <div id="jdDocsList" style="padding:.75rem 1rem"></div>
+              </div>
+            </div>
+            <div>
+              <!-- SUMMARY -->
+              <div class="crd" style="margin-bottom:1rem">
+                <div class="crd-hd">Job Summary</div>
+                <div id="jdSummary" style="padding:.85rem 1rem"></div>
+              </div>
+              <!-- ACTIVITY -->
+              <div class="crd">
+                <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Activity</div></div>
+                <div id="jdActivity" style="max-height:260px;overflow-y:auto;padding:.5rem .75rem"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   COMPANY INFO
+═══════════════════════════════════════ */
+const CO = {
+  name:'Trends Engineering Services (PTY) Ltd',
+  po:'P.O. BOX 30177', city:'FRANCISTOWN', tel:'72388904',
+  vendor:'103913', vat:'BW00000259728-00-05-42',
+  bank:'Stanbic Bank Botswana', acc:'9060 0026 4898 4',
+  branch:'Francistown Branch', bcode:'064067', swift:'SBICBWGX',
+};
+const BPC_CO = { name:'BOTSWANA POWER CORPORATION', addr:'Motlakase House, Macheng Way', po:'P.O. Box 48', city:'GABORONE', tel:'3607000' };
+
+/* ═══════════════════════════════════════
+   RATES DATABASE
+═══════════════════════════════════════ */
+const RATES_SEED = [
+  {id:'r1', d:'Service Conn; 230V; 60A; Single Phase; U/G',      u:'Ea', r:11987.42, c:'U/G Service Connection', on:true},
+  {id:'r2', d:'Service Conn; 230V; 80A; Single Phase; U/G',      u:'Ea', r:13240.10, c:'U/G Service Connection', on:true},
+  {id:'r3', d:'Service Conn; 400V; 100A; Three Phase; U/G',      u:'Ea', r:18540.00, c:'U/G Service Connection', on:true},
+  {id:'r4', d:'Service Conn; 230V; 60A; Overhead',               u:'Ea', r:8760.00,  c:'OH Service Connection',  on:true},
+  {id:'r5', d:'OHL; 400V; 50mm2; 4core; ABC',                    u:'M',  r:254.11,   c:'Overhead Line',          on:true},
+  {id:'r6', d:'OHL; 400V; 95mm2; 4core; ABC',                    u:'M',  r:312.40,   c:'Overhead Line',          on:true},
+  {id:'r7', d:'OHL; 400V; 35mm2; 4core; ABC',                    u:'M',  r:198.60,   c:'Overhead Line',          on:true},
+  {id:'r8', d:'OHL; 11kV; 50mm2; 3core; XLPE',                   u:'M',  r:520.00,   c:'Overhead Line',          on:false},
+  {id:'r9', d:'U/G Cable; 400V; 50mm2; 4core; XLPE',             u:'M',  r:285.30,   c:'Underground Cable',      on:true},
+  {id:'r10',d:'U/G Cable; 400V; 95mm2; 4core; XLPE',             u:'M',  r:365.80,   c:'Underground Cable',      on:true},
+  {id:'r11',d:'U/G Cable Trench; Excavation & Reinstatement',     u:'M',  r:95.40,    c:'Underground Cable',      on:true},
+  {id:'r12',d:'Pole Protector; Supply & Install; 9m Woodpole',    u:'Ea', r:639.17,   c:'Poles & Structures',     on:true},
+  {id:'r13',d:'Woodpole; 9m; Class 3; Supply & Erect',            u:'Ea', r:4200.00,  c:'Poles & Structures',     on:true},
+  {id:'r14',d:'Stay Wire Assembly; Supply & Install',              u:'Ea', r:1240.00,  c:'Poles & Structures',     on:true},
+  {id:'r15',d:'Transformer; 50kVA; 11kV/400V; Supply & Install',  u:'Ea', r:48000.00, c:'Transformers',           on:false},
+  {id:'r16',d:'Meter Box; Surface Mount; Supply & Install',        u:'Ea', r:1840.00,  c:'Metering',               on:true},
+  {id:'r17',d:'Energy Meter; Single Phase; Supply & Install',      u:'Ea', r:980.00,   c:'Metering',               on:true},
+  {id:'r18',d:'Cut Out; 60A; Supply & Install',                    u:'Ea', r:420.00,   c:'Metering',               on:true},
+  {id:'r19',d:'GIS RATE-Service connections',                      u:'Ea', r:593.59,   c:'GIS',                    on:true},
+  {id:'r20',d:'GIS RATE-Overhead Line',                            u:'Ea', r:850.00,   c:'GIS',                    on:true},
+  {id:'r21',d:'Excavation; Normal Soil; Per m3',                   u:'m3', r:180.00,   c:'Civil Works',            on:true},
+  {id:'r22',d:'Reinstatement; Gravel Road',                        u:'M',  r:85.00,    c:'Civil Works',            on:true},
+  {id:'r23',d:'Reinstatement; Tar Road',                           u:'M',  r:420.00,   c:'Civil Works',            on:true},
+  {id:'r24',d:'Transport & Sundries; Per work order',              u:'Ea', r:1500.00,  c:'Miscellaneous',          on:true},
+];
+
+/* ═══════════════════════════════════════
+   PIPELINE STAGES
+═══════════════════════════════════════ */
+const STAGES = [
+  {id:'wo_received',        lbl:'Work Order Received from BPC',          role:'admin'},
+  {id:'vo1_created',        lbl:'Works Valuation (VO1) Created',         role:'admin'},
+  {id:'linesman_sent',      lbl:'VO1 Sent to Linesman',                  role:'admin'},
+  {id:'field_received',     lbl:'Field Findings Received from Linesman', role:'admin'},
+  {id:'vo2_created',        lbl:'Variation Order (VO2) Created',         role:'admin'},
+  {id:'teams_notified',     lbl:'Teams Notified to Start Work',          role:'admin'},
+  {id:'work_complete',      lbl:'Work Complete',                          role:'admin'},
+  {id:'gis_notified',       lbl:'GIS Consultant Notified',               role:'admin'},
+  {id:'gis_complete',       lbl:'GIS Report Uploaded',                   role:'gis'},
+  {id:'claim_docs_ready',   lbl:'Claim Documents Generated',             role:'finance'},
+  {id:'claim_submitted',    lbl:'Claim Submitted to BPC',                role:'admin'},
+];
+const STAGE_IDS = STAGES.map(s=>s.id);
+
+function stageIdx(id){ return STAGE_IDS.indexOf(id); }
+function stageLabel(id){ return STAGES.find(s=>s.id===id)?.lbl||id; }
+function nextStage(id){ const i=stageIdx(id); return i>=0&&i<STAGE_IDS.length-1?STAGE_IDS[i+1]:null; }
+function stagePct(id){ const i=stageIdx(id); return i<0?0:Math.round((i/10)*100); }
+function stageBadge(id){
+  if(id==='claim_submitted')return'b-gn';
+  if(['gis_complete','claim_docs_ready','work_complete'].includes(id))return'b-bl';
+  if(['teams_notified','gis_notified'].includes(id))return'b-am';
+  return'b-gy';
+}
+
+/* Doc types per stage */
+const STAGE_DOCS = {
+  wo_received:'bpc_wo', vo1_created:'vo1', linesman_sent:null, field_received:'field_report',
+  vo2_created:'vo2', teams_notified:'works_instruction', work_complete:null,
+  gis_notified:null, gis_complete:'gis_report', claim_docs_ready:'annexure,payment_cert,invoice,list_of_jobs',
+  claim_submitted:null,
+};
+
+/* ═══════════════════════════════════════
+   LOCAL DB
+═══════════════════════════════════════ */
+const DB_KEY = 'tes_v3';
+let DB;
+function loadDB(){return null;}
+function saveDB(){}
+
+const WO_SEED = [
+  {wo:'448223',cust:'Ratanang Mahupe',   loc:'Kauxwi, Modubana', type:'U/G Conn', phase:'46'},
+  {wo:'446197',cust:'Thimothiyo Popego', loc:'Shakawe',          type:'U/G Conn', phase:'46'},
+  {wo:'448224',cust:'Maria Koloi',       loc:'Shakawe',          type:'U/G Conn', phase:'46'},
+  {wo:'441033',cust:'Goitseone Molefe',  loc:'Ncaang',           type:'U/G Conn', phase:'46'},
+  {wo:'449501',cust:'Diatsha Mbwedze',   loc:'Sepopa',           type:'OHL 400V', phase:'46'},
+  {wo:'449502',cust:'Samarambo Mayira',  loc:'Ngarange',         type:'OHL 400V', phase:'46'},
+];
+
+function initDB(){
+  // Always start fresh - no saved data from previous sessions
+  DB={version:3,jobs:{},notifs:{},actLog:[],rates:[...RATES_SEED],certSeq:1};
+  saveDB();
+}
+initDB();
+
+function newJob(data){
+  return {
+    wo:data.wo, cust:data.cust||data.customer, loc:data.loc||data.location,
+    type:data.type, phase:data.phase||'46', lf:data.lf||29.25, mk:data.mk||12.5,
+    createdAt:new Date().toISOString(), stage:'wo_received',
+    vo1:{items:[
+      {d:'Service Conn; 230V; 60A; Single Phase; U/G', u:'Ea', q:1, r:11987.42},
+      {d:'GIS RATE-Service connections',               u:'Ea', q:1, r:593.59},
+    ], lf:data.lf||29.25, mk:12.5},
+    vo2:{items:[], lf:data.lf||29.25, mk:10, startDate:'', compDate:''},
+    fieldData:{}, gisData:{},
+    actions:{}, // keyed by stage: { date, notes, extra }
+    scans:{},   // keyed by docType: { dataUrl, filename, uploadedAt, role }
+    claimRef:'',
+  };
+}
+
+function jTotal(job, which){
+  const items=which==='vo2'?job.vo2.items:job.vo1.items;
+  const lf=which==='vo2'?job.vo2.lf:job.vo1.lf;
+  const mk=which==='vo2'?job.vo2.mk:job.vo1.mk||0;
+  const sub=items.reduce((s,i)=>s+(parseFloat(i.q)||0)*(parseFloat(i.r)||0),0);
+  const loc=sub*(lf/100);
+  const markup=(sub+loc)*(mk/100);
+  return{sub,loc,markup,total:sub+loc+markup};
+}
+const P=n=>'P '+(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const BWP=n=>(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fd=iso=>iso?new Date(iso).toLocaleDateString('en-BW',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const fdt=iso=>iso?new Date(iso).toLocaleString('en-BW',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let CU=''; // current role
+let detailWO=null;
+let selClaimJobs=new Set();
+let recordCb=null;
+
+const RN={admin:'Admin',finance:'Finance',gis:'GIS Consultant',md:'Managing Director'};
+
+/* ═══════════════════════════════════════
+   NOTIFICATIONS + LOG
+═══════════════════════════════════════ */
+function notify(roles,msg,wo=''){
+  const arr=Array.isArray(roles)?roles:[roles];
+  arr.forEach(r=>{
+    if(!DB.notifs[r])DB.notifs[r]=[];
+    DB.notifs[r].unshift({id:Date.now()+'_'+Math.random(),msg,wo,ts:new Date().toISOString(),read:false});
+    if(DB.notifs[r].length>40)DB.notifs[r]=DB.notifs[r].slice(0,40);
+  });
+}
+function addLog(wo,action){
+  DB.actLog.unshift({wo,action,role:RN[CU]||CU,ts:new Date().toISOString()});
+  if(DB.actLog.length>500)DB.actLog=DB.actLog.slice(0,500);
+}
+function renderNotifs(){
+  if(!CU)return;
+  const list=(DB.notifs[CU]||[]);
+  const unread=list.filter(n=>!n.read).length;
+  document.getElementById('npip').classList.toggle('on',unread>0);
+  const el=document.getElementById('nlist');
+  if(!list.length){el.innerHTML='<div class="n-empty">No notifications</div>';return;}
+  el.innerHTML=list.slice(0,20).map(n=>`
+    <div class="nitem ${n.read?'read':'unread'}" onclick="clickNotif('${n.id}','${n.wo||''}')">
+      <div class="ndot ${n.read?'read':''}"></div>
+      <div><div class="nmsg">${n.msg}</div><div class="nts">${fd(n.ts)}</div></div>
+    </div>`).join('');
+}
+function clickNotif(id,wo){
+  (DB.notifs[CU]||[]).forEach(n=>{if(n.id===id)n.read=true;});
+  saveDB();document.getElementById('npanel').classList.remove('open');renderNotifs();
+  if(!wo||!DB.jobs[wo])return;
+  if(CU==='gis'){
+    // GIS goes straight to their action, not just job detail
+    openGISAction(wo);
+  } else {
+    openJobDetail(wo);
+  }
+}
+function markAllRead(){(DB.notifs[CU]||[]).forEach(n=>n.read=true);saveDB();renderNotifs();}
+function toggleNotif(){
+  document.getElementById('npanel').classList.toggle('open');
+  if(document.getElementById('npanel').classList.contains('open'))renderNotifs();
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.notif-wrap'))document.getElementById('npanel')?.classList.remove('open');
+});
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+function toast(msg,type='gn'){
+  const el=document.createElement('div');el.className=`toast toast-${type}`;
+  const icons={gn:'<polyline points="20 6 9 17 4 12"/>',rd:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',am:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>'};
+  el.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icons[type]||icons.gn}</svg>${msg}`;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),3500);
+}
+
+/* ═══════════════════════════════════════
+   SCAN UPLOAD
+═══════════════════════════════════════ */
+function triggerScan(wo,docType){
+  const el=document.getElementById(`scan-input-${wo}-${docType}`);if(el)el.click();
+}
+function handleScan(wo,docType,input){
+  if(!input.files[0])return;
+  const file=input.files[0];
+  if(file.size>4*1024*1024){toast('File too large — max 4MB','am');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    if(!DB.jobs[wo].scans)DB.jobs[wo].scans={};
+    DB.jobs[wo].scans[docType]={dataUrl:e.target.result,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
+    addLog(wo,`Signed scan uploaded: ${docType} (${file.name})`);
+    saveDB();refreshDetail();
+    toast('✓ Scan uploaded: '+file.name);
+    // Notify MD that a scan is ready
+    notify(['md'],`New signed document uploaded for WO ${wo}: ${docType}`,wo);
+  };
+  reader.readAsDataURL(file);
+}
+function removeScan(wo,docType){
+  if(confirm('Remove this scan?')){delete DB.jobs[wo].scans[docType];saveDB();refreshDetail();}
+}
+function downloadScan(wo,docType){
+  const s=DB.jobs[wo]?.scans?.[docType];
+  if(!s)return;
+  const a=document.createElement('a');a.href=s.dataUrl;a.download=s.filename||docType+'.pdf';a.click();
+}
+function scanWidget(wo,docType,editable){
+  const s=DB.jobs[wo]?.scans?.[docType];
+  if(s){
+    return `<div class="scan-done">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+      <strong>${s.filename}</strong> · ${fd(s.uploadedAt)}
+      <button class="btn btn-gy btn-sm" onclick="downloadScan('${wo}','${docType}')">⬇ Download</button>
+      ${editable?`<button class="btn btn-rd btn-sm" onclick="removeScan('${wo}','${docType}')">Remove</button>`:''}
+    </div>`;
+  }
+  if(!editable) return `<span style="font-size:.72rem;color:var(--tx3)">No scan uploaded yet</span>`;
+  return `<label class="scan-upload-label">
+    📎 Upload Signed Scan
+    <input type="file" id="scan-input-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this)" style="display:none">
+  </label>`;
+}
+
+/* ═══════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   ROLE-SPECIFIC DASHBOARD RENDERS
+══════════════════════════════════════════ */
+function renderDashboard(){
+  // Hide all panels, show only the one for CU
+  ['dash-admin','dash-finance','dash-gis','dash-md'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  if(CU==='admin')   renderAdminDash();
+  if(CU==='finance') renderFinanceDash();
+  if(CU==='gis')     renderGISDash();
+  if(CU==='md')      renderMDDash();
+}
+
+/* ── ADMIN ── */
+function renderAdminDash(){
+  const el=document.getElementById('dash-admin');if(!el)return;
+  el.style.display='block';
+  const jobs=Object.values(DB.jobs);
+  const ADMIN_NEEDS=[  // stages where admin must act
+    'wo_received','vo1_created','field_received','vo2_created','work_complete','claim_docs_ready'
+  ];
+  const EXTERNAL_WAITING=[  // waiting on linesman/teams/GIS
+    'linesman_sent','teams_notified','gis_notified'
+  ];
+  const needsAction=jobs.filter(j=>ADMIN_NEEDS.includes(j.stage));
+  const waiting=jobs.filter(j=>EXTERNAL_WAITING.includes(j.stage));
+  const val=jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  document.getElementById('a-total').textContent=jobs.length;
+  document.getElementById('a-action').textContent=needsAction.length;
+  document.getElementById('a-prog').textContent=waiting.length;
+  document.getElementById('a-val').textContent=P(val);
+
+  const taskIcons={wo_received:'📋',vo1_created:'📤',field_received:'📝',vo2_created:'👷',work_complete:'🗺',claim_docs_ready:'📦'};
+  const taskLabels={wo_received:'Create VO1',vo1_created:'Send VO1 to Linesman',field_received:'Create VO2',vo2_created:'Notify Teams to Start Work',work_complete:'Notify GIS Consultant',claim_docs_ready:'Record Claim Submitted to BPC'};
+  const taskBadges={wo_received:'b-rd',vo1_created:'b-am',field_received:'b-am',vo2_created:'b-am',work_complete:'b-am',claim_docs_ready:'b-gn'};
+  const tasksEl=document.getElementById('a-tasks');
+  if(!needsAction.length){tasksEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--gn);font-size:.82rem">✓ No pending actions right now</div>';}
+  else{tasksEl.innerHTML=needsAction.map(j=>`
+    <div class="tbl-row" style="grid-template-columns:30px 1fr 140px 100px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
+      <span style="font-size:1.1rem">${taskIcons[j.stage]||'📄'}</span>
+      <div>
+        <div style="font-size:.83rem;font-weight:600;color:var(--tx)">${taskLabels[j.stage]||stageLabel(j.stage)}</div>
+        <div style="font-size:.72rem;color:var(--tx2);margin-top:1px">WO ${j.wo} · ${j.cust} · ${j.loc.split(',')[0]}</div>
+      </div>
+      <span style="font-size:.72rem;color:var(--tx2)">${stageLabel(j.stage)}</span>
+      <span class="badge ${taskBadges[j.stage]||'b-am'}">Act Now</span>
+    </div>`).join('');}
+
+  const waitIcons={linesman_sent:'👷',teams_notified:'🔨',gis_notified:'📍'};
+  const waitLabels={linesman_sent:'Linesman in field',teams_notified:'Teams executing work',gis_notified:'GIS consultant on site'};
+  const waitEl=document.getElementById('a-waiting');
+  if(!waiting.length){waitEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--tx3);font-size:.8rem">Nothing waiting on external parties</div>';}
+  else{waitEl.innerHTML=waiting.map(j=>`
+    <div class="tbl-row" style="grid-template-columns:30px 1fr 160px 80px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
+      <span style="font-size:1.1rem">${waitIcons[j.stage]||'⏳'}</span>
+      <div>
+        <div style="font-size:.83rem;font-weight:500;color:var(--tx2)">${waitLabels[j.stage]||stageLabel(j.stage)}</div>
+        <div style="font-size:.72rem;color:var(--tx3);margin-top:1px">WO ${j.wo} · ${j.cust} · since ${j.actions[j.stage]?.date||'—'}</div>
+      </div>
+      <span style="font-size:.72rem;color:var(--tx2)">${j.loc.split(',')[0]}</span>
+      <span class="badge b-bl">Waiting</span>
+    </div>`).join('');}
+}
+
+/* ── FINANCE ── */
+function renderFinanceDash(){
+  const el=document.getElementById('dash-finance');if(!el)return;
+  el.style.display='block';
+  const jobs=Object.values(DB.jobs);
+  const ready=jobs.filter(j=>j.stage==='gis_complete');
+  const done=jobs.filter(j=>j.stage==='claim_docs_ready');
+  const submitted=jobs.filter(j=>j.stage==='claim_submitted');
+  const netVal=ready.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total*.92;},0)
+    +done.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total*.92;},0);
+  document.getElementById('f-ready').textContent=ready.length;
+  document.getElementById('f-done').textContent=done.length;
+  document.getElementById('f-net').textContent=P(netVal);
+  document.getElementById('f-sub').textContent=submitted.length;
+
+  const tasksEl=document.getElementById('f-tasks');
+  if(!ready.length){tasksEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No jobs ready yet — waiting for GIS reports to be uploaded</div>';}
+  else{tasksEl.innerHTML=ready.map(j=>{
+    const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    return`<div class="tbl-row" style="grid-template-columns:30px 1fr 110px 110px 120px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
+      <span style="font-size:1.1rem">💰</span>
+      <div>
+        <div style="font-size:.83rem;font-weight:600;color:var(--tx)">${j.cust}</div>
+        <div style="font-size:.72rem;color:var(--tx2);margin-top:1px">WO ${j.wo} · ${j.loc.split(',')[0]}</div>
+      </div>
+      <span class="mono" style="font-size:.8rem">${P(t.total)}</span>
+      <span style="font-size:.72rem;color:var(--gn)">✓ GIS received</span>
+      <span class="badge b-am">Generate Docs</span>
+    </div>`;}).join('');}
+
+  const procEl=document.getElementById('f-processed');
+  if(![...done,...submitted].length){procEl.innerHTML='<div style="padding:1rem;text-align:center;color:var(--tx3);font-size:.8rem">None yet</div>';}
+  else{procEl.innerHTML=[...done,...submitted].map(j=>{
+    const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    return`<div class="tbl-row" style="grid-template-columns:30px 1fr 110px 100px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
+      <span style="font-size:1.1rem">${j.stage==='claim_submitted'?'✅':'📋'}</span>
+      <div><div style="font-size:.83rem;font-weight:500;color:var(--tx2)">${j.cust} · WO ${j.wo}</div>
+        <div style="font-size:.7rem;color:var(--tx3)">${j.claimRef||'—'}</div></div>
+      <span class="mono" style="font-size:.8rem">${P(t.total)}</span>
+      <span class="badge ${j.stage==='claim_submitted'?'b-gn':'b-bl'}">${j.stage==='claim_submitted'?'Submitted':'Docs Ready'}</span>
+    </div>`;}).join('');}
+}
+
+/* ── GIS ── */
+function renderGISDash(){
+  const el=document.getElementById('dash-gis');if(!el)return;
+  el.style.display='block';
+  const jobs=Object.values(DB.jobs);
+  const assigned=jobs.filter(j=>j.stage==='gis_notified');
+  const completed=jobs.filter(j=>stageIdx(j.stage)>stageIdx('gis_notified'));
+  const locs=[...new Set(assigned.map(j=>j.loc.split(',')[0]))];
+  document.getElementById('g-assigned').textContent=assigned.length;
+  document.getElementById('g-done').textContent=completed.filter(j=>j.gisData&&Object.keys(j.gisData).length).length;
+  document.getElementById('g-locs').textContent=locs.length?locs.slice(0,2).join(', ')+(locs.length>2?'…':''):'—';
+
+  const currEl=document.getElementById('g-current');
+  if(!assigned.length){currEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No current assignments — admin will notify you when a job is ready</div>';}
+  else{currEl.innerHTML=assigned.map(j=>`
+    <div class="tbl-row" style="grid-template-columns:30px 1fr 110px 130px;background:var(--am-bg);border-left:3px solid var(--am)" onclick="openJobDetail('${j.wo}')" style="cursor:pointer">
+      <span style="font-size:1.1rem">📍</span>
+      <div>
+        <div style="font-size:.85rem;font-weight:600;color:var(--tx)">${j.cust}</div>
+        <div style="font-size:.73rem;color:var(--tx2);margin-top:1px">WO ${j.wo} · ${j.loc}</div>
+        <div style="font-size:.7rem;color:var(--tx3);margin-top:1px">Notified: ${j.actions.gis_notified?.date||'—'}</div>
+      </div>
+      <div>
+        <div style="font-size:.7rem;color:var(--tx3)">Survey scan</div>
+        <div style="font-size:.72rem;color:${j.scans.gis_report?'var(--gn)':'var(--rd)'}">${j.scans.gis_report?'✓ Uploaded':'Not uploaded'}</div>
+      </div>
+      <button class="btn btn-am btn-sm" onclick="event.stopPropagation();openGISAction('${j.wo}')">📋 Open &amp; Submit Report</button>
+    </div>`).join('');}
+
+  const compEl=document.getElementById('g-completed');
+  const compJobs=jobs.filter(j=>j.gisData&&Object.keys(j.gisData).length&&stageIdx(j.stage)>stageIdx('gis_notified'));
+  if(!compJobs.length){compEl.innerHTML='<div style="padding:1rem;text-align:center;color:var(--tx3);font-size:.8rem">No completed reports yet</div>';}
+  else{compEl.innerHTML=compJobs.map(j=>`
+    <div class="tbl-row" style="grid-template-columns:30px 1fr 100px 110px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
+      <span style="font-size:1.1rem">✅</span>
+      <div><div style="font-size:.83rem;color:var(--tx2)">${j.cust} · WO ${j.wo}</div>
+        <div style="font-size:.7rem;color:var(--tx3)">${j.loc.split(',')[0]}</div></div>
+      <span style="font-size:.72rem;color:var(--gn)">Report submitted</span>
+      <span class="badge b-gn">Done</span>
+    </div>`).join('');}
+}
+
+/* ── MANAGING DIRECTOR ── */
+function renderMDDash(){
+  const el=document.getElementById('dash-md');if(!el)return;
+  el.style.display='block';
+  const jobs=Object.values(DB.jobs);
+  const active=jobs.filter(j=>j.stage!=='claim_submitted');
+  const docsReady=jobs.filter(j=>j.stage==='claim_docs_ready');
+  const val=jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  document.getElementById('m-total').textContent=jobs.length;
+  document.getElementById('m-active').textContent=active.length;
+  document.getElementById('m-docs').textContent=docsReady.length;
+  document.getElementById('m-val').textContent=P(val);
+
+  // Who is doing what right now
+  const PARTY_MAP={
+    wo_received:{who:'Admin',doing:'Creating VO1',color:'var(--am)'},
+    vo1_created:{who:'Admin',doing:'Sending VO1 to Linesman',color:'var(--am)'},
+    linesman_sent:{who:'Linesman',doing:'Field measurements',color:'var(--bl)'},
+    field_received:{who:'Admin',doing:'Creating VO2',color:'var(--am)'},
+    vo2_created:{who:'Admin',doing:'Notifying field teams',color:'var(--am)'},
+    teams_notified:{who:'Field Teams',doing:'Executing work on site',color:'var(--bl)'},
+    work_complete:{who:'Admin',doing:'Notifying GIS consultant',color:'var(--am)'},
+    gis_notified:{who:'GIS Consultant',doing:'Site survey & geo-analysis',color:'var(--bl)'},
+    gis_complete:{who:'Finance',doing:'Generating claim documents',color:'var(--gn)'},
+    claim_docs_ready:{who:'Admin',doing:'Submitting claim to BPC',color:'var(--gn)'},
+    claim_submitted:{who:'BPC',doing:'Processing payment',color:'var(--tx3)'},
+  };
+  const wwEl=document.getElementById('m-whoswhat');
+  if(!active.length){wwEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--tx3);font-size:.8rem">No active jobs</div>';}
+  else{
+    const grouped={};
+    active.forEach(j=>{const pm=PARTY_MAP[j.stage];const k=pm?.who||'—';if(!grouped[k])grouped[k]={...pm,jobs:[]};grouped[k].jobs.push(j);});
+    wwEl.innerHTML=Object.entries(grouped).map(([party,info])=>`
+      <div style="padding:.75rem 1rem;border-bottom:1px solid var(--bd)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${info.color};flex-shrink:0"></div>
+          <span style="font-size:.82rem;font-weight:600;color:var(--tx)">${party}</span>
+          <span style="font-size:.72rem;color:var(--tx2)">— ${info.doing}</span>
+          <span class="badge b-gy" style="margin-left:auto">${info.jobs.length} job${info.jobs.length!==1?'s':''}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;padding-left:16px">
+          ${info.jobs.map(j=>`<span onclick="openJobDetail('${j.wo}')" style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:2px 8px;font-size:.72rem;color:var(--tx2);cursor:pointer" onmouseover="this.style.color='var(--am)'" onmouseout="this.style.color='var(--tx2)'">WO ${j.wo} · ${j.cust.split(' ')[0]}</span>`).join('')}
+        </div>
+      </div>`).join('');}
+
+  // Full jobs table
+  const allEl=document.getElementById('m-alljobs');
+  if(!jobs.length){allEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders yet</div>';}
+  else{allEl.innerHTML=jobs.map(j=>{
+    const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    const totalDocs=10,doneDocs=Object.keys(j.scans||{}).length;
+    return`<div style="display:grid;grid-template-columns:80px 1fr 80px 100px 1fr 80px;gap:10px;padding:.6rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center;cursor:pointer;transition:.1s" onclick="openJobDetail('${j.wo}')" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
+      <span class="mono">${j.wo}</span>
+      <div><div>${j.cust}</div><div class="prog-w" style="width:120px;margin-top:3px"><div class="prog-b" style="width:${stagePct(j.stage)}%"></div></div></div>
+      <span class="tag">${j.loc.split(',')[0]}</span>
+      <span class="mono">${P(t.total)}</span>
+      <span style="font-size:.72rem;color:var(--tx2)">${stageLabel(j.stage)}</span>
+      <span style="font-size:.72rem;color:${doneDocs>0?'var(--gn)':'var(--tx3)'}">${doneDocs}/${totalDocs} scans</span>
+    </div>`;}).join('');}
+}
+
+/* ═══════════════════════════════════════
+   JOBS LIST
+═══════════════════════════════════════ */
+function renderJobs(){
+  document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
+  const jobs=Object.values(DB.jobs);
+  document.getElementById('jobsList').innerHTML=jobs.length
+    ?jobs.map(j=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+      return`<div class="tbl-row jobs-cols clickable" onclick="openJobDetail('${j.wo}')">
+        <span class="mono">${j.wo}</span><span>${j.cust}</span>
+        <span class="tag">${j.loc.split(',')[0]}</span>
+        <span class="mono">${P(t.total)}</span>
+        <span style="font-size:.72rem;color:var(--tx2)">${stageLabel(j.stage)}</span>
+        <span class="badge ${stageBadge(j.stage)}">${j.stage==='claim_submitted'?'✓ Done':'Active'}</span>
+      </div>`;}).join('')
+    :'<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders yet. Click Add Work Order to begin.</div>';
+}
+
+/* ═══════════════════════════════════════
+   ADD WORK ORDER
+═══════════════════════════════════════ */
+function saveNewWO(){
+  const num=document.getElementById('nw-num').value.trim();
+  const cust=document.getElementById('nw-cust').value.trim();
+  const loc=document.getElementById('nw-loc').value.trim();
+  const type=document.getElementById('nw-type').value;
+  if(!num||!cust||!loc||!type){toast('Fill in all required fields','am');return;}
+  if(DB.jobs[num]){toast('WO number already exists','rd');return;}
+  const job=newJob({wo:num,cust,loc,type,phase:document.getElementById('nw-phase').value||'46',lf:parseFloat(document.getElementById('nw-lf').value)||29.25,mk:parseFloat(document.getElementById('nw-mk').value)||12.5});
+  // Handle BPC WO scan upload
+  const scanInput=document.getElementById('nw-scan');
+  if(scanInput.files[0]){
+    const f=scanInput.files[0];
+    const reader=new FileReader();
+    reader.onload=e=>{
+      job.scans.bpc_wo={dataUrl:e.target.result,filename:f.name,uploadedAt:new Date().toISOString(),role:CU};
+      DB.jobs[num]=job;addLog(num,'Work order created with BPC scan uploaded');saveDB();
+      notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system`,num);
+      closeModal('addWOModal');resetAddWOForm();refreshAll();toast(`Work Order WO ${num} added`);
+    };reader.readAsDataURL(f);
+  } else {
+    DB.jobs[num]=job;addLog(num,'Work order created from BPC email');saveDB();
+    notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system`,num);
+    closeModal('addWOModal');resetAddWOForm();refreshAll();toast(`Work Order WO ${num} added`);
+  }
+}
+function resetAddWOForm(){
+  ['nw-num','nw-cust','nw-loc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nw-type').value='';
+  document.getElementById('nw-phase').value='46';
+  document.getElementById('nw-lf').value='29.25';
+  document.getElementById('nw-mk').value='12.5';
+  document.getElementById('nw-scan').value='';
+}
+
+/* ═══════════════════════════════════════
+   INBOX
+═══════════════════════════════════════ */
+function renderInbox(){
+  const tasks=[];
+  const jobs=Object.values(DB.jobs);
+  if(CU==='admin'){
+    jobs.filter(j=>j.stage==='wo_received').forEach(j=>tasks.push({wo:j.wo,icon:'📋',name:'Create VO1 — WO '+j.wo,desc:j.cust+' · '+j.loc,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='vo1_created').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Record: VO1 Sent to Linesman — WO '+j.wo,desc:j.cust,badge:'Next Step',bc:'b-gy'}));
+    jobs.filter(j=>j.stage==='linesman_sent').forEach(j=>tasks.push({wo:j.wo,icon:'📥',name:'Enter Field Findings — WO '+j.wo,desc:j.cust+' · awaiting linesman report',badge:'Waiting',bc:'b-bl'}));
+    jobs.filter(j=>j.stage==='field_received').forEach(j=>tasks.push({wo:j.wo,icon:'📝',name:'Create VO2 — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='vo2_created').forEach(j=>tasks.push({wo:j.wo,icon:'👷',name:'Notify Teams — WO '+j.wo,desc:j.cust+' · ready to start work',badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='teams_notified').forEach(j=>tasks.push({wo:j.wo,icon:'✅',name:'Record Work Complete — WO '+j.wo,desc:j.cust,badge:'Waiting',bc:'b-bl'}));
+    jobs.filter(j=>j.stage==='work_complete').forEach(j=>tasks.push({wo:j.wo,icon:'🗺',name:'Notify GIS Consultant — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='claim_docs_ready').forEach(j=>tasks.push({wo:j.wo,icon:'📦',name:'Mark Claim Submitted — WO '+j.wo,desc:j.cust+' · all docs ready',badge:'Final Step',bc:'b-gn'}));
+  }
+  if(CU==='finance'){
+    jobs.filter(j=>j.stage==='gis_complete').forEach(j=>tasks.push({wo:j.wo,icon:'💰',name:'Generate Claim Documents — WO '+j.wo,desc:j.cust+' · GIS report received',badge:'Ready',bc:'b-gn'}));
+  }
+  if(CU==='gis'){
+    jobs.filter(j=>j.stage==='gis_notified').forEach(j=>tasks.push({wo:j.wo,icon:'📍',name:'Submit GIS Report — WO '+j.wo,desc:j.cust+' · '+j.loc+' · Notified: '+(j.actions.gis_notified?.date||'—'),badge:'Action Required',bc:'b-rd'}));
+    jobs.filter(j=>j.stage==='gis_complete').forEach(j=>tasks.push({wo:j.wo,icon:'✅',name:'GIS Report Submitted — WO '+j.wo,desc:j.cust+' · '+j.loc,badge:'Complete',bc:'b-gn'}));
+  }
+  const badge=document.getElementById('ibadge');
+  badge.style.display=tasks.length?'inline-block':'none';
+  badge.textContent=tasks.filter(t=>t.bc!=='b-gn'&&t.bc!=='b-bl').length;
+  const list=document.getElementById('inboxList');
+  if(!tasks.length){list.innerHTML='<div style="padding:2rem;text-align:center;color:var(--tx3);font-size:.8rem">Your inbox is empty — nothing needs action right now</div>';return;}
+  list.innerHTML=tasks.map(t=>{
+    // GIS tasks open straight to their action form
+    const clickFn = (CU==='gis') ? `openGISAction('${t.wo}')` : `openJobDetail('${t.wo}')`;
+    return`<div class="tbl-row" style="grid-template-columns:30px 1fr 100px;cursor:pointer" onclick="${clickFn}">
+      <span style="font-size:1.1rem">${t.icon}</span>
+      <div>
+        <div style="font-size:.82rem;font-weight:600;color:var(--tx)">${t.name}</div>
+        <div style="font-size:.72rem;color:var(--tx2);margin-top:2px">${t.desc}</div>
+      </div>
+      <span class="badge ${t.bc}">${t.badge}</span>
+    </div>`;}).join('');
+}
+
+/* ═══════════════════════════════════════
+   RECORD ACTION MODAL
+═══════════════════════════════════════ */
+let recordStage='', recordWO='';
+function openRecord(wo,stage,title,desc,extraLabel=''){
+  recordWO=wo; recordStage=stage;
+  document.getElementById('rec-title').textContent=title;
+  document.getElementById('rec-desc').textContent=desc;
+  document.getElementById('rec-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('rec-notes').value='';
+  document.getElementById('rec-extra').value='';
+  if(extraLabel){
+    document.getElementById('rec-extra-label').textContent=extraLabel;
+    document.getElementById('rec-extra-label').style.display='block';
+    document.getElementById('rec-extra').style.display='block';
+  } else {
+    document.getElementById('rec-extra-label').style.display='none';
+    document.getElementById('rec-extra').style.display='none';
+  }
+  openModal('recordModal');
+}
+function confirmRecord(){
+  const date=document.getElementById('rec-date').value;
+  const notes=document.getElementById('rec-notes').value.trim();
+  const extra=document.getElementById('rec-extra').value.trim();
+  if(!date){toast('Please select a date','am');return;}
+  const job=DB.jobs[recordWO];if(!job)return;
+  job.actions[recordStage]={date,notes,extra};
+  job.stage=recordStage;
+  addLog(recordWO,stageLabel(recordStage)+' — recorded by Admin');
+  // Stage-specific notifications
+  if(recordStage==='teams_notified'){notify(['md'],`Teams notified for WO ${recordWO} — ${job.cust}`,recordWO);}
+  if(recordStage==='work_complete'){notify(['finance','gis','md'],`Work complete: WO ${recordWO} — ${job.cust}. GIS and claim docs next.`,recordWO);}
+  if(recordStage==='gis_notified'){notify(['gis'],`GIS assignment: WO ${recordWO} — ${job.cust} · ${job.loc}`,recordWO);}
+  if(recordStage==='claim_submitted'){notify(['md','finance'],`Claim submitted to BPC for WO ${recordWO}`,recordWO);}
+  saveDB();closeModal('recordModal');refreshDetail();refreshAll();
+  toast(stageLabel(recordStage)+' recorded');
+}
+
+/* ═══════════════════════════════════════
+   JOB DETAIL
+═══════════════════════════════════════ */
+function openJobDetail(wo){
+  detailWO=wo;
+  const job=DB.jobs[wo];if(!job)return;
+  document.getElementById('n-jobdetail').style.display='flex';
+  nav('jobdetail');
+}
+function goBackFromDetail(){nav('jobs');}
+function refreshDetail(){if(detailWO)renderJobDetail(detailWO);}
+
+function renderJobDetail(wo){
+  const job=DB.jobs[wo];if(!job)return;
+  const canEdit=CU==='admin';
+  const isGIS=CU==='gis';
+  const isFinance=CU==='finance';
+  const isMD=CU==='md';
+  const t=jTotal(job,job.vo2.items.length?'vo2':'vo1');
+  const pct=stagePct(job.stage);
+
+  // Header
+  document.getElementById('jdHeader').innerHTML=`
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <span class="jd-wo">WO ${job.wo}</span>
+        <span class="badge ${stageBadge(job.stage)}">${stageLabel(job.stage)}</span>
+      </div>
+      <div style="font-size:1rem;font-weight:600;color:var(--tx)">${job.cust}</div>
+      <div style="font-size:.78rem;color:var(--tx2);margin-top:2px">${job.loc} · ${job.type} · Phase ${job.phase}</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:1.2rem;font-weight:600;color:var(--am)">${P(t.total)}</div>
+      <div style="font-size:.67rem;color:var(--tx3);margin-top:2px">${pct}% complete</div>
+      <div style="width:100px;margin-top:4px"><div class="prog-w" style="height:6px"><div class="prog-b" style="width:${pct}%"></div></div></div>
+    </div>`;
+
+  // Pipeline - FILTERED BY ROLE
+  const currIdx=stageIdx(job.stage);
+  
+  // Define which stages each role can see
+  let visibleStages = STAGES; // Default all
+  if(CU === 'gis') {
+    visibleStages = STAGES.filter(st => st.id === 'gis_notified' || st.id === 'gis_complete');
+  } else if(CU === 'finance') {
+    visibleStages = STAGES.filter(st => st.id === 'claim_docs_ready' || st.id === 'claim_submitted');
+  }
+  // Admin and MD see all stages (no filter)
+  
+  document.getElementById('jdPipeline').innerHTML=visibleStages.map((st,i)=>{
+    // Calculate proper index for display
+    const globalIdx = STAGE_IDS.indexOf(st.id);
+    const state = globalIdx < currIdx ? 'done' : globalIdx === currIdx ? 'active' : 'pending';
+    const action=job.actions[st.id];
+    const docKey=STAGE_DOCS[st.id];
+    const hasScan=docKey&&docKey.split(',').some(d=>job.scans[d]);
+    let actBtns='';
+    // Show actions for: done steps, active step, or next pending step if role owns it
+    const isMyNextStep = (isGIS && st.id==='gis_complete' && job.stage==='gis_notified')
+                      || (isFinance && st.id==='claim_docs_ready' && job.stage==='gis_complete');
+    if((globalIdx<=currIdx+1)&&(state!=='pending'||isMyNextStep)){
+      // Show appropriate action buttons per role + stage
+      if(canEdit){
+        if(st.id==='wo_received'&&state==='active')
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
+        if(st.id==='vo1_created'&&state==='done')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo1')">View VO1</button>`;
+        if(st.id==='vo1_created'&&state==='active')
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View/Edit VO1</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','linesman_sent','Record: VO1 Sent to Linesman','Record when you sent the VO1 document to the linesman')">Record Sent to Linesman</button>`;
+        if(st.id==='linesman_sent'&&state==='active')
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">Enter Field Findings</button>`;
+        if(st.id==='field_received'&&state==='active')
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">Create VO2</button>`;
+        if(st.id==='field_received'&&state==='done')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Report</button>`;
+        if(st.id==='vo2_created'&&state==='active')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View/Edit VO2</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','teams_notified','Record: Teams Notified','Record when teams were notified to start work','Team(s) assigned (e.g. Team A — Shakawe)')">Record Teams Notified</button>`;
+        if(st.id==='vo2_created'&&state==='done')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button>`;
+        if(st.id==='teams_notified'&&state==='active')
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','work_complete','Record: Work Complete','Record the date the field team completed the work')">Record Work Complete</button>`;
+        if(st.id==='work_complete'&&state==='active')
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Notified','Record when you sent the assignment to the GIS consultant')">Notify GIS Consultant</button>`;
+        if(st.id==='gis_notified'&&state==='done')
+          actBtns+=`<span style="font-size:.72rem;color:var(--tx3)">Waiting for GIS report...</span>`;
+        if(st.id==='gis_complete'&&state==='done')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button>`;
+        if(st.id==='claim_docs_ready'&&state==='active')
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openRecord('${wo}','claim_submitted','Record: Claim Submitted to BPC','Record the date you physically took the documents to BPC')">Record Claim Submitted</button>`;
+        if(st.id==='claim_docs_ready'&&state==='done')
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Claim docs generated</span>`;
+        if(st.id==='claim_submitted'&&state==='done')
+          actBtns+=`<span class="badge b-gn" style="font-size:.65rem">✓ Submitted to BPC on ${action?.date||'—'}</span>`;
+      }
+      // GIS: show their action whenever the job is at gis_notified OR gis_complete (their two stages)
+      if(isGIS&&st.id==='gis_complete'&&['gis_notified','gis_complete'].includes(job.stage)){
+        const gisDone=job.stage==='gis_complete'||stageIdx(job.stage)>stageIdx('gis_complete');
+        if(!gisDone){
+          actBtns+=`<button class="btn btn-am" onclick="openGISAction('${wo}')">📋 Fill In &amp; Submit GIS Report</button>`;
+        } else {
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button>`;
+        }
+        actBtns+=`<span style="margin-left:4px">${scanWidget(wo,'gis_report',true)}</span>`;
+      }
+      if(isFinance&&st.id==='claim_docs_ready'){
+        if(job.stage==='gis_complete'){
+          actBtns+=`<button class="btn btn-am" onclick="nav('claims')">💰 Go to Claim Batch — Generate Documents</button>`;
+        } else if(state==='done') {
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','annexure')">View Annexure</button>`;
+        }
+      }
+      // Scan upload for any doc-producing stage
+      if((canEdit||isGIS||isFinance)&&docKey){
+        docKey.split(',').forEach(dk=>{
+          actBtns+=`<span style="margin-left:2px">${scanWidget(wo,dk.trim(),true)}</span>`;
+        });
+      }
+    }
+    return`<div class="pipe-step">
+      <div class="pipe-dot ${state}">${state==='done'?'✓':state==='active'?'●':''}</div>
+      <div class="pipe-info">
+        <div class="pipe-lbl ${state}">${st.lbl}</div>
+        ${action?`<div class="pipe-date">Recorded: ${action.date}${action.extra?' · '+action.extra:''}${action.notes?' · '+action.notes:''}</div>`:''}
+        ${hasScan?`<div class="pipe-date" style="color:var(--gn)">✓ Signed scan available</div>`:''}
+        ${actBtns?`<div class="pipe-actions">${actBtns}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Documents panel - FILTERED BY ROLE
+  const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_instruction','gis_report','annexure','payment_cert','invoice','list_of_jobs'];
+  let visibleDocTypes = [...allDocTypes];
+  if(CU === 'gis') {
+    visibleDocTypes = ['gis_report'];
+  } else if(CU === 'finance') {
+    visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs'];
+  }
+  
+  const docLabels={bpc_wo:'BPC Work Order',vo1:'Works Valuation (VO1)',field_report:'Field Report',vo2:'Variation Order (VO2)',works_instruction:'Works Instruction',gis_report:'GIS Report',annexure:'Annexure to Payment Cert',payment_cert:'Payment Certificate',invoice:'Invoice',list_of_jobs:'List of Jobs Done'};
+  const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]).length;
+  document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} scanned`;
+  document.getElementById('jdDocsList').innerHTML=visibleDocTypes.map(d=>{
+    const s=job.scans[d];
+    const hasGenerated=['vo1','vo2','field_report','works_instruction','annexure','payment_cert','invoice','list_of_jobs'].includes(d);
+    return`<div class="doc-card">
+      <div class="doc-card-top">
+        <div class="doc-card-icon ${s?'uploaded':hasGenerated?'generated':'pending'}">${s?'✓':'📄'}</div>
+        <div class="doc-card-name">${docLabels[d]}</div>
+        <span class="badge ${s?'b-gn':'b-gy'}">${s?'Scan Ready':'Pending'}</span>
+      </div>
+      <div class="doc-card-btns">
+        ${hasGenerated&&CU!=='md'?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">View / Print</button>`:''}
+        ${s?`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${d}')">⬇ Download Scan</button>`:''}
+        ${(CU!=='md')&&!s?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload Scan<input type="file" id="scan-input-${wo}-${d}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
+        ${CU==='md'&&!s?`<span style="font-size:.72rem;color:var(--tx3)">Not yet uploaded</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Summary
+  document.getElementById('jdSummary').innerHTML=`
+    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">WO Number</span> &nbsp; <span class="mono">${job.wo}</span></div>
+    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Type</span> &nbsp; ${job.type}</div>
+    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Phase</span> &nbsp; ${job.phase}</div>
+    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Loc. Factor</span> &nbsp; ${job.vo1.lf}%</div>
+    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">VO1 Total</span> &nbsp; ${P(jTotal(job,'vo1').total)}</div>
+    ${job.vo2.items.length?`<div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">VO2 Total</span> &nbsp; ${P(jTotal(job,'vo2').total)}</div>`:''}
+    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Teams</span> &nbsp; ${job.actions.teams_notified?.extra||'—'}</div>
+    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Work Done</span> &nbsp; ${job.actions.work_complete?.date||'—'}</div>
+    <div style="font-size:.78rem;padding:4px 0"><span style="color:var(--tx3)">Claim Ref.</span> &nbsp; ${job.claimRef||'—'}</div>`;
+
+  // Activity - only MD sees
+  const jLogs=DB.actLog.filter(l=>l.wo===wo);
+  if(isMD){
+    document.getElementById('jdActivity').innerHTML=jLogs.length
+      ?jLogs.map(l=>`<div style="display:flex;gap:8px;padding:.5rem 0;border-bottom:1px solid var(--bd)">
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--am-b);flex-shrink:0;margin-top:5px"></div>
+          <div><div style="font-size:.78rem;color:var(--tx)">${l.action}</div>
+            <div style="font-size:.65rem;color:var(--tx3);margin-top:2px">${l.role} · ${fdt(l.ts)}</div></div>
+        </div>`).join('')
+      :'<div style="font-size:.78rem;color:var(--tx3);padding:.5rem 0">No activity yet</div>';
+  } else {
+    document.getElementById('jdActivity').innerHTML='<div style="font-size:.78rem;color:var(--tx3);padding:.5rem 0">Activity log restricted to Managing Director only.</div>';
+  }
+}
+
+/* GIS opens their report directly — bypasses pipeline gate */
+function openGISAction(wo){
+  const job=DB.jobs[wo];if(!job)return;
+  detailWO=wo;
+  document.getElementById('n-jobdetail').style.display='flex';
+  // Open job detail first so GIS sees context, then open the doc
+  nav('jobdetail');
+  // Small delay so the detail renders first
+  setTimeout(()=>openDocForAction(wo,'gis_report'),100);
+}
+
+/* ═══════════════════════════════════════
+   OPEN DOCUMENT MODAL
+═══════════════════════════════════════ */
+function openDocForAction(wo,docType){
+  const job=DB.jobs[wo];if(!job)return;
+  const titles={vo1:'Works Valuation (VO1) · WO '+wo,vo2:'Variation Order (VO2) · WO '+wo,field_report:'Field Report · WO '+wo,works_instruction:'Works Instruction · WO '+wo,gis_report:'GIS Report · WO '+wo,bpc_wo:'BPC Work Order · WO '+wo,annexure:'Annexure · WO '+wo,payment_cert:'Payment Certificate · WO '+wo,invoice:'Invoice · WO '+wo,list_of_jobs:'List of Jobs Done'};
+  document.getElementById('docModalTitle').textContent=titles[docType]||docType;
+  const html=buildDoc(docType,job);
+  document.getElementById('docModalBody').innerHTML=html;
+  document.getElementById('docModalFoot').innerHTML=buildDocFoot(docType,job);
+  openModal('docModal');
+}
+function buildDocFoot(docType,job){
+  if(CU==='md')return'<span style="font-size:.75rem;color:var(--tx3)">Read-only view — print or download scan from the documents panel</span>';
+  const wo=job.wo;
+  let btns=`<button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Document</button>`;
+  btns+=`<label class="scan-upload-label">📎 Upload Signed Scan<input type="file" id="scan-input-modal-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this);closeModal('docModal')" style="display:none"></label>`;
+  if(job.scans[docType])btns+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${docType}')">⬇ Download Scan</button>`;
+  // Stage advance buttons
+  if(CU==='admin'){
+    if(docType==='vo1'&&job.stage==='wo_received')btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','vo1_created')">✓ Mark VO1 Complete</button>`;
+    if(docType==='field_report'&&job.stage==='linesman_sent')btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','field_received')">✓ Save Field Findings</button>`;
+    if(docType==='vo2'&&job.stage==='field_received')btns+=`<button class="btn btn-am" onclick="saveVO2('${wo}')">✓ Save VO2</button>`;
+    if(docType==='works_instruction'&&job.stage==='teams_notified')btns+=`<button class="btn btn-gy btn-sm" onclick="closeModal('docModal')">Close</button>`;
+  }
+  if(CU==='gis'&&docType==='gis_report'&&['gis_notified','gis_complete'].includes(job.stage)){
+    btns+=`<button class="btn btn-am" onclick="advanceStage('${job.wo}','gis_complete')">✓ Submit GIS Report</button>`;
+  }
+  if(CU==='finance'&&docType==='annexure')btns+=`<button class="btn btn-gy btn-sm">Close</button>`;
+  return btns;
+}
+function advanceStage(wo,newStage){
+  const job=DB.jobs[wo];if(!job)return;
+  job.stage=newStage;
+  addLog(wo,stageLabel(newStage)+' — stage advanced');
+  if(newStage==='vo1_created')notify(['md'],`VO1 created for WO ${wo}`,wo);
+  if(newStage==='gis_complete'){notify(['admin','md'],`GIS report uploaded for WO ${wo} — ${job.cust}`,wo);}
+  saveDB();closeModal('docModal');refreshDetail();refreshAll();
+  toast(stageLabel(newStage)+' ✓');
+}
+function saveVO2(wo){
+  const job=DB.jobs[wo];if(!job)return;
+  // collect VO2 items from form
+  const items=job.vo2.items.map((it,i)=>({
+    d:document.getElementById(`vo2-d-${wo}-${i}`)?.value||it.d,
+    u:document.getElementById(`vo2-u-${wo}-${i}`)?.value||it.u,
+    q:parseFloat(document.getElementById(`vo2-q-${wo}-${i}`)?.value)||it.q||0,
+    r:parseFloat(document.getElementById(`vo2-r-${wo}-${i}`)?.value)||it.r||0,
+  }));
+  job.vo2.items=items.length?items:job.vo2.items;
+  job.stage='vo2_created';
+  const t1=jTotal(job,'vo1'),t2=jTotal(job,'vo2');
+  const diff=t2.total-t1.total;
+  const pctDiff=t1.total>0?((diff/t1.total)*100):0;
+  let msg=diff>0?`VO2 exceeds VO1 by ${P(diff)} (${pctDiff.toFixed(1)}%). Review before notifying teams.`:`VO2 saved within VO1 budget.`;
+  addLog(wo,'VO2 (Variation Order) created');
+  notify(['md'],`VO2 created for WO ${wo} — ${job.cust}`,wo);
+  saveDB();closeModal('docModal');refreshDetail();refreshAll();
+  toast('VO2 saved');
+  if(diff>0) setTimeout(()=>toast(msg,'am'),400);
+}
+
+/* ═══════════════════════════════════════
+   CLAIMS BATCH (Finance)
+═══════════════════════════════════════ */
+function renderClaims(){
+  const eligible=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('gis_complete'));
+  const list=document.getElementById('claimsList');
+  if(!eligible.length){list.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No eligible jobs yet — GIS report must be uploaded first</div>';document.getElementById('claimSummary').innerHTML='';return;}
+  list.innerHTML=eligible.map(j=>{
+    const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    return`<div style="display:grid;grid-template-columns:32px 90px 1fr 90px 130px 90px;gap:10px;padding:.62rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center;cursor:pointer;transition:.1s" onclick="toggleClaim('${j.wo}')" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
+      <span><input type="checkbox" id="cc-${j.wo}" ${selClaimJobs.has(j.wo)?'checked':''} onclick="toggleClaim('${j.wo}',event)" style="cursor:pointer;width:15px;height:15px;accent-color:var(--am)"></span>
+      <span class="mono">${j.wo}</span><span>${j.cust}</span>
+      <span class="tag">${j.loc.split(',')[0]}</span>
+      <span class="mono">${P(t.total)}</span>
+      <span style="font-size:.75rem;color:var(--tx2)">${j.actions.work_complete?.date||'—'}</span>
+    </div>`;}).join('');
+  updateClaimSummary();
+}
+function toggleClaim(wo,e){if(e)e.stopPropagation();selClaimJobs.has(wo)?selClaimJobs.delete(wo):selClaimJobs.add(wo);renderClaims();}
+function updateClaimSummary(){
+  const total=Array.from(selClaimJobs).reduce((s,wo)=>{const j=DB.jobs[wo];if(!j)return s;return s+jTotal(j,j.vo2.items.length?'vo2':'vo1').total;},0);
+  const n=selClaimJobs.size;
+  document.getElementById('claimSummary').innerHTML=n>0?`
+    <div class="ua ua-gn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <span>${n} job${n>1?'s':''} selected · Gross: <strong>${P(total)}</strong> · Retention (5%): <strong>(${P(total*.05)})</strong> · WHT (3%): <strong>(${P(total*.03)})</strong> · Net Payable: <strong>${P(total*.92)}</strong></span>
+    </div>`:'';
+}
+function generateClaimDocs(){
+  if(!selClaimJobs.size){toast('Select at least one job','am');return;}
+  const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
+  DB.certSeq++;
+  selClaimJobs.forEach(wo=>{
+    const job=DB.jobs[wo];if(!job)return;
+    job.claimRef=certNo;
+    job.stage='claim_docs_ready';
+    addLog(wo,`Claim documents generated — Cert: ${certNo}`);
+  });
+  notify(['admin','md'],`Claim ${certNo} prepared — ${selClaimJobs.size} jobs. Admin to submit to BPC.`);
+  selClaimJobs.clear();saveDB();renderClaims();renderInbox();renderDashboard();
+  toast(`Claim ${certNo} generated — Admin notified`);
+}
+
+/* ═══════════════════════════════════════
+   ACTIVITY LOG
+═══════════════════════════════════════ */
+function renderActLog(filter=''){
+  let logs=DB.actLog;
+  if(filter)logs=logs.filter(l=>l.role?.toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('actLogList').innerHTML=logs.length
+    ?logs.map(l=>`<div style="display:flex;gap:.85rem;padding:.7rem 1rem;border-bottom:1px solid var(--bd);transition:.1s" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--bd2);flex-shrink:0;margin-top:5px"></div>
+        <div><div style="font-size:.8rem;font-weight:500;color:var(--tx)">${l.action}${l.wo?' — WO '+l.wo:''}</div>
+          <div style="font-size:.67rem;color:var(--tx3);margin-top:2px">${l.role} · ${fdt(l.ts)}</div></div>
+      </div>`).join('')
+    :'<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No activity yet</div>';
+}
+
+/* ═══════════════════════════════════════
+   RATES
+═══════════════════════════════════════ */
+function renderRates(q=''){
+  const ql=q.toLowerCase();
+  const filtered=DB.rates.filter(r=>!ql||r.d.toLowerCase().includes(ql)||r.c.toLowerCase().includes(ql));
+  document.getElementById('ratesList').innerHTML=filtered.map(r=>`
+    <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 80px;gap:10px;padding:.55rem 1rem;border-bottom:1px solid var(--bd);font-size:.78rem;align-items:center;transition:.1s" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
+      <span style="color:var(--tx)">${r.d}</span>
+      <span class="tag">${r.u}</span>
+      <span class="mono">${P(r.r)}</span>
+      <span class="tag">${r.c}</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" ${r.on?'checked':''} style="accent-color:var(--am);cursor:pointer;width:14px;height:14px" onchange="toggleRate('${r.id}',this.checked)">
+        <span class="badge ${r.on?'b-gn':'b-gy'}">${r.on?'Active':'Off'}</span>
+      </label>
+    </div>`).join('');
+}
+function toggleRate(id,val){
+  const r=DB.rates.find(x=>x.id===id);if(!r)return;
+  r.on=val;saveDB();toast(r.d.slice(0,30)+(val?' activated':' deactivated'),val?'gn':'am');
+}
+
+/* ═══════════════════════════════════════
+   PAPER DOCUMENT BUILDERS
+═══════════════════════════════════════ */
+function lh(title){
+  return`<table class="lh-t"><tr>
+    <td style="width:55%"><div class="lh-bpc">BOTSWANA POWER CORPORATION</div>
+    <div class="lh-addr">P.O. Box 48 · Tel ${BPC_CO.tel}</div>
+    <div class="lh-addr">${BPC_CO.city}</div></td>
+    <td style="text-align:right"><div class="lh-title">${title}</div></td>
+  </tr></table><hr>`;
+}
+function sigBlank(label){
+  return`<div class="sig-box"><div class="sig-lbl">${label}</div><div class="sig-line"></div><div class="sig-sub">Name: _________________________ Date: _______________</div></div>`;
+}
+
+function buildDoc(docType,job){
+  switch(docType){
+    case 'vo1': return docVO1(job);
+    case 'vo2': return docVO2(job);
+    case 'field_report': return docFieldReport(job);
+    case 'works_instruction': return docWorksInstruction(job);
+    case 'gis_report': return docGISReport(job);
+    case 'annexure': return docAnnexure(job);
+    case 'payment_cert': return docPaymentCert(job);
+    case 'invoice': return docInvoice(job);
+    case 'list_of_jobs': return docListOfJobs(job);
+    case 'bpc_wo': return`<div class="ua ua-bl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Upload the scanned BPC work order document received via email. This is the original document from BPC, not generated in this system.</div>`;
+    default: return'<p style="padding:1rem;color:#555">Document not available</p>';
+  }
+}
+
+/* ── WORKS VALUATION VO1 ── */
+function docVO1(job){
+  const t=jTotal(job,'vo1');
+  const rows=job.vo1.items.map((it,i)=>`<tr>
+    <td>${i+1}</td>
+    <td style="min-width:190px">${acInput(job.wo,'vo1',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo1u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+  </tr>`).join('');
+  return`<div class="paper">
+  ${lh('Works Valuation')}
+  <table class="hdt">
+    <tr><td class="lbl">BPC W/O No. :</td><td>${job.wo}</td><td class="lbl">Project No. :</td><td>${job.wo}</td></tr>
+    <tr><td class="lbl">Contract :</td><td colspan="3">FREE CONNECTIONS PHASE ${job.phase} PROJECT</td></tr>
+    <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
+    <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" onchange="DB.jobs['${job.wo}'].cust=this.value;saveDB()" style="width:95%"></td>
+      <td class="lbl">Location Factor :</td><td><input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo1.lf=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td></tr>
+    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${job.loc}" onchange="DB.jobs['${job.wo}'].loc=this.value;saveDB()" style="width:95%"></td>
+      <td class="lbl">Markup :</td><td><input class="ef ef-b" value="${job.vo1.mk||12.5}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo1.mk=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td></tr>
+  </table><hr>
+  <span class="p-grey">VO1 — Bill of Quantities (Initial Estimate)</span>
+  <div style="font-size:7.5pt;color:#0055cc;margin-bottom:4px;padding:3px 5px;background:#f0f5ff;border:1px solid #c8d8ff;border-radius:3px">💡 Click description field to search BPC Rates — rate and unit auto-fill on selection</div>
+  <table class="boq">
+    <thead><tr><th style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:46px">QTY</th><th class="r" style="width:78px">RATE/UNIT</th><th class="r" style="width:90px">VALUE (BWP)</th></tr></thead>
+    <tbody id="vo1rows${job.wo}">${rows}</tbody>
+  </table>
+  <button onclick="addVO1Row('${job.wo}')" style="font-size:8pt;padding:2px 8px;cursor:pointer;margin-top:5px">+ Add row</button>
+  <div style="margin-top:8px;background:#f8f8f8;border:1px solid #ddd;padding:6px 8px">
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0"><span>Subtotal</span><span id="vo1sub${job.wo}">${t.sub.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0;background:#fffbe8"><span>Location Factor (${job.vo1.lf||29.25}%)</span><span id="vo1loc${job.wo}">${t.loc.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0"><span>Markup (${job.vo1.mk||12.5}%)</span><span id="vo1mk${job.wo}">${t.markup.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:9pt;padding:3px 0;border-top:1.5px solid #000;margin-top:2px"><span>TOTAL (VO1)</span><span id="vo1tot${job.wo}">${t.total.toFixed(2)}</span></div>
+  </div>
+  <div style="font-size:8pt;color:#555;margin-top:8px;padding:5px 8px;border:1px solid #e0e0e0;background:#fafafa">Print → Hand-sign → Scan → Upload signed scan using the button above</div>
+  <div class="sig-area">
+    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
+    ${sigBlank('Inspector (BPC Representative)')}
+  </div>
+  </div>`;
+}
+
+/* ── VARIATION ORDER VO2 ── */
+function docVO2(job){
+  if(!job.vo2.items.length) job.vo2.items=job.vo1.items.map(i=>({...i}));
+  const t=jTotal(job,'vo2'), t1=jTotal(job,'vo1'), diff=t.total-t1.total;
+  const rows=job.vo2.items.map((it,i)=>`<tr>
+    <td>${i+1}.0</td>
+    <td style="min-width:190px"><div class="ac-wrap"><input class="ac-in" id="vo2d${job.wo}${i}" value="${(it.d||'').replace(/"/g,'&quot;')}" placeholder="Search rates..." oninput="acS('${job.wo}','vo2',${i},this.value)" onfocus="acS('${job.wo}','vo2',${i},this.value)" onblur="setTimeout(()=>acC('acd-vo2-${job.wo}-${i}'),180)" onkeydown="acK(event,'${job.wo}','vo2',${i})"><div class="ac-dd" id="acd-vo2-${job.wo}-${i}" style="display:none"></div></div></td>
+    <td class="c"><input class="ef ef-b" id="vo2u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo2q${job.wo}${i}" value="${it.q||0}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].q=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo2r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].r=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r" id="vo2v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+  </tr>`).join('');
+  return`<div class="paper">
+  ${lh('Variation Order')}
+  <table class="hdt">
+    <tr><td class="lbl">PROJECT TITLE:</td><td>${job.cust}</td><td class="lbl">PHASE:</td><td>${job.phase}</td></tr>
+    <tr><td class="lbl">LOCATION:</td><td>${job.loc}</td><td class="lbl">BPC W/O No.:</td><td>${job.wo}</td></tr>
+    <tr><td class="lbl">Location Factor:</td><td><input class="ef ef-b" value="${job.vo2.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.lf=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td>
+      <td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||10}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td></tr>
+  </table><hr>
+  <span class="p-grey">VO2 — Actual Quantities After Field Inspection</span>
+  <div style="font-size:7.5pt;color:#0055cc;margin-bottom:4px;padding:3px 5px;background:#f0f5ff;border:1px solid #c8d8ff;border-radius:3px">💡 Update quantities from linesman's findings. Add any extra items.</div>
+  <table class="boq">
+    <thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:46px">QTY</th><th class="r" style="width:78px">UNIT COST</th><th class="r" style="width:90px">TOTAL (BWP)</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <button onclick="addVO2Row('${job.wo}')" style="font-size:8pt;padding:2px 8px;cursor:pointer;margin-top:5px">+ Add row</button>
+  <div style="margin-top:8px;background:#f8f8f8;border:1px solid #ddd;padding:6px 8px">
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0;background:#fffbe8"><span>Location Factor</span><span id="vo2loc${job.wo}">${t.loc.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0"><span>SUB TOTAL</span><span id="vo2sub${job.wo}">${(t.sub+t.loc).toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0"><span>Markup</span><span id="vo2mk${job.wo}">${t.markup.toFixed(2)}</span></div>
+    <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:9pt;padding:3px 0;border-top:2px solid #000;margin-top:2px"><span>TOTAL (BWP)</span><span id="vo2tot${job.wo}">${t.total.toFixed(2)}</span></div>
+  </div>
+  ${diff>0?`<div style="background:#fff3cd;border:1px solid #f0a500;padding:5px 8px;margin-top:6px;font-size:8pt;color:#7a4f00">⚠ VO2 (${P(t.total)}) exceeds VO1 (${P(t1.total)}) by ${P(diff)}. Consult BPC before notifying teams if this is a large difference.</div>`:`<div style="background:#d9f7e8;border:1px solid #4caf50;padding:5px 8px;margin-top:6px;font-size:8pt;color:#1a5c30">✓ VO2 within VO1 budget. Proceed to notify teams.</div>`}
+  <div class="sig-area">
+    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
+    ${sigBlank('Approved by (BPC Representative)')}
+  </div>
+  </div>`;
+}
+
+/* ── FIELD REPORT ── */
+function docFieldReport(job){
+  const f=job.fieldData||{};
+  const canEdit=CU==='admin';
+  return`<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">FIELD MEASUREMENT REPORT</div>
+  <table class="hdt">
+    <tr><td class="lbl">BPC W/O No. :</td><td>${job.wo}</td><td class="lbl">Customer :</td><td>${job.cust}</td></tr>
+    <tr><td colspan="4"><span class="lbl">Location :</span> ${job.loc}</td></tr>
+  </table><hr>
+  ${f.submitted?`<div style="background:#d9f7e8;border:1px solid #4caf50;padding:5px 8px;margin-bottom:8px;font-size:8pt">✓ Field findings recorded on ${f.recordedDate||'—'}</div>`:''}
+  <table class="boq"><tbody>
+    <tr><td style="width:175px;font-weight:bold">Airdac Length (m)</td><td>${canEdit?`<input class="ef ef-b" id="ff_airdac" value="${f.airdac||''}" placeholder="e.g. 45" style="width:100%">`:f.airdac||'—'}</td></tr>
+    <tr><td style="font-weight:bold">ABC Cable (m)</td><td>${canEdit?`<input class="ef ef-b" id="ff_abc" value="${f.abc||''}" placeholder="e.g. 30" style="width:100%">`:f.abc||'—'}</td></tr>
+    <tr><td style="font-weight:bold">No. of LV Poles</td><td>${canEdit?`<input class="ef ef-b" id="ff_poles" value="${f.poles||''}" placeholder="e.g. 2" style="width:100%">`:f.poles||'—'}</td></tr>
+    <tr><td style="font-weight:bold">T-Off Point</td><td>${canEdit?`<input class="ef ef-b" id="ff_toff" value="${f.toff||''}" placeholder="Existing pole/structure" style="width:100%">`:f.toff||'—'}</td></tr>
+    <tr><td style="font-weight:bold">Supply Type</td><td>${canEdit?`<input class="ef ef-b" id="ff_supply" value="${f.supply||job.type||''}" style="width:100%">`:f.supply||'—'}</td></tr>
+    <tr><td style="font-weight:bold">Site Conditions / Notes</td><td>${canEdit?`<textarea class="ef ef-b" id="ff_notes" style="width:100%;min-height:50px">${f.notes||''}</textarea>`:f.notes||'—'}</td></tr>
+    <tr><td style="font-weight:bold">Linesman Drawings/Photos</td><td>
+      ${canEdit?`<input type="file" id="ff_drawing" accept="image/*,application/pdf" style="font-size:8pt"><div id="ff_preview" style="margin-top:4px"></div>${f.drawing?`<span style="font-size:7.5pt;color:#666">Previous: ${f.drawing}</span>`:''}`:`${f.drawing?`<span>📎 ${f.drawing}</span>`:'—'}`}
+    </td></tr>
+    ${f.photoData?`<tr><td style="font-weight:bold">Photo</td><td><img src="${f.photoData}" style="max-width:220px;max-height:140px;border:1px solid #ccc;border-radius:4px"></td></tr>`:''}
+  </tbody></table>
+  <div class="sig-area">
+    ${sigBlank('Linesman (hand-signed copy provided to Admin)')}
+    ${sigBlank('Admin (Received & Recorded)')}
+  </div>
+  </div>`;
+}
+
+/* ── WORKS INSTRUCTION ── */
+function docWorksInstruction(job){
+  const t=jTotal(job,job.vo2.items.length?'vo2':'vo1');
+  const teams=job.actions.teams_notified?.extra||'—';
+  return`<div class="paper">
+  ${lh('Works Instruction')}
+  <table class="hdt">
+    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Contract Details</td></tr>
+    <tr><td class="lbl">Contract :</td><td colspan="2">FREE CONNECTIONS PHASE ${job.phase} PROJECT</td><td><span style="font-weight:bold">BPC Contract No.:</span> 2000921000</td></tr>
+    <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
+    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Work Details</td></tr>
+    <tr><td class="lbl">BPC W/O No. :</td><td>${job.wo}</td><td class="lbl">Location Factor :</td><td>${job.vo1.lf||29.25}%</td></tr>
+    <tr><td class="lbl">Project Title :</td><td>${job.cust}</td><td class="lbl">Location :</td><td>${job.loc}</td></tr>
+    <tr><td class="lbl">Assigned Team :</td><td>${teams}</td><td class="lbl">W/O Value :</td><td style="font-weight:bold">${P(t.total)}</td></tr>
+    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Execution</td></tr>
+    <tr><td class="lbl">Start Date :</td><td>${job.actions.teams_notified?.date||'___________'}</td><td class="lbl">Completion Date :</td><td>${job.actions.work_complete?.date||'___________'}</td></tr>
+  </table>
+  <div style="margin:8px 0;font-size:8.5pt;background:#fffbe8;border:1px solid #e0c060;padding:5px 8px">The works are to be carried out in accordance with the VO1/VO2 documents. Any significant alterations require BPC approval before proceeding.</div>
+  <div class="sig-area">
+    ${sigBlank('Issued by (Admin · Trends Engineering)')}
+    ${sigBlank('Acknowledged by (Team Supervisor)')}
+  </div>
+  </div>`;
+}
+
+/* ── GIS REPORT ── */
+function docGISReport(job){
+  const g=job.gisData||{};
+  const canEdit=CU==='gis'||CU==='admin';
+  const ef=(id,val,ph)=>canEdit?`<input class="ef ef-b" id="${id}" value="${val||''}" placeholder="${ph}" style="width:98%">`:val||'—';
+  const ta=(id,val,ph)=>canEdit?`<textarea class="ef ef-b" id="${id}" placeholder="${ph}" style="width:98%;min-height:50px">${val||''}</textarea>`:val||'—';
+  return`<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">GIS GEO-ANALYSIS REPORT</div>
+  <table class="hdt">
+    <tr><td class="lbl">BPC W/O No. :</td><td><strong>${job.wo}</strong></td><td class="lbl">Phase :</td><td>${job.phase}</td></tr>
+    <tr><td class="lbl">Customer :</td><td>${job.cust}</td><td class="lbl">Survey Date :</td><td>${ef('g_date',g.date,'YYYY-MM-DD')}</td></tr>
+    <tr><td class="lbl">Location :</td><td colspan="3">${job.loc}</td></tr>
+  </table><hr>
+  <span class="p-grey">1. SITE INFORMATION</span>
+  <table class="boq"><tbody>
+    <tr><td style="width:160px;font-weight:bold">Coordinates</td><td>${ef('g_coords',g.coords,'-18.3667, 21.8500')}</td></tr>
+    <tr><td style="font-weight:bold">Erf / Plot</td><td>${ef('g_erf',g.erf,'Plot number')}</td></tr>
+    <tr><td style="font-weight:bold">Soil Type</td><td>${ef('g_soil',g.soil,'e.g. Sandy loam')}</td></tr>
+    <tr><td style="font-weight:bold">Accessibility</td><td>${ef('g_access',g.access,'Good / Poor / 4x4 required')}</td></tr>
+    <tr><td style="font-weight:bold">Nearest LV Network</td><td>${ef('g_lv',g.lv,'Distance to nearest LV line (m)')}</td></tr>
+  </tbody></table>
+  <span class="p-grey">2. FINDINGS</span>${ta('g_findings',g.findings,'Site conditions, obstacles, existing infrastructure...')}
+  <span class="p-grey">3. PROPOSED ROUTE / RECOMMENDATION</span>${ta('g_recs',g.recs,'Recommended connection route, installation method...')}
+  <span class="p-grey">4. SURVEYOR</span>
+  <table class="boq"><tbody>
+    <tr><td style="width:160px;font-weight:bold">Surveyor Name</td><td>${ef('g_surveyor',g.surveyor,'Full name')}</td></tr>
+    <tr><td style="font-weight:bold">Company</td><td>${ef('g_company',g.company,'GIS firm name')}</td></tr>
+    <tr><td style="font-weight:bold">Equipment Used</td><td>${ef('g_equipment',g.equipment,'GPS, Total Station, etc.')}</td></tr>
+  </tbody></table>
+  <div class="sig-area">
+    ${sigBlank('GIS Consultant')}
+    ${sigBlank('BPC Representative')}
+  </div>
+  </div>`;
+}
+
+/* ── ANNEXURE ── */
+function docAnnexure(job){
+  const certNo=job.claimRef||'TES-001';
+  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo||j.stage==='claim_docs_ready');
+  const total=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  return`<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;margin-bottom:4px">ANNEXURE TO PAYMENT CERTIFICATE</div><hr>
+  <table class="hdt">
+    <tr><td class="lbl">Payment Certificate:</td><td>${certNo}</td><td class="lbl">Date:</td><td><input class="ef ef-b" type="date" value="${new Date().toISOString().slice(0,10)}"></td></tr>
+    <tr><td class="lbl">Contract:</td><td>Free Connections Projects — Phase ${job.phase}</td><td></td><td></td></tr>
+    <tr><td class="lbl">Employer:</td><td>${BPC_CO.name}</td><td></td><td></td></tr>
+    <tr><td class="lbl">Contractor:</td><td colspan="3">${CO.name}</td></tr>
+    <tr><td class="lbl">Vendor No.:</td><td>${CO.vendor}</td><td class="lbl">VAT No.:</td><td>${CO.vat}</td></tr>
+  </table><hr>
+  <table class="jt">
+    <thead><tr><th>#</th><th>WO No.</th><th>Customer Name</th><th>Location</th><th>Type</th><th>Completion Date</th><th>Amount (BWP)</th></tr></thead>
+    <tbody>
+      ${claimJobs.map((j,i)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return`<tr><td class="c">${i+1}</td><td>${j.wo}</td><td>${j.cust}</td><td>${j.loc.split(',')[0]}</td><td>${j.type}</td><td>${j.actions.work_complete?.date||'—'}</td><td style="text-align:right">${BWP(t.total)}</td></tr>`;}).join('')}
+      <tr class="tot"><td colspan="6" style="text-align:right;font-weight:bold">TOTAL CLAIM</td><td style="text-align:right;font-weight:bold">P ${BWP(total)}</td></tr>
+    </tbody>
+  </table>
+  <div class="sig-area">
+    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
+    ${sigBlank('Certified by (Finance · Trends Engineering)')}
+  </div>
+  </div>`;
+}
+
+/* ── PAYMENT CERTIFICATE ── */
+function docPaymentCert(job){
+  const certNo=job.claimRef||'TES-001';
+  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo||j.stage==='claim_docs_ready');
+  const gross=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
+  return`<div class="paper">
+  <div style="font-size:12pt;font-weight:bold;text-align:center;margin-bottom:5px">PAYMENT CERTIFICATE</div><hr>
+  <table class="hdt">
+    <tr><td class="lbl">Certificate No.</td><td>${certNo}</td><td class="lbl">Date:</td><td><input class="ef ef-b" type="date" value="${new Date().toISOString().slice(0,10)}"></td></tr>
+    <tr><td class="lbl">Project</td><td>Free Connections Phase ${job.phase}</td></tr>
+    <tr><td class="lbl">Employer</td><td>${BPC_CO.name}</td></tr>
+    <tr><td class="lbl">Contractor</td><td colspan="3">${CO.name}</td></tr>
+  </table><hr>
+  <span class="pc-sec">Amount Certified</span>
+  <div class="pc-row"><div class="n">1.</div><div class="d">Value of Work Completed (see Annexure ${certNo})</div><div class="c">P</div><div class="v">${BWP(gross)}</div></div>
+  <div class="pc-row"><div class="n">2.</div><div class="d">Less Previous Payments</div><div class="c">P</div><div class="v">0.00</div></div>
+  <div class="pc-row sub"><div class="n">3.</div><div class="d">Sub Total</div><div class="c">P</div><div class="v">${BWP(gross)}</div></div>
+  <div class="pc-row"><div class="n">4.</div><div class="d">Plus VAT @ 14%</div><div class="c">P</div><div class="v">0.00</div></div>
+  <div class="pc-row sub"><div class="n">5.</div><div class="d">Total Valuation Certified</div><div class="c">P</div><div class="v">${BWP(gross)}</div></div>
+  <span class="pc-sec">Deductions</span>
+  <div class="pc-row ded"><div class="n">6.</div><div class="d">Less Retention @ 5% of Value of Work</div><div class="c">P</div><div class="v">(${BWP(ret)})</div></div>
+  <div class="pc-row ded"><div class="n">7.</div><div class="d">Less Withholding Tax (WHT) @ 3%</div><div class="c">P</div><div class="v">(${BWP(wht)})</div></div>
+  <div class="pc-row sub"><div class="n">8.</div><div class="d">Total Deductions</div><div class="c">P</div><div class="v">(${BWP(ret+wht)})</div></div>
+  <span class="pc-sec">Amount Payable</span>
+  <div class="pc-row fin"><div class="n">9.</div><div class="d">Net Amount Payable (Item 5 less Item 8)</div><div class="c">P</div><div class="v">${BWP(net)}</div></div>
+  <div style="font-size:8pt;font-style:italic;margin-top:4px">(${numWords(net)})</div>
+  <div style="margin:6px 0;font-size:8pt">Remarks: _____________________________________________</div>
+  <div style="font-size:8pt;margin:6px 0">We certify that the value shown is correct and recommend payment of the amount above.</div>
+  <div class="sig-area">
+    ${sigBlank('Prepared by Finance · Trends Engineering')}
+    ${sigBlank('Approved by BPC — Authorising Payment')}
+  </div>
+  <div style="margin-top:10px;font-size:8pt;font-weight:bold;border-bottom:1px solid #000;padding-bottom:3px">PAYMENT TRACKING</div>
+  <table style="width:100%;border-collapse:collapse;font-size:7.5pt;margin-top:5px">
+    <tr><th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px;text-align:left;width:40%">Approval Stage</th><th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px">Date Received</th><th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px">Date Dispatched</th><th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px">Name &amp; Signature</th></tr>
+    ${["Contractor's claim submitted","Project Engineer (North)","Senior Project Engineer (North)","Network Services Manager","Financial Controller T&amp;D","Finance Manager Projects","General Manager T&amp;D"].map(s=>`<tr><td style="border:1px solid #bbb;padding:5px;font-weight:bold">${s}</td><td style="border:1px solid #bbb;padding:5px"></td><td style="border:1px solid #bbb;padding:5px"></td><td style="border:1px solid #bbb;padding:5px"></td></tr>`).join('')}
+  </table>
+  </div>`;
+}
+
+/* ── INVOICE ── */
+function docInvoice(job){
+  const certNo=job.claimRef||'TES-001';
+  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo||j.stage==='claim_docs_ready');
+  const gross=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
+  const invNo=`INV_${certNo}.${new Date().getFullYear()}`;
+  return`<div class="paper">
+  <table class="lh-t"><tr>
+    <td style="width:50%">
+      <div style="font-size:12pt;font-weight:bold">${CO.name}</div>
+      <div style="font-size:8.5pt">${CO.po}, ${CO.city}</div>
+      <div style="font-size:8.5pt">Tel: ${CO.tel}</div>
+      <div style="font-size:8.5pt">VAT No: ${CO.vat}</div>
+      <div style="font-size:8.5pt">Vendor No: ${CO.vendor}</div>
+    </td>
+    <td style="text-align:right;vertical-align:top">
+      <div style="font-size:13pt;font-weight:bold">INVOICE</div>
+      <div style="font-size:9pt">Invoice No: ${invNo}</div>
+      <div style="font-size:9pt">Date: <input class="ef ef-b" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+    </td>
+  </tr></table><hr>
+  <table class="hdt">
+    <tr><td class="lbl" style="font-weight:bold;font-size:9pt">BILL TO:</td><td></td></tr>
+    <tr><td style="padding-left:10px">${BPC_CO.name}</td><td class="lbl">Payment Cert.:</td><td>${certNo}</td></tr>
+    <tr><td style="padding-left:10px">${BPC_CO.addr}</td><td class="lbl">Contract:</td><td>Free Connections Phase ${job.phase}</td></tr>
+    <tr><td style="padding-left:10px">${BPC_CO.city}</td><td></td><td></td></tr>
+  </table><hr>
+  <table class="boq">
+    <thead><tr><th>#</th><th>Description</th><th class="c">WO No.</th><th class="c">Phase</th><th class="r">Amount (BWP)</th></tr></thead>
+    <tbody>
+      ${claimJobs.map((j,i)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return`<tr><td class="c">${i+1}</td><td>${j.cust} — ${j.loc.split(',')[0]} (${j.type})</td><td class="c">${j.wo}</td><td class="c">${j.phase}</td><td class="r">${BWP(t.total)}</td></tr>`;}).join('')}
+      <tr class="sr"><td colspan="4" class="r">Subtotal</td><td class="r">${BWP(gross)}</td></tr>
+      <tr><td colspan="4" class="r">Less Retention (5%)</td><td class="r" style="color:#c00">(${BWP(ret)})</td></tr>
+      <tr><td colspan="4" class="r">Less Withholding Tax (3%)</td><td class="r" style="color:#c00">(${BWP(wht)})</td></tr>
+      <tr class="tr"><td colspan="4" class="r"><strong>NET AMOUNT PAYABLE</strong></td><td class="r"><strong>P ${BWP(net)}</strong></td></tr>
+    </tbody>
+  </table>
+  <div style="margin-top:10px;background:#f0f5ff;border:1px solid #c8d8ff;padding:8px;font-size:8.5pt">
+    <div style="font-weight:bold;margin-bottom:4px">BANKING DETAILS — Please deposit to:</div>
+    <div>Bank: <strong>${CO.bank}</strong></div>
+    <div>Account Name: ${CO.name}</div>
+    <div>Account Number: <strong>${CO.acc}</strong></div>
+    <div>Branch: ${CO.branch} &nbsp; Branch Code: ${CO.bcode} &nbsp; SWIFT: ${CO.swift}</div>
+  </div>
+  <div style="margin-top:8px;font-size:8pt;text-align:center;font-style:italic">E. &amp; O. E. — Errors and Omissions Excepted</div>
+  <div class="sig-area">
+    ${sigBlank('Finance Officer · Trends Engineering')}
+    ${sigBlank('Authorised Signatory · Trends Engineering')}
+  </div>
+  </div>`;
+}
+
+/* ── LIST OF JOBS DONE ── */
+function docListOfJobs(job){
+  const certNo=job.claimRef||'TES-001';
+  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo||j.stage==='claim_docs_ready');
+  const total=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  return`<div class="paper">
+  <div style="font-size:12pt;font-weight:bold;text-align:center;margin-bottom:4px">LIST OF JOBS DONE</div>
+  <div style="font-size:9pt;text-align:center;margin-bottom:6px">Free Connections Phase ${job.phase} — ${certNo}</div><hr>
+  <table class="hdt">
+    <tr><td class="lbl">Contractor:</td><td>${CO.name}</td><td class="lbl">Vendor No.:</td><td>${CO.vendor}</td></tr>
+    <tr><td class="lbl">Certificate:</td><td>${certNo}</td><td class="lbl">Date:</td><td>${new Date().toLocaleDateString('en-BW',{day:'2-digit',month:'long',year:'numeric'})}</td></tr>
+  </table><hr>
+  <table class="jt">
+    <thead><tr><th>#</th><th>BPC W/O No.</th><th>Customer Name</th><th>Location / Ward</th><th>Connection Type</th><th>VO1 (BWP)</th><th>VO2 (BWP)</th><th>Completion Date</th></tr></thead>
+    <tbody>
+      ${claimJobs.map((j,i)=>{
+        const t1=jTotal(j,'vo1'),t2=jTotal(j,'vo2');
+        return`<tr><td class="c">${i+1}</td><td>${j.wo}</td><td>${j.cust}</td><td>${j.loc}</td><td>${j.type}</td><td class="r">${BWP(t1.total)}</td><td class="r">${t2.total>0?BWP(t2.total):'—'}</td><td>${j.actions.work_complete?.date||'—'}</td></tr>`;
+      }).join('')}
+      <tr class="tot"><td colspan="5" class="r"><strong>TOTAL</strong></td><td colspan="2" class="r"><strong>P ${BWP(total)}</strong></td><td></td></tr>
+    </tbody>
+  </table>
+  <div style="margin-top:8px;font-size:8pt">Total Jobs: <strong>${claimJobs.length}</strong> &nbsp;&nbsp; Total Value: <strong>${P(total)}</strong></div>
+  <div class="sig-area">
+    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
+    ${sigBlank('Verified by (Managing Director · Trends Engineering)')}
+  </div>
+  </div>`;
+}
+
+function numWords(n){const m=Math.floor(n),c=Math.round((n-m)*100);return`${m.toLocaleString()} Pula${c?', '+c+' thebe':''} only`;}
+
+/* ═══════════════════════════════════════
+   LIVE RECALC
+═══════════════════════════════════════ */
+function recalcVO1(wo){
+  const job=DB.jobs[wo];if(!job)return;
+  let sub=0;
+  job.vo1.items.forEach((it,i)=>{const v=(it.q||0)*(it.r||0);sub+=v;const el=document.getElementById(`vo1v${wo}${i}`);if(el)el.textContent=v.toFixed(2);});
+  const lf=job.vo1.lf||29.25,mk=job.vo1.mk||12.5;
+  const loc=sub*(lf/100),markup=(sub+loc)*(mk/100),tot=sub+loc+markup;
+  const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  s(`vo1sub${wo}`,sub.toFixed(2));s(`vo1loc${wo}`,loc.toFixed(2));s(`vo1mk${wo}`,markup.toFixed(2));s(`vo1tot${wo}`,tot.toFixed(2));
+  saveDB();
+}
+function recalcVO2(wo){
+  const job=DB.jobs[wo];if(!job)return;
+  let sub=0;
+  job.vo2.items.forEach((it,i)=>{const v=(it.q||0)*(it.r||0);sub+=v;const el=document.getElementById(`vo2v${wo}${i}`);if(el)el.textContent=v.toFixed(2);});
+  const lf=job.vo2.lf||29.25,mk=job.vo2.mk||10;
+  const loc=sub*(lf/100),markup=(sub+loc)*(mk/100),tot=sub+loc+markup;
+  const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  s(`vo2loc${wo}`,loc.toFixed(2));s(`vo2sub${wo}`,(sub+loc).toFixed(2));s(`vo2mk${wo}`,markup.toFixed(2));s(`vo2tot${wo}`,tot.toFixed(2));
+  saveDB();
+}
+function addVO1Row(wo){DB.jobs[wo].vo1.items.push({d:'New Item',u:'Ea',q:1,r:0});saveDB();openDocForAction(wo,'vo1');}
+function addVO2Row(wo){DB.jobs[wo].vo2.items.push({d:'New Item',u:'Ea',q:1,r:0});saveDB();openDocForAction(wo,'vo2');}
+
+/* ═══════════════════════════════════════
+   AUTOCOMPLETE
+═══════════════════════════════════════ */
+function acInput(wo,dt,idx){
+  const items=dt==='vo2'?DB.jobs[wo].vo2.items:DB.jobs[wo].vo1.items;
+  const it=items[idx];
+  const iid=`${dt==='vo1'?'vo1d':'vo2d'}${wo}${idx}`, did=`acd-${dt}-${wo}-${idx}`;
+  return`<div class="ac-wrap"><input class="ac-in" id="${iid}" value="${(it.d||'').replace(/"/g,'&quot;')}" placeholder="Type to search BPC rates..." oninput="acS('${wo}','${dt}',${idx},this.value)" onfocus="acS('${wo}','${dt}',${idx},this.value)" onblur="setTimeout(()=>acC('${did}'),180)" onkeydown="acK(event,'${wo}','${dt}',${idx})"><div class="ac-dd" id="${did}" style="display:none"></div></div>`;
+}
+function acS(wo,dt,idx,q){
+  const did=`acd-${dt}-${wo}-${idx}`, dd=document.getElementById(did);if(!dd)return;
+  const ql=q.trim().toLowerCase();
+  const active=DB.rates.filter(r=>r.on);
+  const m=ql.length===0?active.slice(0,12):active.filter(r=>r.d.toLowerCase().includes(ql)||r.c.toLowerCase().includes(ql)).slice(0,12);
+  if(!m.length){dd.innerHTML='<div class="ac-empty">No match — type freely to add custom item</div>';dd.style.display='block';return;}
+  dd.innerHTML=m.map(r=>`<div class="ac-it" onmousedown="acSel('${wo}','${dt}',${idx},'${r.d.replace(/'/g,"\\'")}','${r.u}',${r.r},'${did}')"><div class="ac-desc">${r.d}</div><div class="ac-meta"><span class="ac-rate">BWP ${r.r.toLocaleString('en-BW',{minimumFractionDigits:2})}</span><span>per ${r.u}</span><span class="ac-cat">${r.c}</span></div></div>`).join('');
+  dd.style.display='block';
+}
+function acSel(wo,dt,idx,desc,unit,rate,did){
+  const items=dt==='vo2'?DB.jobs[wo].vo2.items:DB.jobs[wo].vo1.items;
+  items[idx].d=desc;items[idx].u=unit;items[idx].r=rate;
+  const inp=document.getElementById(`${dt==='vo1'?'vo1d':'vo2d'}${wo}${idx}`);if(inp)inp.value=desc;
+  const uel=document.getElementById(`${dt==='vo1'?'vo1u':'vo2u'}${wo}${idx}`);if(uel)uel.value=unit;
+  const rel=document.getElementById(`${dt==='vo1'?'vo1r':'vo2r'}${wo}${idx}`);if(rel)rel.value=rate.toFixed(2);
+  dt==='vo1'?recalcVO1(wo):recalcVO2(wo);
+  acC(did);
+}
+function acC(did){const d=document.getElementById(did);if(d)d.style.display='none';}
+function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
+
+/* ═══════════════════════════════════════
+   PRINT
+═══════════════════════════════════════ */
+function printModal(){
+  const pa=document.getElementById('printArea');
+  pa.innerHTML=document.getElementById('docModalBody').innerHTML;
+  pa.style.display='block';window.print();
+  setTimeout(()=>{pa.innerHTML='';pa.style.display='none';},1200);
+}
+
+/* ═══════════════════════════════════════
+   MODALS
+═══════════════════════════════════════ */
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+/* ═══════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════ */
+function nav(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('act'));
+  document.getElementById('sc-'+screen)?.classList.add('act');
+  const titles={dashboard:'Dashboard',jobs:'Work Orders',inbox:'Inbox',claims:'Claim Batch',rates:'Rates Sheet',actlog:'Activity Log',jobdetail:'Job Detail'};
+  document.getElementById('tbt').textContent=titles[screen]||screen;
+  document.getElementById('n-'+screen)?.classList.add('act');
+  if(screen==='dashboard'){renderDashboard();}
+  if(screen==='jobs'){renderJobs();}
+  if(screen==='inbox'){renderInbox();}
+  if(screen==='claims'){renderClaims();}
+  if(screen==='rates'){renderRates();}
+  if(screen==='actlog'){renderActLog();}
+  if(screen==='jobdetail'&&detailWO){renderJobDetail(detailWO);}
+}
+function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs();}
+
+/* ═══════════════════════════════════════
+   LOGIN / LOGOUT
+═══════════════════════════════════════ */
+function doLogin(){
+  const r=document.getElementById('loginRole').value;
+  if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
+  CU=r;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  document.getElementById('sbRn').textContent=RN[r];
+
+  // Role-specific nav
+  const show=id=>{const e=document.getElementById(id);if(e)e.style.display='flex';};
+  const hide=id=>{const e=document.getElementById(id);if(e)e.style.display='none';};
+  ['n-inbox','n-claims','n-rates','n-actlog','n-jobdetail'].forEach(hide);
+
+  if(r==='admin'){show('n-inbox');show('n-rates');show('n-actlog');}
+  if(r==='finance'){show('n-inbox');show('n-claims');}
+  if(r==='gis'){show('n-inbox');}
+  if(r==='md'){show('n-actlog');show('n-jobs');}
+
+  addLog('','Signed in as '+RN[r]);
+  renderDashboard();renderNotifs();
+
+  // Seed demo data if empty
+  if(!Object.keys(DB.jobs).length&&r==='admin'){
+    WO_SEED.forEach(w=>{DB.jobs[w.wo]=newJob(w);addLog(w.wo,'Work order loaded from BPC email');});
+    saveDB();renderDashboard();renderInbox();
+  }
+}
+function doLogout(){
+  addLog('','Signed out');saveDB();
+  CU='';detailWO=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('loginRole').value='';
+}
+</script>
 </body>
 </html>
