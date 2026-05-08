@@ -234,7 +234,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
 .ef{display:inline-block;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;min-width:60px}
 .ef:focus{border-bottom-color:#0055cc;background:#fffce8}
-.ef-b{color:#0055cc}
+.ef-b{color:#000}
 .ef-c{color:#555;background:#f8f8f8;pointer-events:none;border-bottom:1px dotted #bbb}
 .boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
 .boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}
@@ -369,7 +369,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 </div>
 
 <!-- VIEW DOCUMENT MODAL (paper doc viewer) -->
-<div id="docModal" class="overlay" onclick="if(event.target===this)closeModal('docModal')">
+<div id="docModal" class="overlay" onclick="if(event.target===this){closeModal('docModal');refreshDetail();}">
   <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;width:min(860px,95vw);max-height:90vh;display:flex;flex-direction:column">
     <div style="padding:.8rem 1.25rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <span style="font-size:.9rem;font-weight:600;color:var(--tx)" id="docModalTitle">Document</span>
@@ -377,7 +377,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <button class="btn btn-print btn-sm" onclick="printModal()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print
         </button>
-        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal')">✕ Close</button>
+        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
       </div>
     </div>
     <div style="flex:1;overflow-y:auto;padding:1.25rem" id="docModalBody"></div>
@@ -527,6 +527,22 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
             <div class="crd" style="margin-bottom:1rem">
               <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Currently Active — Who Is Doing What</div></div>
               <div id="m-whoswhat"></div>
+            </div>
+            <!-- Completed Jobs — List of Jobs Done -->
+            <div class="crd" style="margin-bottom:1rem">
+              <div class="crd-hd" style="justify-content:space-between">
+                <div class="crd-hd-l" style="color:var(--gn)">✅ Completed Jobs — List of Jobs Done</div>
+                <button class="btn btn-gn btn-sm" onclick="openDocForAction(null,'list_of_jobs')">📄 View / Download List of Jobs</button>
+              </div>
+              <div style="display:grid;grid-template-columns:80px 1fr 80px 110px 100px 110px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">WO No.</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Value</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Completed</span>
+                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Status</span>
+              </div>
+              <div id="m-done-jobs"></div>
             </div>
             <!-- All jobs overview -->
             <div class="crd">
@@ -712,17 +728,18 @@ const RATES_SEED = [
    PIPELINE STAGES
 ═══════════════════════════════════════ */
 const STAGES = [
-  {id:'wo_received',        lbl:'Work Order Received from BPC',          role:'admin'},
-  {id:'vo1_created',        lbl:'Works Valuation (VO1) Created',         role:'admin'},
-  {id:'linesman_sent',      lbl:'VO1 Sent to Linesman',                  role:'admin'},
-  {id:'field_received',     lbl:'Field Findings Received from Linesman', role:'admin'},
-  {id:'vo2_created',        lbl:'Variation Order (VO2) Created',         role:'admin'},
-  {id:'teams_notified',     lbl:'Teams Notified to Start Work',          role:'admin'},
-  {id:'work_complete',      lbl:'Work Complete',                          role:'admin'},
-  {id:'gis_notified',       lbl:'GIS Consultant Notified',               role:'admin'},
-  {id:'gis_complete',       lbl:'GIS Report Uploaded',                   role:'gis'},
-  {id:'claim_docs_ready',   lbl:'Claim Documents Generated',             role:'finance'},
-  {id:'claim_submitted',    lbl:'Claim Submitted to BPC',                role:'admin'},
+  {id:'wo_received',              lbl:'Work Order Received from BPC',              role:'admin'},
+  {id:'vo1_created',              lbl:'Works Valuation (VO1) Created',             role:'admin'},
+  {id:'linesman_notified',        lbl:'Linesman Notified (External)',               role:'admin'},
+  {id:'field_received',           lbl:'Linesman Findings Uploaded',                role:'admin'},
+  {id:'vo2_created',              lbl:'Variation Order (VO2) Created',             role:'admin'},
+  {id:'work_instruction_ready',   lbl:'Works Instruction Prepared',                role:'admin'},
+  {id:'teams_notified',           lbl:'Teams Notified to Start Work (External)',   role:'admin'},
+  {id:'work_complete',            lbl:'Teams Reported Work Complete',              role:'admin'},
+  {id:'gis_notified',             lbl:'GIS Consultant Notified',                   role:'admin'},
+  {id:'gis_complete',             lbl:'GIS Report Submitted',                      role:'gis'},
+  {id:'claim_docs_ready',         lbl:'Claim Documents Generated by Finance',      role:'finance'},
+  {id:'job_complete',             lbl:'Job Complete — Recorded by Admin',          role:'admin'},
 ];
 const STAGE_IDS = STAGES.map(s=>s.id);
 
@@ -731,18 +748,17 @@ function stageLabel(id){ return STAGES.find(s=>s.id===id)?.lbl||id; }
 function nextStage(id){ const i=stageIdx(id); return i>=0&&i<STAGE_IDS.length-1?STAGE_IDS[i+1]:null; }
 function stagePct(id){ const i=stageIdx(id); return i<0?0:Math.round((i/10)*100); }
 function stageBadge(id){
-  if(id==='claim_submitted')return'b-gn';
+  if(id==='job_complete')return'b-gn';
   if(['gis_complete','claim_docs_ready','work_complete'].includes(id))return'b-bl';
   if(['teams_notified','gis_notified'].includes(id))return'b-am';
   return'b-gy';
 }
 
-/* Doc types per stage */
 const STAGE_DOCS = {
-  wo_received:'bpc_wo', vo1_created:'vo1', linesman_sent:null, field_received:'field_report',
-  vo2_created:'vo2', teams_notified:'works_instruction', work_complete:null,
-  gis_notified:null, gis_complete:'gis_report', claim_docs_ready:'annexure,payment_cert,invoice,list_of_jobs',
-  claim_submitted:null,
+  wo_received:'bpc_wo', vo1_created:'vo1', linesman_notified:null, field_received:'field_report',
+  vo2_created:'vo2', work_instruction_ready:'works_instruction', teams_notified:null, work_complete:null,
+  gis_notified:null, gis_complete:'gis_report', claim_docs_ready:'annexure,payment_cert,invoice',
+  job_complete:null,
 };
 
 /* ═══════════════════════════════════════
@@ -891,12 +907,26 @@ function handleScan(wo,docType,input){
   reader.readAsDataURL(file);
 }
 function removeScan(wo,docType){
-  if(confirm('Remove this scan?')){delete DB.jobs[wo].scans[docType];saveDB();refreshDetail();}
+  if(!confirm('Remove this uploaded scan?'))return;
+  if(!DB.jobs[wo]||!DB.jobs[wo].scans)return;
+  delete DB.jobs[wo].scans[docType];
+  addLog(wo,'Scan removed: '+docType);
+  saveDB();refreshDetail();refreshAll();
+  toast('Scan removed','am');
 }
 function downloadScan(wo,docType){
-  const s=DB.jobs[wo]?.scans?.[docType];
-  if(!s)return;
-  const a=document.createElement('a');a.href=s.dataUrl;a.download=s.filename||docType+'.pdf';a.click();
+  let s;
+  if(wo&&DB.jobs[wo]){s=DB.jobs[wo]?.scans?.[docType];}
+  if(!s){toast('No scan found to download','am');return;}
+  try{
+    const a=document.createElement('a');
+    a.href=s.dataUrl;
+    a.download=s.filename||docType+'.pdf';
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }catch(e){toast('Download failed: '+e.message,'rd');}
 }
 function scanWidget(wo,docType,editable){
   const s=DB.jobs[wo]?.scans?.[docType];
@@ -904,8 +934,8 @@ function scanWidget(wo,docType,editable){
     return `<div class="scan-done">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
       <strong>${s.filename}</strong> · ${fd(s.uploadedAt)}
-      <button class="btn btn-gy btn-sm" onclick="downloadScan('${wo}','${docType}')">⬇ Download</button>
-      ${editable?`<button class="btn btn-rd btn-sm" onclick="removeScan('${wo}','${docType}')">Remove</button>`:''}
+      <button class="btn btn-gy btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${docType}')">⬇ Download</button>
+      ${editable?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${docType}')">✕ Remove</button>`:''}
     </div>`;
   }
   if(!editable) return `<span style="font-size:.72rem;color:var(--tx3)">No scan uploaded yet</span>`;
@@ -938,10 +968,10 @@ function renderAdminDash(){
   el.style.display='block';
   const jobs=Object.values(DB.jobs);
   const ADMIN_NEEDS=[  // stages where admin must act
-    'wo_received','vo1_created','field_received','vo2_created','work_complete','claim_docs_ready'
+    'wo_received','vo1_created','field_received','vo2_created','work_instruction_ready','work_complete','claim_docs_ready'
   ];
   const EXTERNAL_WAITING=[  // waiting on linesman/teams/GIS
-    'linesman_sent','teams_notified','gis_notified'
+    'linesman_notified','teams_notified','gis_notified'
   ];
   const needsAction=jobs.filter(j=>ADMIN_NEEDS.includes(j.stage));
   const waiting=jobs.filter(j=>EXTERNAL_WAITING.includes(j.stage));
@@ -951,13 +981,13 @@ function renderAdminDash(){
   document.getElementById('a-prog').textContent=waiting.length;
   document.getElementById('a-val').textContent=P(val);
 
-  const taskIcons={wo_received:'📋',vo1_created:'📤',field_received:'📝',vo2_created:'👷',work_complete:'🗺',claim_docs_ready:'📦'};
-  const taskLabels={wo_received:'Create VO1',vo1_created:'Send VO1 to Linesman',field_received:'Create VO2',vo2_created:'Notify Teams to Start Work',work_complete:'Notify GIS Consultant',claim_docs_ready:'Record Claim Submitted to BPC'};
-  const taskBadges={wo_received:'b-rd',vo1_created:'b-am',field_received:'b-am',vo2_created:'b-am',work_complete:'b-am',claim_docs_ready:'b-gn'};
+  const taskIcons={wo_received:'📋',vo1_created:'📤',field_received:'📝',vo2_created:'👷',work_instruction_ready:'📄',work_complete:'🗺',claim_docs_ready:'✅'};
+  const taskLabels={wo_received:'Create VO1 — Review uploaded WO',vo1_created:'Notify Linesman (external) — Record in system',field_received:'Upload Linesman Findings, then Create VO2',vo2_created:'Prepare Works Instruction document',work_instruction_ready:'Send Works Instruction to Teams (external) — Record',work_complete:'Notify GIS Consultant (external)',claim_docs_ready:'Review Finance Docs — Record Job as Complete'};
+  const taskBadges={wo_received:'b-rd',vo1_created:'b-am',field_received:'b-am',vo2_created:'b-am',work_instruction_ready:'b-am',work_complete:'b-am',claim_docs_ready:'b-gn'};
   const tasksEl=document.getElementById('a-tasks');
   if(!needsAction.length){tasksEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--gn);font-size:.82rem">✓ No pending actions right now</div>';}
   else{tasksEl.innerHTML=needsAction.map(j=>`
-    <div class="tbl-row" style="grid-template-columns:30px 1fr 140px 100px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
+    <div class="tbl-row" style="grid-template-columns:30px 1fr 160px 100px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
       <span style="font-size:1.1rem">${taskIcons[j.stage]||'📄'}</span>
       <div>
         <div style="font-size:.83rem;font-weight:600;color:var(--tx)">${taskLabels[j.stage]||stageLabel(j.stage)}</div>
@@ -967,8 +997,8 @@ function renderAdminDash(){
       <span class="badge ${taskBadges[j.stage]||'b-am'}">Act Now</span>
     </div>`).join('');}
 
-  const waitIcons={linesman_sent:'👷',teams_notified:'🔨',gis_notified:'📍'};
-  const waitLabels={linesman_sent:'Linesman in field',teams_notified:'Teams executing work',gis_notified:'GIS consultant on site'};
+  const waitIcons={linesman_notified:'👷',teams_notified:'🔨',gis_notified:'📍'};
+  const waitLabels={linesman_notified:'Linesman conducting field survey',teams_notified:'Teams executing work on site',gis_notified:'GIS consultant on site'};
   const waitEl=document.getElementById('a-waiting');
   if(!waiting.length){waitEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--tx3);font-size:.8rem">Nothing waiting on external parties</div>';}
   else{waitEl.innerHTML=waiting.map(j=>`
@@ -990,13 +1020,13 @@ function renderFinanceDash(){
   const jobs=Object.values(DB.jobs);
   const ready=jobs.filter(j=>j.stage==='gis_complete');
   const done=jobs.filter(j=>j.stage==='claim_docs_ready');
-  const submitted=jobs.filter(j=>j.stage==='claim_submitted');
+  const completed=jobs.filter(j=>j.stage==='job_complete');
   const netVal=ready.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total*.92;},0)
     +done.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total*.92;},0);
   document.getElementById('f-ready').textContent=ready.length;
   document.getElementById('f-done').textContent=done.length;
   document.getElementById('f-net').textContent=P(netVal);
-  document.getElementById('f-sub').textContent=submitted.length;
+  document.getElementById('f-sub').textContent=completed.length;
 
   const tasksEl=document.getElementById('f-tasks');
   if(!ready.length){tasksEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No jobs ready yet — waiting for GIS reports to be uploaded</div>';}
@@ -1014,15 +1044,15 @@ function renderFinanceDash(){
     </div>`;}).join('');}
 
   const procEl=document.getElementById('f-processed');
-  if(![...done,...submitted].length){procEl.innerHTML='<div style="padding:1rem;text-align:center;color:var(--tx3);font-size:.8rem">None yet</div>';}
-  else{procEl.innerHTML=[...done,...submitted].map(j=>{
+  if(![...done,...completed].length){procEl.innerHTML='<div style="padding:1rem;text-align:center;color:var(--tx3);font-size:.8rem">None yet</div>';}
+  else{procEl.innerHTML=[...done,...completed].map(j=>{
     const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
     return`<div class="tbl-row" style="grid-template-columns:30px 1fr 110px 100px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
-      <span style="font-size:1.1rem">${j.stage==='claim_submitted'?'✅':'📋'}</span>
+      <span style="font-size:1.1rem">${j.stage==='job_complete'?'✅':'📋'}</span>
       <div><div style="font-size:.83rem;font-weight:500;color:var(--tx2)">${j.cust} · WO ${j.wo}</div>
         <div style="font-size:.7rem;color:var(--tx3)">${j.claimRef||'—'}</div></div>
       <span class="mono" style="font-size:.8rem">${P(t.total)}</span>
-      <span class="badge ${j.stage==='claim_submitted'?'b-gn':'b-bl'}">${j.stage==='claim_submitted'?'Submitted':'Docs Ready'}</span>
+      <span class="badge ${j.stage==='job_complete'?'b-gn':'b-bl'}">${j.stage==='job_complete'?'Complete':'Docs Ready'}</span>
     </div>`;}).join('');}
 }
 
@@ -1073,8 +1103,9 @@ function renderMDDash(){
   const el=document.getElementById('dash-md');if(!el)return;
   el.style.display='block';
   const jobs=Object.values(DB.jobs);
-  const active=jobs.filter(j=>j.stage!=='claim_submitted');
+  const active=jobs.filter(j=>j.stage!=='job_complete');
   const docsReady=jobs.filter(j=>j.stage==='claim_docs_ready');
+  const jobsDone=jobs.filter(j=>j.stage==='job_complete');
   const val=jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
   document.getElementById('m-total').textContent=jobs.length;
   document.getElementById('m-active').textContent=active.length;
@@ -1083,20 +1114,21 @@ function renderMDDash(){
 
   // Who is doing what right now
   const PARTY_MAP={
-    wo_received:{who:'Admin',doing:'Creating VO1',color:'var(--am)'},
-    vo1_created:{who:'Admin',doing:'Sending VO1 to Linesman',color:'var(--am)'},
-    linesman_sent:{who:'Linesman',doing:'Field measurements',color:'var(--bl)'},
-    field_received:{who:'Admin',doing:'Creating VO2',color:'var(--am)'},
-    vo2_created:{who:'Admin',doing:'Notifying field teams',color:'var(--am)'},
+    wo_received:{who:'Admin',doing:'Reviewing WO — Creating VO1',color:'var(--am)'},
+    vo1_created:{who:'Admin',doing:'Notifying Linesman (external)',color:'var(--am)'},
+    linesman_notified:{who:'Linesman',doing:'Conducting field measurements',color:'var(--bl)'},
+    field_received:{who:'Admin',doing:'Processing findings — Creating VO2',color:'var(--am)'},
+    vo2_created:{who:'Admin',doing:'Preparing Works Instruction',color:'var(--am)'},
+    work_instruction_ready:{who:'Admin',doing:'Sending Works Instruction to teams',color:'var(--am)'},
     teams_notified:{who:'Field Teams',doing:'Executing work on site',color:'var(--bl)'},
     work_complete:{who:'Admin',doing:'Notifying GIS consultant',color:'var(--am)'},
     gis_notified:{who:'GIS Consultant',doing:'Site survey & geo-analysis',color:'var(--bl)'},
     gis_complete:{who:'Finance',doing:'Generating claim documents',color:'var(--gn)'},
-    claim_docs_ready:{who:'Admin',doing:'Submitting claim to BPC',color:'var(--gn)'},
-    claim_submitted:{who:'BPC',doing:'Processing payment',color:'var(--tx3)'},
+    claim_docs_ready:{who:'Admin',doing:'Reviewing docs — Recording job complete',color:'var(--gn)'},
+    job_complete:{who:'—',doing:'Job complete',color:'var(--tx3)'},
   };
   const wwEl=document.getElementById('m-whoswhat');
-  if(!active.length){wwEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--tx3);font-size:.8rem">No active jobs</div>';}
+  if(!active.length){wwEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--tx3);font-size:.8rem">No active jobs in pipeline</div>';}
   else{
     const grouped={};
     active.forEach(j=>{const pm=PARTY_MAP[j.stage];const k=pm?.who||'—';if(!grouped[k])grouped[k]={...pm,jobs:[]};grouped[k].jobs.push(j);});
@@ -1113,12 +1145,52 @@ function renderMDDash(){
         </div>
       </div>`).join('');}
 
+  // Completed jobs — List of Jobs Done
+  const doneEl=document.getElementById('m-done-jobs');
+  if(doneEl){
+    if(!jobsDone.length){
+      doneEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No completed jobs yet</div>';
+    } else {
+      const totalClaimVal=jobsDone.reduce((s,j)=>{const t=j.vo2.items.length?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);
+      doneEl.innerHTML=`
+        <div style="margin:.75rem 1rem;padding:.75rem 1rem;background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);font-size:.78rem;color:var(--gn)">
+          <div style="font-weight:700;font-size:.82rem;margin-bottom:6px">📋 Ready to Claim — ${jobsDone.length} completed job${jobsDone.length>1?'s':''} · Total: <span style="color:var(--am)">${P(totalClaimVal)}</span></div>
+          <div style="color:var(--tx);line-height:1.6;font-size:.76rem">
+            <strong>To submit a claim to BPC, prepare the following documents in order:</strong><br>
+            1. <strong>List of Jobs Done</strong> — edit &amp; print from any completed job's Documents panel (Admin prepares this)<br>
+            2. <strong>Annexure to Payment Certificate</strong> — Finance generates this via Claim Batch<br>
+            3. <strong>Payment Certificate</strong> — Finance generates this via Claim Batch<br>
+            4. <strong>Tax Invoice</strong> — Finance generates this via Claim Batch<br>
+            5. <strong>VO1 &amp; VO2 documents</strong> — signed copies from each job<br>
+            6. <strong>GIS Reports</strong> — signed copies from each job<br>
+            7. <strong>BPC Work Orders</strong> — originals received from BPC<br><br>
+            Print each document → obtain hand signatures → scan and upload back into the system → compile the full set and submit physically to BPC offices.
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-gn btn-sm" onclick="openDocForAction(null,'list_of_jobs')">📄 Open List of Jobs Done</button>
+            <span style="font-size:.73rem;color:var(--tx2);align-self:center">↑ Edit, print &amp; sign this first, then bring all documents to BPC</span>
+          </div>
+        </div>
+        ${jobsDone.map(j=>{
+          const t=j.vo2.items.length?jTotal(j,'vo2'):jTotal(j,'vo1');
+          return`<div style="display:grid;grid-template-columns:80px 1fr 80px 110px 100px 110px;gap:10px;padding:.6rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center;cursor:pointer;transition:.1s" onclick="openJobDetail('${j.wo}')" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
+            <span class="mono">${j.wo}</span>
+            <span>${j.cust}</span>
+            <span class="tag">${j.loc.split(',')[0]}</span>
+            <span class="mono">${P(t.total)}</span>
+            <span style="font-size:.72rem;color:var(--tx3)">${j.actions.work_complete?.date||'—'}</span>
+            <span class="badge b-gn">✓ Complete</span>
+          </div>`;}).join('')}`;
+    }
+  }
+
   // Full jobs table
   const allEl=document.getElementById('m-alljobs');
   if(!jobs.length){allEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders yet</div>';}
   else{allEl.innerHTML=jobs.map(j=>{
     const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
-    const totalDocs=10,doneDocs=Object.keys(j.scans||{}).length;
+    const doneDocs=Object.keys(j.scans||{}).length;
+    const totalDocs=9;
     return`<div style="display:grid;grid-template-columns:80px 1fr 80px 100px 1fr 80px;gap:10px;padding:.6rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center;cursor:pointer;transition:.1s" onclick="openJobDetail('${j.wo}')" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
       <span class="mono">${j.wo}</span>
       <div><div>${j.cust}</div><div class="prog-w" style="width:120px;margin-top:3px"><div class="prog-b" style="width:${stagePct(j.stage)}%"></div></div></div>
@@ -1142,7 +1214,7 @@ function renderJobs(){
         <span class="tag">${j.loc.split(',')[0]}</span>
         <span class="mono">${P(t.total)}</span>
         <span style="font-size:.72rem;color:var(--tx2)">${stageLabel(j.stage)}</span>
-        <span class="badge ${stageBadge(j.stage)}">${j.stage==='claim_submitted'?'✓ Done':'Active'}</span>
+        <span class="badge ${stageBadge(j.stage)}">${j.stage==='job_complete'?'✓ Done':'Active'}</span>
       </div>`;}).join('')
     :'<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No work orders yet. Click Add Work Order to begin.</div>';
 }
@@ -1191,14 +1263,15 @@ function renderInbox(){
   const tasks=[];
   const jobs=Object.values(DB.jobs);
   if(CU==='admin'){
-    jobs.filter(j=>j.stage==='wo_received').forEach(j=>tasks.push({wo:j.wo,icon:'📋',name:'Create VO1 — WO '+j.wo,desc:j.cust+' · '+j.loc,badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='vo1_created').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Record: VO1 Sent to Linesman — WO '+j.wo,desc:j.cust,badge:'Next Step',bc:'b-gy'}));
-    jobs.filter(j=>j.stage==='linesman_sent').forEach(j=>tasks.push({wo:j.wo,icon:'📥',name:'Enter Field Findings — WO '+j.wo,desc:j.cust+' · awaiting linesman report',badge:'Waiting',bc:'b-bl'}));
-    jobs.filter(j=>j.stage==='field_received').forEach(j=>tasks.push({wo:j.wo,icon:'📝',name:'Create VO2 — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='vo2_created').forEach(j=>tasks.push({wo:j.wo,icon:'👷',name:'Notify Teams — WO '+j.wo,desc:j.cust+' · ready to start work',badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='teams_notified').forEach(j=>tasks.push({wo:j.wo,icon:'✅',name:'Record Work Complete — WO '+j.wo,desc:j.cust,badge:'Waiting',bc:'b-bl'}));
-    jobs.filter(j=>j.stage==='work_complete').forEach(j=>tasks.push({wo:j.wo,icon:'🗺',name:'Notify GIS Consultant — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='claim_docs_ready').forEach(j=>tasks.push({wo:j.wo,icon:'📦',name:'Mark Claim Submitted — WO '+j.wo,desc:j.cust+' · all docs ready',badge:'Final Step',bc:'b-gn'}));
+    jobs.filter(j=>j.stage==='wo_received').forEach(j=>tasks.push({wo:j.wo,icon:'📋',name:'Create VO1 — Review BPC Work Order · WO '+j.wo,desc:j.cust+' · '+j.loc,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='vo1_created').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Notify Linesman Externally — Record in System · WO '+j.wo,desc:j.cust,badge:'Next Step',bc:'b-gy'}));
+    jobs.filter(j=>j.stage==='linesman_notified').forEach(j=>tasks.push({wo:j.wo,icon:'📥',name:'Upload Linesman Findings — WO '+j.wo,desc:j.cust+' · awaiting linesman field report',badge:'Waiting',bc:'b-bl'}));
+    jobs.filter(j=>j.stage==='field_received').forEach(j=>tasks.push({wo:j.wo,icon:'📝',name:'Create VO2 from Field Findings — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='vo2_created').forEach(j=>tasks.push({wo:j.wo,icon:'📄',name:'Prepare Works Instruction — WO '+j.wo,desc:j.cust+' · ready to instruct teams',badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='work_instruction_ready').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Send WI to Teams (External) — Record in System · WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='teams_notified').forEach(j=>tasks.push({wo:j.wo,icon:'✅',name:'Waiting: Teams Executing Work — WO '+j.wo,desc:j.cust+' · click when teams report back',badge:'Waiting',bc:'b-bl'}));
+    jobs.filter(j=>j.stage==='work_complete').forEach(j=>tasks.push({wo:j.wo,icon:'🗺',name:'Notify GIS Consultant (External) — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='claim_docs_ready').forEach(j=>tasks.push({wo:j.wo,icon:'✅',name:'Finance Docs Ready — Record Job Complete · WO '+j.wo,desc:j.cust+' · all documents ready',badge:'Final Step',bc:'b-gn'}));
   }
   if(CU==='finance'){
     jobs.filter(j=>j.stage==='gis_complete').forEach(j=>tasks.push({wo:j.wo,icon:'💰',name:'Generate Claim Documents — WO '+j.wo,desc:j.cust+' · GIS report received',badge:'Ready',bc:'b-gn'}));
@@ -1254,12 +1327,16 @@ function confirmRecord(){
   const job=DB.jobs[recordWO];if(!job)return;
   job.actions[recordStage]={date,notes,extra};
   job.stage=recordStage;
-  addLog(recordWO,stageLabel(recordStage)+' — recorded by Admin');
+  addLog(recordWO,stageLabel(recordStage)+' — recorded by '+RN[CU]);
   // Stage-specific notifications
-  if(recordStage==='teams_notified'){notify(['md'],`Teams notified for WO ${recordWO} — ${job.cust}`,recordWO);}
-  if(recordStage==='work_complete'){notify(['finance','gis','md'],`Work complete: WO ${recordWO} — ${job.cust}. GIS and claim docs next.`,recordWO);}
+  if(recordStage==='linesman_notified'){notify(['md'],`Linesman notified for WO ${recordWO} — ${job.cust}. Awaiting field findings.`,recordWO);}
+  if(recordStage==='teams_notified'){notify(['md'],`Teams notified for WO ${recordWO} — ${job.cust}. Work in progress.`,recordWO);}
+  if(recordStage==='work_complete'){notify(['finance','gis','md'],`Work complete: WO ${recordWO} — ${job.cust}. GIS survey and claim docs next.`,recordWO);}
   if(recordStage==='gis_notified'){notify(['gis'],`GIS assignment: WO ${recordWO} — ${job.cust} · ${job.loc}`,recordWO);}
-  if(recordStage==='claim_submitted'){notify(['md','finance'],`Claim submitted to BPC for WO ${recordWO}`,recordWO);}
+  if(recordStage==='job_complete'){
+    addLog(recordWO,'Job added to List of Jobs Done');
+    notify(['md'],`Job complete: WO ${recordWO} — ${job.cust}. Added to List of Jobs Done.`,recordWO);
+  }
   saveDB();closeModal('recordModal');refreshDetail();refreshAll();
   toast(stageLabel(recordStage)+' recorded');
 }
@@ -1309,7 +1386,7 @@ function renderJobDetail(wo){
   if(CU === 'gis') {
     visibleStages = STAGES.filter(st => st.id === 'gis_notified' || st.id === 'gis_complete');
   } else if(CU === 'finance') {
-    visibleStages = STAGES.filter(st => st.id === 'claim_docs_ready' || st.id === 'claim_submitted');
+    visibleStages = STAGES.filter(st => st.id === 'claim_docs_ready');
   }
   // Admin and MD see all stages (no filter)
   
@@ -1321,42 +1398,70 @@ function renderJobDetail(wo){
     const docKey=STAGE_DOCS[st.id];
     const hasScan=docKey&&docKey.split(',').some(d=>job.scans[d]);
     let actBtns='';
-    // Show actions for: done steps, active step, or next pending step if role owns it
-    const isMyNextStep = (isGIS && st.id==='gis_complete' && job.stage==='gis_notified')
+    // Show actions for: done steps, active step, or the very next pending step for each role
+    const adminNextSteps = {
+      wo_received:    'vo1_created',
+      vo1_created:    'linesman_notified',
+      linesman_notified: 'field_received',
+      field_received: 'vo2_created',
+      vo2_created:    'work_instruction_ready',
+      work_instruction_ready: 'teams_notified',
+      teams_notified: 'work_complete',
+      work_complete:  'gis_notified',
+      gis_notified:   null,
+      gis_complete:   null,
+      claim_docs_ready:'job_complete',
+      job_complete:   null,
+    };
+    const isAdminNext = canEdit && adminNextSteps[job.stage] === st.id;
+    const isMyNextStep = isAdminNext
+                      || (isGIS && st.id==='gis_complete' && job.stage==='gis_notified')
                       || (isFinance && st.id==='claim_docs_ready' && job.stage==='gis_complete');
     if((globalIdx<=currIdx+1)&&(state!=='pending'||isMyNextStep)){
       // Show appropriate action buttons per role + stage
       if(canEdit){
         if(st.id==='wo_received'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
+          actBtns+=`<div style="background:var(--bl-bg);border:1px solid var(--bl-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--bl);margin-bottom:5px">📥 Upload the BPC Work Order document you received by email using the Documents panel below, then create VO1.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
         if(st.id==='vo1_created'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo1')">View VO1</button>`;
         if(st.id==='vo1_created'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View/Edit VO1</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','linesman_sent','Record: VO1 Sent to Linesman','Record when you sent the VO1 document to the linesman')">Record Sent to Linesman</button>`;
-        if(st.id==='linesman_sent'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">Enter Field Findings</button>`;
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','linesman_notified','Record: Linesman Notified','Record when you notified the linesman. Reminder: contact the linesman externally (phone/email) and share the VO1 document.')">Record Linesman Notified</button>`;
+        if(st.id==='linesman_notified'&&state==='active')
+          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000">⏳ Waiting for linesman. When he reports back externally, use the button below to record his findings.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">📝 Record Linesman Findings</button>`;
+        if(st.id==='linesman_notified'&&state==='done')
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Linesman notified on ${action?.date||'—'}</span>`;
         if(st.id==='field_received'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">Create VO2</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">📝 Create VO2 from Field Findings</button>`;
         if(st.id==='field_received'&&state==='done')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Report</button>`;
-        if(st.id==='vo2_created'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View/Edit VO2</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','teams_notified','Record: Teams Notified','Record when teams were notified to start work','Team(s) assigned (e.g. Team A — Shakawe)')">Record Teams Notified</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button>`;
+        if(st.id==='vo2_created'&&(state==='active'||state==='pending'))
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">📝 Create VO2 from Field Findings</button>`;
         if(st.id==='vo2_created'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button>`;
-        if(st.id==='teams_notified'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','work_complete','Record: Work Complete','Record the date the field team completed the work')">Record Work Complete</button>`;
-        if(st.id==='work_complete'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Notified','Record when you sent the assignment to the GIS consultant')">Notify GIS Consultant</button>`;
+        if(st.id==='work_instruction_ready'&&(state==='active'||state==='pending'))
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">📄 Prepare Works Instruction</button>`;
+        if(st.id==='work_instruction_ready'&&state==='done')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button>`;
+        if(st.id==='teams_notified'&&(state==='active'||state==='pending'))
+          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000">📤 Send the Works Instruction to the team externally (WhatsApp/email). When teams report back that work is complete, click below.</div><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','teams_notified','Record: Works Instruction Sent to Teams','Record when you sent the Works Instruction to the teams externally.','Team(s) assigned (e.g. Shakawe Team A)')">📤 Record Teams Notified</button>`;
+        if(st.id==='teams_notified'&&state==='done')
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Teams notified on ${action?.date||'—'} · ${action?.extra||''}</span><div style="margin-top:5px"><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','work_complete','Record: Teams Reported Work Complete','Record the date the field team completed the work and reported back to you.')">✅ Teams Reported Work Complete</button></div>`;
+        if(st.id==='work_complete'&&(state==='active'||state==='pending'))
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Consultant Notified','Record when you sent the assignment to the GIS consultant externally.')">📍 Notify GIS Consultant (External) — Record</button>`;
+        if(st.id==='work_complete'&&state==='done')
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Work complete on ${action?.date||'—'}</span>`;
+        if(st.id==='gis_notified'&&state==='active')
+          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000">⏳ Waiting for GIS consultant to complete survey and upload their report...</div>`;
         if(st.id==='gis_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--tx3)">Waiting for GIS report...</span>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--tx3)">GIS notified — waiting for report</span>`;
         if(st.id==='gis_complete'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button>`;
         if(st.id==='claim_docs_ready'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openRecord('${wo}','claim_submitted','Record: Claim Submitted to BPC','Record the date you physically took the documents to BPC')">Record Claim Submitted</button>`;
+          actBtns+=`<div style="background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--gn);margin-bottom:6px">✅ Finance has generated the claim documents. Review them below, then record this job as complete.</div><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Recording this marks the job as complete and adds it to the List of Jobs Done.')">✅ Record Job as Complete</button>`;
         if(st.id==='claim_docs_ready'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Claim docs generated</span>`;
-        if(st.id==='claim_submitted'&&state==='done')
-          actBtns+=`<span class="badge b-gn" style="font-size:.65rem">✓ Submitted to BPC on ${action?.date||'—'}</span>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All documents are ready. Record this job as complete. It will be added to the List of Jobs Done.')">✅ Record Job as Complete</button>`;
+        if(st.id==='job_complete'&&state==='done')
+          actBtns+=`<span class="badge b-gn">✅ Job complete on ${action?.date||'—'} — Added to List of Jobs Done</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs Done</button>`;
       }
       // GIS: show their action whenever the job is at gis_notified OR gis_complete (their two stages)
       if(isGIS&&st.id==='gis_complete'&&['gis_notified','gis_complete'].includes(job.stage)){
@@ -1372,6 +1477,8 @@ function renderJobDetail(wo){
         if(job.stage==='gis_complete'){
           actBtns+=`<button class="btn btn-am" onclick="nav('claims')">💰 Go to Claim Batch — Generate Documents</button>`;
         } else if(state==='done') {
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','payment_cert')">View Payment Certificate</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','invoice')">View Invoice</button>`;
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','annexure')">View Annexure</button>`;
         }
       }
@@ -1394,15 +1501,15 @@ function renderJobDetail(wo){
   }).join('');
 
   // Documents panel - FILTERED BY ROLE
-  const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_instruction','gis_report','annexure','payment_cert','invoice','list_of_jobs'];
+  const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_instruction','gis_report','annexure','payment_cert','invoice'];
   let visibleDocTypes = [...allDocTypes];
   if(CU === 'gis') {
     visibleDocTypes = ['gis_report'];
   } else if(CU === 'finance') {
-    visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs'];
+    visibleDocTypes = ['annexure','payment_cert','invoice'];
   }
   
-  const docLabels={bpc_wo:'BPC Work Order',vo1:'Works Valuation (VO1)',field_report:'Field Report',vo2:'Variation Order (VO2)',works_instruction:'Works Instruction',gis_report:'GIS Report',annexure:'Annexure to Payment Cert',payment_cert:'Payment Certificate',invoice:'Invoice',list_of_jobs:'List of Jobs Done'};
+  const docLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',field_report:'Linesman Field Findings',vo2:'Variation Order (VO2)',works_instruction:'Works Instruction',gis_report:'GIS Geo-Analysis Report',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice'};
   const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]).length;
   document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} scanned`;
   document.getElementById('jdDocsList').innerHTML=visibleDocTypes.map(d=>{
@@ -1415,22 +1522,26 @@ function renderJobDetail(wo){
         <span class="badge ${s?'b-gn':'b-gy'}">${s?'Scan Ready':'Pending'}</span>
       </div>
       <div class="doc-card-btns">
-        ${hasGenerated&&CU!=='md'?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">View / Print</button>`:''}
-        ${s?`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${d}')">⬇ Download Scan</button>`:''}
-        ${(CU!=='md')&&!s?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload Scan<input type="file" id="scan-input-${wo}-${d}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
+        ${hasGenerated&&CU!=='md'?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">📄 View / Edit / Print</button>`:''}
+        ${s?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ Download Scan</button><button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
+        ${(CU!=='md')&&!s?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload Scan<input type="file" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
         ${CU==='md'&&!s?`<span style="font-size:.72rem;color:var(--tx3)">Not yet uploaded</span>`:''}
       </div>
     </div>`;
   }).join('');
 
   // Summary
+  const t1live=jTotal(job,'vo1');
+  const t2live=job.vo2.items.length?jTotal(job,'vo2'):null;
+  const claimAmount=t2live?t2live.total:t1live.total;
   document.getElementById('jdSummary').innerHTML=`
     <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">WO Number</span> &nbsp; <span class="mono">${job.wo}</span></div>
     <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Type</span> &nbsp; ${job.type}</div>
     <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Phase</span> &nbsp; ${job.phase}</div>
     <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Loc. Factor</span> &nbsp; ${job.vo1.lf}%</div>
-    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">VO1 Total</span> &nbsp; ${P(jTotal(job,'vo1').total)}</div>
-    ${job.vo2.items.length?`<div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">VO2 Total</span> &nbsp; ${P(jTotal(job,'vo2').total)}</div>`:''}
+    <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">VO1 Total</span> &nbsp; <span class="mono">${P(t1live.total)}</span></div>
+    ${t2live?`<div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">VO2 Total</span> &nbsp; <span class="mono">${P(t2live.total)}</span></div>`:''}
+    <div style="font-size:.82rem;font-weight:600;border-bottom:1px solid var(--bd);padding:5px 0;background:var(--am-bg);margin:3px -4px;padding-left:4px"><span style="color:var(--tx3)">Claim Amount</span> &nbsp; <span style="color:var(--am)">${P(claimAmount)}</span> <span style="font-size:.67rem;color:var(--tx3)">(${t2live?'VO2':'VO1'})</span></div>
     <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Teams</span> &nbsp; ${job.actions.teams_notified?.extra||'—'}</div>
     <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">Work Done</span> &nbsp; ${job.actions.work_complete?.date||'—'}</div>
     <div style="font-size:.78rem;padding:4px 0"><span style="color:var(--tx3)">Claim Ref.</span> &nbsp; ${job.claimRef||'—'}</div>`;
@@ -1465,8 +1576,8 @@ function openGISAction(wo){
    OPEN DOCUMENT MODAL
 ═══════════════════════════════════════ */
 function openDocForAction(wo,docType){
-  const job=DB.jobs[wo];if(!job)return;
-  const titles={vo1:'Works Valuation (VO1) · WO '+wo,vo2:'Variation Order (VO2) · WO '+wo,field_report:'Field Report · WO '+wo,works_instruction:'Works Instruction · WO '+wo,gis_report:'GIS Report · WO '+wo,bpc_wo:'BPC Work Order · WO '+wo,annexure:'Annexure · WO '+wo,payment_cert:'Payment Certificate · WO '+wo,invoice:'Invoice · WO '+wo,list_of_jobs:'List of Jobs Done'};
+  const job=wo?DB.jobs[wo]:null;
+  const titles={vo1:'Works Valuation (VO1)'+(wo?' · WO '+wo:''),vo2:'Variation Order (VO2)'+(wo?' · WO '+wo:''),field_report:'Linesman Field Findings'+(wo?' · WO '+wo:''),works_instruction:'Works Instruction'+(wo?' · WO '+wo:''),gis_report:'GIS Geo-Analysis Report'+(wo?' · WO '+wo:''),bpc_wo:'BPC Work Order'+(wo?' · WO '+wo:''),annexure:'Annexure to Payment Certificate'+(wo?' · WO '+wo:''),payment_cert:'Payment Certificate'+(wo?' · WO '+wo:''),invoice:'Tax Invoice'+(wo?' · WO '+wo:''),list_of_jobs:'List of Jobs Done — Trends Engineering Services'};
   document.getElementById('docModalTitle').textContent=titles[docType]||docType;
   const html=buildDoc(docType,job);
   document.getElementById('docModalBody').innerHTML=html;
@@ -1475,29 +1586,43 @@ function openDocForAction(wo,docType){
 }
 function buildDocFoot(docType,job){
   if(CU==='md')return'<span style="font-size:.75rem;color:var(--tx3)">Read-only view — print or download scan from the documents panel</span>';
-  const wo=job.wo;
+  const wo=job?job.wo:'';
   let btns=`<button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Document</button>`;
-  btns+=`<label class="scan-upload-label">📎 Upload Signed Scan<input type="file" id="scan-input-modal-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this);closeModal('docModal')" style="display:none"></label>`;
-  if(job.scans[docType])btns+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${docType}')">⬇ Download Scan</button>`;
-  // Stage advance buttons
-  if(CU==='admin'){
-    if(docType==='vo1'&&job.stage==='wo_received')btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','vo1_created')">✓ Mark VO1 Complete</button>`;
-    if(docType==='field_report'&&job.stage==='linesman_sent')btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','field_received')">✓ Save Field Findings</button>`;
-    if(docType==='vo2'&&job.stage==='field_received')btns+=`<button class="btn btn-am" onclick="saveVO2('${wo}')">✓ Save VO2</button>`;
-    if(docType==='works_instruction'&&job.stage==='teams_notified')btns+=`<button class="btn btn-gy btn-sm" onclick="closeModal('docModal')">Close</button>`;
+  if(wo){
+    btns+=`<label class="scan-upload-label">📎 Upload Signed Scan<input type="file" id="scan-input-modal-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this);closeModal('docModal')" style="display:none"></label>`;
+    if(job.scans&&job.scans[docType])btns+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${docType}')">⬇ Download Scan</button>`;
   }
-  if(CU==='gis'&&docType==='gis_report'&&['gis_notified','gis_complete'].includes(job.stage)){
+  // Stage advance buttons
+  if(CU==='admin'&&job){
+    if(docType==='vo1'&&job.stage==='wo_received')btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','vo1_created')">✓ Mark VO1 Complete — Move to Next Step</button>`;
+    if(docType==='field_report'&&(job.stage==='linesman_notified'||job.stage==='field_received'))btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','field_received')">✓ Save Field Findings — Now Create VO2</button>`;
+    if(docType==='vo2'&&(job.stage==='field_received'||job.stage==='vo2_created'))btns+=`<button class="btn btn-am" onclick="saveVO2('${wo}')">✓ Save VO2 — Proceed to Works Instruction</button>`;
+    if(docType==='works_instruction'&&(job.stage==='vo2_created'||job.stage==='work_instruction_ready'))btns+=`<button class="btn btn-am" onclick="advanceStageWI('${wo}')">✓ Works Instruction Ready — Send to Teams</button>`;
+  }
+  if(CU==='gis'&&job&&docType==='gis_report'&&['gis_notified','gis_complete'].includes(job.stage)){
     btns+=`<button class="btn btn-am" onclick="advanceStage('${job.wo}','gis_complete')">✓ Submit GIS Report</button>`;
   }
-  if(CU==='finance'&&docType==='annexure')btns+=`<button class="btn btn-gy btn-sm">Close</button>`;
   return btns;
+}
+function advanceStageWI(wo){
+  const job=DB.jobs[wo];if(!job)return;
+  job.stage='work_instruction_ready';
+  job.actions['work_instruction_ready']={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
+  addLog(wo,'Works Instruction prepared — stage advanced');
+  saveDB();closeModal('docModal');
+  // Immediately prompt to record teams notified
+  setTimeout(()=>openRecord(wo,'teams_notified','Record: Works Instruction Sent to Teams','Send the Works Instruction to the team externally (WhatsApp/email) with this doc, then record here.','Team(s) assigned (e.g. Shakawe Team A)'),200);
+  refreshDetail();refreshAll();
+  toast('Works Instruction ready — record sending it to teams');
 }
 function advanceStage(wo,newStage){
   const job=DB.jobs[wo];if(!job)return;
   job.stage=newStage;
+  job.actions[newStage]={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
   addLog(wo,stageLabel(newStage)+' — stage advanced');
-  if(newStage==='vo1_created')notify(['md'],`VO1 created for WO ${wo}`,wo);
-  if(newStage==='gis_complete'){notify(['admin','md'],`GIS report uploaded for WO ${wo} — ${job.cust}`,wo);}
+  if(newStage==='vo1_created')notify(['md'],`VO1 created for WO ${wo} — ${job.cust}`,wo);
+  if(newStage==='field_received')notify(['md'],`Field findings recorded for WO ${wo}`,wo);
+  if(newStage==='gis_complete'){notify(['admin','md'],`GIS report submitted for WO ${wo} — ${job.cust}. Admin: Review and record job complete.`,wo);}
   saveDB();closeModal('docModal');refreshDetail();refreshAll();
   toast(stageLabel(newStage)+' ✓');
 }
@@ -1512,15 +1637,16 @@ function saveVO2(wo){
   }));
   job.vo2.items=items.length?items:job.vo2.items;
   job.stage='vo2_created';
+  job.actions['vo2_created']={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
   const t1=jTotal(job,'vo1'),t2=jTotal(job,'vo2');
   const diff=t2.total-t1.total;
   const pctDiff=t1.total>0?((diff/t1.total)*100):0;
-  let msg=diff>0?`VO2 exceeds VO1 by ${P(diff)} (${pctDiff.toFixed(1)}%). Review before notifying teams.`:`VO2 saved within VO1 budget.`;
+  let msg=diff>0?`VO2 exceeds VO1 by ${P(diff)} (${pctDiff.toFixed(1)}%). Review before notifying teams.`:`VO2 saved within VO1 budget. Next: Prepare Works Instruction.`;
   addLog(wo,'VO2 (Variation Order) created');
-  notify(['md'],`VO2 created for WO ${wo} — ${job.cust}`,wo);
+  notify(['md'],`VO2 created for WO ${wo} — ${job.cust}. Next: Works Instruction.`,wo);
   saveDB();closeModal('docModal');refreshDetail();refreshAll();
-  toast('VO2 saved');
-  if(diff>0) setTimeout(()=>toast(msg,'am'),400);
+  toast('VO2 saved — next step: prepare Works Instruction');
+  setTimeout(()=>toast(msg,diff>0?'am':'gn'),400);
 }
 
 /* ═══════════════════════════════════════
@@ -1558,11 +1684,11 @@ function generateClaimDocs(){
     const job=DB.jobs[wo];if(!job)return;
     job.claimRef=certNo;
     job.stage='claim_docs_ready';
-    addLog(wo,`Claim documents generated — Cert: ${certNo}`);
+    addLog(wo,`Claim documents generated by Finance — Cert: ${certNo}`);
   });
-  notify(['admin','md'],`Claim ${certNo} prepared — ${selClaimJobs.size} jobs. Admin to submit to BPC.`);
+  notify(['admin','md'],`Finance generated claim docs — Cert ${certNo} (${selClaimJobs.size} job${selClaimJobs.size>1?'s':''}). Admin: review and record each job as complete.`);
   selClaimJobs.clear();saveDB();renderClaims();renderInbox();renderDashboard();
-  toast(`Claim ${certNo} generated — Admin notified`);
+  toast(`Claim ${certNo} documents generated — Admin notified`);
 }
 
 /* ═══════════════════════════════════════
@@ -1629,7 +1755,7 @@ function buildDoc(docType,job){
     case 'payment_cert': return docPaymentCert(job);
     case 'invoice': return docInvoice(job);
     case 'list_of_jobs': return docListOfJobs(job);
-    case 'bpc_wo': return`<div class="ua ua-bl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Upload the scanned BPC work order document received via email. This is the original document from BPC, not generated in this system.</div>`;
+    case 'bpc_wo': return`<div class="ua ua-bl" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Upload the scanned BPC work order document you received by email. This is the original BPC document — upload it here so it is stored in the system for reference.</div>`;
     default: return'<p style="padding:1rem;color:#555">Document not available</p>';
   }
 }
@@ -1638,42 +1764,59 @@ function buildDoc(docType,job){
 function docVO1(job){
   const t=jTotal(job,'vo1');
   const rows=job.vo1.items.map((it,i)=>`<tr>
-    <td>${i+1}</td>
-    <td style="min-width:190px">${acInput(job.wo,'vo1',i)}</td>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
     <td class="c"><input class="ef ef-b" id="vo1u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].u=this.value"></td>
     <td class="r"><input class="ef ef-b" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
     <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
     <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
   </tr>`).join('');
+  const custPayDate=job.actions.wo_received?.date||'';
   return`<div class="paper">
-  ${lh('Works Valuation')}
+  <table style="width:100%;border-collapse:collapse;margin-bottom:6px">
+    <tr>
+      <td style="width:60%;vertical-align:top">
+        <div style="font-weight:bold;font-size:10pt">BOTSWANA POWER CORPORATION</div>
+        <div style="font-size:8.5pt">P. O. Box 48 &nbsp;&nbsp;&nbsp; Tel &nbsp; 3607000</div>
+        <div style="font-size:8.5pt">Gaborone &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Fax &nbsp; 3607731</div>
+      </td>
+      <td style="text-align:right;vertical-align:top">
+        <div style="font-size:11pt;font-weight:bold">Works Valuation</div>
+      </td>
+    </tr>
+  </table>
+  <hr>
+  <div style="margin-bottom:6px"><span style="font-weight:bold;font-size:9pt">BPC &nbsp; W/O No. :</span> &nbsp; <input class="ef ef-b" value="${job.wo}" style="width:80px" onchange="DB.jobs['${job.wo}'].wo=this.value;saveDB()"></div>
+  <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Project Details</div>
   <table class="hdt">
-    <tr><td class="lbl">BPC W/O No. :</td><td>${job.wo}</td><td class="lbl">Project No. :</td><td>${job.wo}</td></tr>
-    <tr><td class="lbl">Contract :</td><td colspan="3">FREE CONNECTIONS PHASE ${job.phase} PROJECT</td></tr>
+    <tr><td class="lbl">Contract :</td><td colspan="3">FREE CONNECTIONS PHASE ${job.phase} PROJECT &nbsp;&nbsp;&nbsp;&nbsp; BPC Project No. : <input class="ef ef-b" value="${job.wo}" style="width:70px"></td></tr>
     <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
-    <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" onchange="DB.jobs['${job.wo}'].cust=this.value;saveDB()" style="width:95%"></td>
-      <td class="lbl">Location Factor :</td><td><input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo1.lf=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td></tr>
-    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${job.loc}" onchange="DB.jobs['${job.wo}'].loc=this.value;saveDB()" style="width:95%"></td>
-      <td class="lbl">Markup :</td><td><input class="ef ef-b" value="${job.vo1.mk||12.5}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo1.mk=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td></tr>
+    <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" onchange="DB.jobs['${job.wo}'].cust=this.value;saveDB()" style="width:98%"></td>
+      <td class="lbl" style="white-space:nowrap">Location Factor :</td><td><input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo1.lf=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td></tr>
+    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${job.loc}" onchange="DB.jobs['${job.wo}'].loc=this.value;saveDB()" style="width:98%"></td>
+      <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td><input class="ef ef-b" type="date" value="${custPayDate}" style="width:110px"></td></tr>
+    <tr><td class="lbl">Wayleave Approval :</td><td>BPC</td><td class="lbl">Date Wayleave Available :</td><td><input class="ef ef-b" value="Not Required" style="width:98%"></td></tr>
   </table><hr>
-  <span class="p-grey">VO1 — Bill of Quantities (Initial Estimate)</span>
-  <div style="font-size:7.5pt;color:#0055cc;margin-bottom:4px;padding:3px 5px;background:#f0f5ff;border:1px solid #c8d8ff;border-radius:3px">💡 Click description field to search BPC Rates — rate and unit auto-fill on selection</div>
+  <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Details of BPC &nbsp; W/O No. : &nbsp; ${job.wo}</div>
+  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1</div>
   <table class="boq">
-    <thead><tr><th style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:46px">QTY</th><th class="r" style="width:78px">RATE/UNIT</th><th class="r" style="width:90px">VALUE (BWP)</th></tr></thead>
+    <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
     <tbody id="vo1rows${job.wo}">${rows}</tbody>
   </table>
-  <button onclick="addVO1Row('${job.wo}')" style="font-size:8pt;padding:2px 8px;cursor:pointer;margin-top:5px">+ Add row</button>
-  <div style="margin-top:8px;background:#f8f8f8;border:1px solid #ddd;padding:6px 8px">
-    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0"><span>Subtotal</span><span id="vo1sub${job.wo}">${t.sub.toFixed(2)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0;background:#fffbe8"><span>Location Factor (${job.vo1.lf||29.25}%)</span><span id="vo1loc${job.wo}">${t.loc.toFixed(2)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0"><span>Markup (${job.vo1.mk||12.5}%)</span><span id="vo1mk${job.wo}">${t.markup.toFixed(2)}</span></div>
-    <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:9pt;padding:3px 0;border-top:1.5px solid #000;margin-top:2px"><span>TOTAL (VO1)</span><span id="vo1tot${job.wo}">${t.total.toFixed(2)}</span></div>
-  </div>
-  <div style="font-size:8pt;color:#555;margin-top:8px;padding:5px 8px;border:1px solid #e0e0e0;background:#fafafa">Print → Hand-sign → Scan → Upload signed scan using the button above</div>
-  <div class="sig-area">
-    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
-    ${sigBlank('Inspector (BPC Representative)')}
-  </div>
+  <button onclick="addVO1Row('${job.wo}')" style="font-size:8pt;padding:2px 8px;cursor:pointer;margin-top:5px;border:1px solid #bbb;border-radius:3px;background:#f8f8f8">+ Add item</button>
+  <table style="width:100%;margin-top:8px;font-size:8.5pt;border-collapse:collapse">
+    <tr><td style="width:65%;text-align:right;padding:2px 5px">Items Subtotal</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px" id="vo1rawsub${job.wo}">${t.sub.toFixed(2)}</td></tr>
+    <tr><td style="text-align:right;padding:2px 5px">Location Factor @ <input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:36px;text-align:center" onchange="DB.jobs['${job.wo}'].vo1.lf=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px" id="vo1loc${job.wo}">${t.loc.toFixed(2)}</td></tr>
+    <tr><td style="text-align:right;padding:2px 5px;background:#f8f8f8">Sub Total</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px;background:#f8f8f8;font-weight:bold" id="vo1sub${job.wo}">${(t.sub+t.loc).toFixed(2)}</td></tr>
+    <tr><td style="text-align:right;padding:2px 5px">Markup @ <input class="ef ef-b" value="${job.vo1.mk||12.5}" style="width:36px;text-align:center" onchange="DB.jobs['${job.wo}'].vo1.mk=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px" id="vo1mk${job.wo}">${t.markup.toFixed(2)}</td></tr>
+    <tr style="background:#d9d9d9"><td style="text-align:right;padding:3px 5px;font-weight:bold;font-size:9pt">TOTAL (BWP)</td><td style="text-align:right;border:2px solid #000;padding:3px 5px;font-weight:bold;font-size:9.5pt" id="vo1tot${job.wo}">${t.total.toFixed(2)}</td></tr>
+  </table>
+  <div style="font-size:8pt;color:#555;margin-top:8px;padding:5px 8px;border:1px solid #e0e0e0;background:#fafafa">Print → Hand-sign below → Scan → Upload signed scan</div>
+  <br>
+  <div style="font-size:9pt">Name : …..…………………………………………………………………………………………….</div>
+  <br>
+  <div style="font-size:9pt">Name : …..…………………………………………………………………………………………….
+  <span style="font-size:8pt">(Inspector-BPC)</span></div>
   </div>`;
 }
 
@@ -1698,7 +1841,6 @@ function docVO2(job){
       <td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||10}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td></tr>
   </table><hr>
   <span class="p-grey">VO2 — Actual Quantities After Field Inspection</span>
-  <div style="font-size:7.5pt;color:#0055cc;margin-bottom:4px;padding:3px 5px;background:#f0f5ff;border:1px solid #c8d8ff;border-radius:3px">💡 Update quantities from linesman's findings. Add any extra items.</div>
   <table class="boq">
     <thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:46px">QTY</th><th class="r" style="width:78px">UNIT COST</th><th class="r" style="width:90px">TOTAL (BWP)</th></tr></thead>
     <tbody>${rows}</tbody>
@@ -1750,26 +1892,83 @@ function docFieldReport(job){
 
 /* ── WORKS INSTRUCTION ── */
 function docWorksInstruction(job){
-  const t=jTotal(job,job.vo2.items.length?'vo2':'vo1');
-  const teams=job.actions.teams_notified?.extra||'—';
+  const t1=jTotal(job,'vo1');
+  const t2=jTotal(job,'vo2');
+  const finalCost=t2.total>0?t2.total:t1.total;
+  const ef=(id,val,w,type)=>`<input class="ef ef-b" id="${id}" value="${val||''}" style="width:${w||'90%'}" ${type?`type="${type}"`:''}  >`;
   return`<div class="paper">
-  ${lh('Works Instruction')}
+  <table style="width:100%;border-collapse:collapse;margin-bottom:5px">
+    <tr>
+      <td style="width:60%;vertical-align:top">
+        <div style="font-weight:bold;font-size:10pt">BOTSWANA POWER CORPORATION</div>
+        <div style="font-size:8.5pt">P. O. Box 48 &nbsp;&nbsp; Tel &nbsp; ${ef('wi_tel','3607000','60px')} &nbsp;&nbsp; Gaborone</div>
+        <div style="font-size:8.5pt">Fax &nbsp; ${ef('wi_fax','3607731','60px')}</div>
+      </td>
+      <td style="text-align:right;vertical-align:top">
+        <div style="font-size:11pt;font-weight:bold">Works Instruction</div>
+        <div style="font-size:9pt">BPC &nbsp; W/O No. : &nbsp; <strong>${job.wo}</strong></div>
+      </td>
+    </tr>
+  </table><hr>
+  <div style="font-weight:bold;font-size:9pt;background:#f0f0f0;padding:2px 6px;margin-bottom:3px">Contract Details</div>
   <table class="hdt">
-    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Contract Details</td></tr>
-    <tr><td class="lbl">Contract :</td><td colspan="2">FREE CONNECTIONS PHASE ${job.phase} PROJECT</td><td><span style="font-weight:bold">BPC Contract No.:</span> 2000921000</td></tr>
-    <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
-    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Work Details</td></tr>
-    <tr><td class="lbl">BPC W/O No. :</td><td>${job.wo}</td><td class="lbl">Location Factor :</td><td>${job.vo1.lf||29.25}%</td></tr>
-    <tr><td class="lbl">Project Title :</td><td>${job.cust}</td><td class="lbl">Location :</td><td>${job.loc}</td></tr>
-    <tr><td class="lbl">Assigned Team :</td><td>${teams}</td><td class="lbl">W/O Value :</td><td style="font-weight:bold">${P(t.total)}</td></tr>
-    <tr><td colspan="4" style="font-weight:bold;background:#f0f0f0;padding:2px 5px">Execution</td></tr>
-    <tr><td class="lbl">Start Date :</td><td>${job.actions.teams_notified?.date||'___________'}</td><td class="lbl">Completion Date :</td><td>${job.actions.work_complete?.date||'___________'}</td></tr>
+    <tr><td class="lbl">Contract :</td><td>${ef('wi_contract','FREE CONNECTIONS PHASE '+job.phase+' PROJECT','65%')}</td>
+      <td class="lbl" style="white-space:nowrap">BPC Contract No. :</td><td>${ef('wi_contractno','2000921000','90px')}</td></tr>
+    <tr><td class="lbl">Contractor :</td><td colspan="3">${ef('wi_contractor',CO.name,'98%')}</td></tr>
   </table>
-  <div style="margin:8px 0;font-size:8.5pt;background:#fffbe8;border:1px solid #e0c060;padding:5px 8px">The works are to be carried out in accordance with the VO1/VO2 documents. Any significant alterations require BPC approval before proceeding.</div>
-  <div class="sig-area">
-    ${sigBlank('Issued by (Admin · Trends Engineering)')}
-    ${sigBlank('Acknowledged by (Team Supervisor)')}
+  <div style="font-weight:bold;font-size:9pt;background:#f0f0f0;padding:2px 6px;margin:3px 0">Work Details</div>
+  <table class="hdt">
+    <tr><td class="lbl">Project Title :</td><td>${ef('wi_title',job.cust,'98%')}</td>
+      <td class="lbl" style="white-space:nowrap">Location Factor :</td><td>${ef('wi_lf',String(job.vo1.lf||29.25),'50px')}</td></tr>
+    <tr><td class="lbl">Location :</td><td>${ef('wi_loc',job.loc,'98%')}</td>
+      <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td>${ef('wi_custdate',job.actions.wo_received?.date||'','110px','date')}</td></tr>
+    <tr><td class="lbl">Drawings :</td><td>${ef('wi_drawings','Attached','80px')}</td>
+      <td class="lbl" style="white-space:nowrap">Date Wayleave Available :</td><td>${ef('wi_wayleave','','110px')}</td></tr>
+    <tr><td class="lbl">Wayleave Approval :</td><td>${ef('wi_wayleaveapproval','BPC','60px')}</td><td></td><td></td></tr>
+  </table>
+  <div style="font-weight:bold;font-size:9pt;background:#f0f0f0;padding:2px 6px;margin:3px 0">Commencement of Works</div>
+  <table class="hdt">
+    <tr><td class="lbl">Agreed Start Date :</td><td>${ef('wi_start',job.actions.teams_notified?.date||'','110px','date')}</td>
+      <td class="lbl" style="white-space:nowrap">Intial W/O Cost:</td><td><strong>${ef('wi_initcost',t1.total.toFixed(2),'100px')}</strong></td></tr>
+    <tr><td class="lbl">Agreed Completion Date :</td><td>${ef('wi_agreedcomp','','110px','date')}</td>
+      <td class="lbl" style="white-space:nowrap">Weekly Penalty for Delay :</td><td>${ef('wi_penalty','0','60px')}</td></tr>
+    <tr><td class="lbl">% Complete :</td><td>${ef('wi_pct','1','40px')}</td><td></td><td></td></tr>
+  </table>
+  <div style="font-weight:bold;font-size:9pt;background:#f0f0f0;padding:2px 6px;margin:3px 0">Completion of Works</div>
+  <table class="hdt">
+    <tr><td class="lbl">Actual Completion Date :</td><td>${ef('wi_actualcomp',job.actions.work_complete?.date||'','110px','date')}</td>
+      <td class="lbl" style="white-space:nowrap">Delay to Completion (Weeks):</td><td>${ef('wi_delay','0','60px')}</td></tr>
+    <tr><td class="lbl">Reason for Delay :</td><td colspan="3">${ef('wi_reasondelay','NIL','98%')}</td></tr>
+    <tr><td class="lbl">Final W/O Cost</td><td><strong>${ef('wi_finalcost',finalCost.toFixed(2),'110px')}</strong></td>
+      <td class="lbl" style="white-space:nowrap">Final V/O No:</td><td>${ef('wi_fvono',t2.total>0?'2':'1','40px')}</td></tr>
+    <tr><td class="lbl">Penalty Deduction :</td><td>${ef('wi_penaltyded','0','80px')}</td><td></td><td></td></tr>
+    <tr><td class="lbl">Interim Payments :</td><td>${ef('wi_interim','0','80px')}</td><td></td><td></td></tr>
+    <tr><td class="lbl">Final W/O Payment:</td><td><strong>${ef('wi_finalpay',finalCost.toFixed(2),'110px')}</strong></td>
+      <td class="lbl" style="white-space:nowrap">Payment Cert. (Final):</td><td>${ef('wi_paymentcertfinal',CO.name,'150px')}</td></tr>
+  </table>
+  <div style="margin-top:8px;font-size:9pt">
+    Signed For Contractor : &nbsp; ${ef('wi_signedcontractor','…………………………………………………………………','70%')}
   </div>
+  <div style="margin-top:5px;font-size:9pt">
+    Name : &nbsp; ${ef('wi_namecontractor','','70%')}
+  </div>
+  <div style="margin-top:10px;font-weight:bold;font-size:9pt;background:#f0f0f0;padding:2px 6px">Certification of Works</div>
+  <table style="width:100%;border-collapse:collapse;margin-top:6px">
+    <tr>
+      <td style="width:50%;padding-right:12px">
+        <div style="font-size:8.5pt;font-weight:bold">Certified For Payment</div>
+        <div style="margin-top:20px;border-bottom:1px solid #000;height:22px"></div>
+        <div style="margin-top:4px;font-size:8.5pt">Name : ${ef('wi_certname','','95%')}</div>
+        <div style="font-size:7.5pt;color:#555">(Inspector-BPC)</div>
+      </td>
+      <td style="width:50%;padding-left:12px">
+        <div style="font-size:8.5pt;font-weight:bold">Approved for Payment</div>
+        <div style="margin-top:20px;border-bottom:1px solid #000;height:22px"></div>
+        <div style="margin-top:4px;font-size:8.5pt">Name : ${ef('wi_approvname','','95%')}</div>
+        <div style="font-size:7.5pt;color:#555">(for Botswana Power Corporation)</div>
+      </td>
+    </tr>
+  </table>
   </div>`;
 }
 
@@ -1809,154 +2008,414 @@ function docGISReport(job){
   </div>`;
 }
 
-/* ── ANNEXURE ── */
+/* ── ANNEXURE TO PAYMENT CERTIFICATE ── */
 function docAnnexure(job){
-  const certNo=job.claimRef||'TES-001';
-  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo||j.stage==='claim_docs_ready');
-  const total=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const certNo=job?.claimRef||'TES-001';
+  const claimJobs=job
+    ?(certNo!=='TES-001'
+      ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
+      :[job])
+    :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
+  const totalFinal=claimJobs.reduce((s,j)=>{const t=j.vo2.items.length?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);
+  const inL=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none">`;
+  const inR=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;text-align:right">`;
+  const rows=claimJobs.map(j=>{
+    const tVO2=j.vo2.items.length?jTotal(j,'vo2'):null;
+    const tVO1=jTotal(j,'vo1');
+    // Final Cost and Final Payment are VO2 total; fall back to VO1 only if VO2 not yet done
+    const amt=tVO2?BWP(tVO2.total):BWP(tVO1.total);
+    return`<tr>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.wo,'70px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.cust,'99%')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inR(amt,'105px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inR('0.00','70px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inR('0.00','105px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inR(amt,'105px')}</td>
+    </tr>`;
+  }).join('');
   return`<div class="paper">
-  <div style="font-size:11pt;font-weight:bold;text-align:center;margin-bottom:4px">ANNEXURE TO PAYMENT CERTIFICATE</div><hr>
-  <table class="hdt">
-    <tr><td class="lbl">Payment Certificate:</td><td>${certNo}</td><td class="lbl">Date:</td><td><input class="ef ef-b" type="date" value="${new Date().toISOString().slice(0,10)}"></td></tr>
-    <tr><td class="lbl">Contract:</td><td>Free Connections Projects — Phase ${job.phase}</td><td></td><td></td></tr>
-    <tr><td class="lbl">Employer:</td><td>${BPC_CO.name}</td><td></td><td></td></tr>
-    <tr><td class="lbl">Contractor:</td><td colspan="3">${CO.name}</td></tr>
-    <tr><td class="lbl">Vendor No.:</td><td>${CO.vendor}</td><td class="lbl">VAT No.:</td><td>${CO.vat}</td></tr>
-  </table><hr>
-  <table class="jt">
-    <thead><tr><th>#</th><th>WO No.</th><th>Customer Name</th><th>Location</th><th>Type</th><th>Completion Date</th><th>Amount (BWP)</th></tr></thead>
+  <div style="font-size:12pt;font-weight:bold;text-align:center;margin-bottom:5px">ANNEXURE TO PAYMENT CERTIFICATE</div>
+  <hr>
+  <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:6px">
+    <tr>
+      <td style="padding:2px 4px;width:140px;font-weight:bold">Payment Certificate:</td>
+      <td style="padding:2px 4px">${inL(certNo,'90px')}</td>
+      <td style="padding:2px 4px;width:60px;font-weight:bold">Ref:</td>
+      <td style="padding:2px 4px">${inL(certNo,'90px')}</td>
+    </tr>
+    <tr>
+      <td style="padding:2px 4px;font-weight:bold">Contract:</td>
+      <td colspan="3" style="padding:2px 4px">${inL('Free Connections Projects - North','98%')}</td>
+    </tr>
+    <tr>
+      <td style="padding:2px 4px;font-weight:bold">Employer:</td>
+      <td colspan="3" style="padding:2px 4px">${inL('Botswana Power Corporation','98%')}</td>
+    </tr>
+    <tr>
+      <td style="padding:2px 4px;font-weight:bold">Contractor:</td>
+      <td colspan="3" style="padding:2px 4px">${inL(CO.name,'98%')}</td>
+    </tr>
+    <tr>
+      <td style="padding:2px 4px;font-weight:bold">Region:</td>
+      <td style="padding:2px 4px">${inL('North','80px')}</td>
+      <td style="padding:2px 4px;font-weight:bold">Date:</td>
+      <td style="padding:2px 4px"><input type="date" value="${new Date().toISOString().slice(0,10)}" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none"></td>
+    </tr>
+  </table>
+  <hr>
+  <table style="width:100%;border-collapse:collapse;font-size:8.5pt">
+    <thead>
+      <tr style="background:#d9d9d9">
+        <th style="border:1px solid #999;padding:4px 5px;text-align:left;width:80px">BPC W/O No</th>
+        <th style="border:1px solid #999;padding:4px 5px;text-align:left">Project Title</th>
+        <th style="border:1px solid #999;padding:4px 5px;text-align:right;width:115px">Final Cost</th>
+        <th style="border:1px solid #999;padding:4px 5px;text-align:right;width:80px">Penalties</th>
+        <th style="border:1px solid #999;padding:4px 5px;text-align:right;width:115px">Interim Payments</th>
+        <th style="border:1px solid #999;padding:4px 5px;text-align:right;width:115px">Final Payment</th>
+      </tr>
+    </thead>
     <tbody>
-      ${claimJobs.map((j,i)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return`<tr><td class="c">${i+1}</td><td>${j.wo}</td><td>${j.cust}</td><td>${j.loc.split(',')[0]}</td><td>${j.type}</td><td>${j.actions.work_complete?.date||'—'}</td><td style="text-align:right">${BWP(t.total)}</td></tr>`;}).join('')}
-      <tr class="tot"><td colspan="6" style="text-align:right;font-weight:bold">TOTAL CLAIM</td><td style="text-align:right;font-weight:bold">P ${BWP(total)}</td></tr>
+      ${rows}
+      <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #999">
+        <td style="border:1px solid #bbb;padding:4px 5px" colspan="2"><strong>TOTAL</strong></td>
+        <td style="border:1px solid #bbb;padding:4px 5px;text-align:right">${inR(BWP(totalFinal),'105px')}</td>
+        <td style="border:1px solid #bbb;padding:4px 5px;text-align:right">${inR('0.00','70px')}</td>
+        <td style="border:1px solid #bbb;padding:4px 5px;text-align:right">${inR('0.00','105px')}</td>
+        <td style="border:1px solid #bbb;padding:4px 5px;text-align:right">${inR(BWP(totalFinal),'105px')}</td>
+      </tr>
     </tbody>
   </table>
-  <div class="sig-area">
-    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
-    ${sigBlank('Certified by (Finance · Trends Engineering)')}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px">
+    <div style="border-top:1px solid #000;padding-top:4px">
+      <div style="font-size:8pt;font-weight:bold;margin-bottom:18px">Prepared by (Finance Officer)</div>
+      <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:4px"></div>
+      <div style="font-size:8.5pt">Name: ${inL('','55%')} &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
+    </div>
+    <div style="border-top:1px solid #000;padding-top:4px">
+      <div style="font-size:8pt;font-weight:bold;margin-bottom:18px">Verified by (Trends Engineering)</div>
+      <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:4px"></div>
+      <div style="font-size:8.5pt">Name: ${inL('','55%')} &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
+    </div>
   </div>
   </div>`;
 }
 
-/* ── PAYMENT CERTIFICATE ── */
+/* ── PAYMENT CERTIFICATE (exact match to CLAIM xlsx PAYMENT CERTIFICATE sheet) ── */
+function recalcPC(){
+  try{
+    const g=id=>parseFloat((document.getElementById(id)||{}).value||'0')||0;
+    const r1=g('pcr1'),r2=g('pcr2'),r3=g('pcr3'),r5=g('pcr5');
+    const r4=r1+r2+r3;
+    const r6=r4+r5;
+    const r7=g('pcr7'),r8=g('pcr8'),r9=g('pcr9');
+    const r10=r7+r8+r9;
+    const r11=r6-r10;
+    const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=BWP(v);};
+    set('pcr4',r4);set('pcr6',r6);set('pcr10',r10);set('pcr11',r11);
+    const w=document.getElementById('pc_words');if(w)w.textContent='('+numWords(r11)+')';
+  }catch(e){}
+}
 function docPaymentCert(job){
-  const certNo=job.claimRef||'TES-001';
-  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo||j.stage==='claim_docs_ready');
+  const certNo=job?.claimRef||'TES-001';
+  const claimJobs=job
+    ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
+    :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
   const gross=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
   const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
+  const ef=(val,w,id)=>`<input class="ef ef-b" ${id?`id="${id}"`:''}  value="${val||''}" style="width:${w||'90%'}">`;
   return`<div class="paper">
-  <div style="font-size:12pt;font-weight:bold;text-align:center;margin-bottom:5px">PAYMENT CERTIFICATE</div><hr>
-  <table class="hdt">
-    <tr><td class="lbl">Certificate No.</td><td>${certNo}</td><td class="lbl">Date:</td><td><input class="ef ef-b" type="date" value="${new Date().toISOString().slice(0,10)}"></td></tr>
-    <tr><td class="lbl">Project</td><td>Free Connections Phase ${job.phase}</td></tr>
-    <tr><td class="lbl">Employer</td><td>${BPC_CO.name}</td></tr>
-    <tr><td class="lbl">Contractor</td><td colspan="3">${CO.name}</td></tr>
-  </table><hr>
-  <span class="pc-sec">Amount Certified</span>
-  <div class="pc-row"><div class="n">1.</div><div class="d">Value of Work Completed (see Annexure ${certNo})</div><div class="c">P</div><div class="v">${BWP(gross)}</div></div>
-  <div class="pc-row"><div class="n">2.</div><div class="d">Less Previous Payments</div><div class="c">P</div><div class="v">0.00</div></div>
-  <div class="pc-row sub"><div class="n">3.</div><div class="d">Sub Total</div><div class="c">P</div><div class="v">${BWP(gross)}</div></div>
-  <div class="pc-row"><div class="n">4.</div><div class="d">Plus VAT @ 14%</div><div class="c">P</div><div class="v">0.00</div></div>
-  <div class="pc-row sub"><div class="n">5.</div><div class="d">Total Valuation Certified</div><div class="c">P</div><div class="v">${BWP(gross)}</div></div>
-  <span class="pc-sec">Deductions</span>
-  <div class="pc-row ded"><div class="n">6.</div><div class="d">Less Retention @ 5% of Value of Work</div><div class="c">P</div><div class="v">(${BWP(ret)})</div></div>
-  <div class="pc-row ded"><div class="n">7.</div><div class="d">Less Withholding Tax (WHT) @ 3%</div><div class="c">P</div><div class="v">(${BWP(wht)})</div></div>
-  <div class="pc-row sub"><div class="n">8.</div><div class="d">Total Deductions</div><div class="c">P</div><div class="v">(${BWP(ret+wht)})</div></div>
-  <span class="pc-sec">Amount Payable</span>
-  <div class="pc-row fin"><div class="n">9.</div><div class="d">Net Amount Payable (Item 5 less Item 8)</div><div class="c">P</div><div class="v">${BWP(net)}</div></div>
-  <div style="font-size:8pt;font-style:italic;margin-top:4px">(${numWords(net)})</div>
-  <div style="margin:6px 0;font-size:8pt">Remarks: _____________________________________________</div>
-  <div style="font-size:8pt;margin:6px 0">We certify that the value shown is correct and recommend payment of the amount above.</div>
-  <div class="sig-area">
-    ${sigBlank('Prepared by Finance · Trends Engineering')}
-    ${sigBlank('Approved by BPC — Authorising Payment')}
-  </div>
-  <div style="margin-top:10px;font-size:8pt;font-weight:bold;border-bottom:1px solid #000;padding-bottom:3px">PAYMENT TRACKING</div>
+  <div style="font-size:13pt;font-weight:bold;text-align:center;margin-bottom:5px">PAYMENT CERTIFICATE</div>
+  <hr>
+  <table class="hdt" style="margin-bottom:6px">
+    <tr><td class="lbl">Reference No.</td><td>…………….</td><td>${ef(certNo,'90px')}</td>
+      <td class="lbl" style="text-align:right">Date:</td><td><input class="ef ef-b" type="date" value="${new Date().toISOString().slice(0,10)}"></td></tr>
+    <tr><td class="lbl">Certificate No.</td><td>:…………….</td><td colspan="3">${ef(certNo,'90px')}</td></tr>
+    <tr><td class="lbl">Project</td><td>:…………….</td><td colspan="3">${ef('Free Connections Projects - North','98%')}</td></tr>
+    <tr><td class="lbl">Employer</td><td>:…………….</td><td colspan="3">${ef('Botswana Power Corporation','98%')}</td></tr>
+    <tr><td class="lbl">Contractor</td><td>:…………….</td><td colspan="3">${ef(CO.name,'98%')}</td></tr>
+  </table>
+  <div style="font-size:8.5pt;font-weight:bold;margin:4px 0">Contract Statement (Including VAT)</div>
+  <table style="width:100%;font-size:8.5pt;border-collapse:collapse">
+    <tr><td>Original Approved Contract Value</td><td style="width:20px;text-align:right">P</td><td style="width:130px;text-align:right">${ef('0.00','120px')}</td></tr>
+    <tr><td>Value Of Work Completed To Date (Excl. Vat)</td><td style="text-align:right">P</td><td style="text-align:right">${ef(BWP(gross),'120px')}</td></tr>
+    <tr><td>Less Previous Payments</td><td style="text-align:right">P</td><td style="text-align:right">${ef('0.00','120px')}</td></tr>
+  </table>
+  <div style="background:#d9d9d9;font-weight:bold;padding:2px 5px;font-size:9pt;margin:5px 0 2px">Amount Certified To Date</div>
+  <table style="width:100%;font-size:8.5pt;border-collapse:collapse">
+    <tr><td style="padding:2px 5px;width:4%">1.</td><td>Value of Work Completed (see Annexure ${ef(certNo,'70px')})</td><td style="width:20px;text-align:right;padding:2px">P</td><td style="width:130px;text-align:right;padding:2px"><input class="ef ef-b" id="pcr1" value="${BWP(gross)}" style="width:120px;text-align:right" oninput="recalcPC()"></td></tr>
+    <tr><td style="padding:2px 5px">2.</td><td>Value of Interim Work previously claimed but now 100% completed (see Annexure)</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px"><input class="ef ef-b" id="pcr2" value="0.00" style="width:120px;text-align:right" oninput="recalcPC()"></td></tr>
+    <tr><td style="padding:2px 5px">3.</td><td>Interim Value of work completed (see Annexure)</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px"><input class="ef ef-b" id="pcr3" value="0.00" style="width:120px;text-align:right" oninput="recalcPC()"></td></tr>
+    <tr style="background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999"><td style="padding:2px 5px">4.</td><td>Sub total of Work completed</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px;font-weight:bold" id="pcr4">${BWP(gross)}</td></tr>
+    <tr><td style="padding:2px 5px">5.</td><td>Plus VAT @ 14%</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px"><input class="ef ef-b" id="pcr5" value="0.00" style="width:120px;text-align:right" oninput="recalcPC()"></td></tr>
+    <tr style="background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999"><td style="padding:2px 5px">6.</td><td>Total Valuation Certified To Date</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px;font-weight:bold" id="pcr6">${BWP(gross)}</td></tr>
+  </table>
+  <div style="background:#d9d9d9;font-weight:bold;padding:2px 5px;font-size:9pt;margin:5px 0 2px">Deductions</div>
+  <table style="width:100%;font-size:8.5pt;border-collapse:collapse">
+    <tr><td style="padding:2px 5px;width:4%">7.</td><td>Less Retention (5% of Value of Work Now Completed excluding VAT)</td><td style="width:20px;text-align:right;padding:2px">P</td><td style="width:130px;text-align:right;padding:2px;color:#c00"><input class="ef ef-b" id="pcr7" value="${BWP(ret)}" style="width:120px;text-align:right;color:#c00" oninput="recalcPC()"></td></tr>
+    <tr><td style="padding:2px 5px">8.</td><td>Less Witholding Tax @ 3% of Value of Work Completed</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px;color:#c00"><input class="ef ef-b" id="pcr8" value="${BWP(wht)}" style="width:120px;text-align:right;color:#c00" oninput="recalcPC()"></td></tr>
+    <tr><td style="padding:2px 5px">9.</td><td>Less Retention (10% of Interim Value of Work Claimed excluding VAT)</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px;color:#c00"><input class="ef ef-b" id="pcr9" value="0.00" style="width:120px;text-align:right;color:#c00" oninput="recalcPC()"></td></tr>
+    <tr style="background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999"><td style="padding:2px 5px">10.</td><td>Sub-Total-Sum Items 7-9</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px;color:#c00;font-weight:bold" id="pcr10">${BWP(ret+wht)}</td></tr>
+  </table>
+  <div style="background:#d9d9d9;font-weight:bold;padding:2px 5px;font-size:9pt;margin:5px 0 2px">Amount Due</div>
+  <table style="width:100%;font-size:8.5pt;border-collapse:collapse">
+    <tr style="background:#d9d9d9;font-weight:bold;border-top:2px solid #000"><td style="padding:3px 5px;width:4%">11.</td><td>Item 6 - Item 10</td><td style="width:20px;text-align:right;padding:3px">P</td><td style="width:130px;text-align:right;padding:3px;font-size:9.5pt;font-weight:bold" id="pcr11">${BWP(net)}</td></tr>
+  </table>
+  <div style="font-size:8pt;font-style:italic;margin:4px 5px" id="pc_words">(${numWords(net)})</div>
+  <div style="margin:5px;font-size:8.5pt">Remarks: <input class="ef ef-b" value="" placeholder="________________________________________" style="width:82%"></div>
+  <div style="margin:5px;font-size:8.5pt">________________________________________</div>
+  <div style="margin:5px 5px 8px;font-size:8pt">We hereby certify that the value of work shown is correct and recommend payment in full of the amount shown</div>
+  <table style="width:100%;border-collapse:collapse;margin-top:10px">
+    <tr>
+      <td style="width:50%;vertical-align:top;padding-right:12px">
+        <div style="font-size:8.5pt;margin-bottom:20px">Certificate Prepared by:</div>
+        <div style="border-bottom:1px solid #000;margin-bottom:3px;height:18px"></div>
+        <div style="font-size:8.5pt">Name: <input class="ef ef-b" value="" style="width:70%"></div>
+        <div style="font-size:7.5pt;color:#555">for Botswana Power Corporation</div>
+      </td>
+      <td style="width:50%;vertical-align:top;padding-left:12px">
+        <div style="font-size:8.5pt;margin-bottom:20px">Certificate Approved by:</div>
+        <div style="border-bottom:1px solid #000;margin-bottom:3px;height:18px"></div>
+        <div style="font-size:8.5pt">Name: <input class="ef ef-b" value="" style="width:70%"></div>
+        <div style="font-size:7.5pt;color:#555">for Botswana Power Corporation</div>
+      </td>
+    </tr>
+  </table>
+  <div style="margin-top:10px;font-size:8.5pt">Transmission &amp; Distribution:<br>Botswana Power Corporation</div>
+  <div style="margin-top:12px;font-size:8pt;font-weight:bold;border-bottom:1px solid #000;padding-bottom:3px">PAYMENT CERTIFICATE TRACKING SHEET</div>
   <table style="width:100%;border-collapse:collapse;font-size:7.5pt;margin-top:5px">
-    <tr><th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px;text-align:left;width:40%">Approval Stage</th><th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px">Date Received</th><th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px">Date Dispatched</th><th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px">Name &amp; Signature</th></tr>
-    ${["Contractor's claim submitted","Project Engineer (North)","Senior Project Engineer (North)","Network Services Manager","Financial Controller T&amp;D","Finance Manager Projects","General Manager T&amp;D"].map(s=>`<tr><td style="border:1px solid #bbb;padding:5px;font-weight:bold">${s}</td><td style="border:1px solid #bbb;padding:5px"></td><td style="border:1px solid #bbb;padding:5px"></td><td style="border:1px solid #bbb;padding:5px"></td></tr>`).join('')}
+    <tr>
+      <th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px;text-align:left;width:35%">Approval Stage</th>
+      <th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px;width:18%">Date Received</th>
+      <th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px;width:18%">Date Dispatched</th>
+      <th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px">Name &amp; Signature</th>
+    </tr>
+    ${["Contractor's claim submitted to Consultant","Finalized claim sent to Contractor","Final Tax Invoice and Claim to Client","Project Engineer (North)","Senior Project Engineer (North)","Network Services and Supply Manager (North)","Financial Controller T &amp; D","Finance Manager Projects","General Manager Transmission &amp; Distribution","ACCOUNTS","PAYMENT MADE BY"].map(s=>`<tr><td style="border:1px solid #bbb;padding:4px 5px;font-weight:bold">${s}</td><td style="border:1px solid #bbb;padding:4px 5px"></td><td style="border:1px solid #bbb;padding:4px 5px"></td><td style="border:1px solid #bbb;padding:4px 5px"></td></tr>`).join('')}
   </table>
   </div>`;
 }
 
-/* ── INVOICE ── */
+/* ── INVOICE (exact match to CLAIM_10 INVOICE sheet) ── */
 function docInvoice(job){
-  const certNo=job.claimRef||'TES-001';
-  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo||j.stage==='claim_docs_ready');
+  const certNo=job?.claimRef||'TES-001';
+  const claimJobs=job
+    ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
+    :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
+  const phase=job?.phase||claimJobs[0]?.phase||'46';
   const gross=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
-  const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
+  const vat=gross*.14;
+  const ret=gross*.05, wht=gross*.03;
+  const amountDue=gross+vat-ret-wht;
   const invNo=`INV_${certNo}.${new Date().getFullYear()}`;
+  const ef=(val,w)=>`<input class="ef ef-b" value="${val||''}" style="width:${w||'90%'}">`;
   return`<div class="paper">
-  <table class="lh-t"><tr>
-    <td style="width:50%">
-      <div style="font-size:12pt;font-weight:bold">${CO.name}</div>
-      <div style="font-size:8.5pt">${CO.po}, ${CO.city}</div>
-      <div style="font-size:8.5pt">Tel: ${CO.tel}</div>
-      <div style="font-size:8.5pt">VAT No: ${CO.vat}</div>
-      <div style="font-size:8.5pt">Vendor No: ${CO.vendor}</div>
-    </td>
-    <td style="text-align:right;vertical-align:top">
-      <div style="font-size:13pt;font-weight:bold">INVOICE</div>
-      <div style="font-size:9pt">Invoice No: ${invNo}</div>
-      <div style="font-size:9pt">Date: <input class="ef ef-b" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
-    </td>
-  </tr></table><hr>
-  <table class="hdt">
-    <tr><td class="lbl" style="font-weight:bold;font-size:9pt">BILL TO:</td><td></td></tr>
-    <tr><td style="padding-left:10px">${BPC_CO.name}</td><td class="lbl">Payment Cert.:</td><td>${certNo}</td></tr>
-    <tr><td style="padding-left:10px">${BPC_CO.addr}</td><td class="lbl">Contract:</td><td>Free Connections Phase ${job.phase}</td></tr>
-    <tr><td style="padding-left:10px">${BPC_CO.city}</td><td></td><td></td></tr>
-  </table><hr>
-  <table class="boq">
-    <thead><tr><th>#</th><th>Description</th><th class="c">WO No.</th><th class="c">Phase</th><th class="r">Amount (BWP)</th></tr></thead>
+  <div style="font-size:14pt;font-weight:bold;margin-bottom:8px">INVOICE</div>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
+    <tr>
+      <td style="width:55%;vertical-align:top;font-size:8.5pt">
+        <div style="font-weight:bold">BOTSWANA POWER CORPORATION</div>
+        <div>Motlakase House</div>
+        <div>Macheng Way</div>
+        <div>P.O. Box 48</div>
+        <div>Gaborone</div>
+      </td>
+      <td style="vertical-align:top;font-size:8.5pt">
+        <table style="font-size:8.5pt;border-collapse:collapse">
+          <tr><td style="padding:1px 3px;white-space:nowrap;font-weight:bold">Invoice Number:</td><td style="padding:1px 3px">${ef(invNo,'130px')}</td></tr>
+          <tr><td style="padding:1px 3px;white-space:nowrap;font-weight:bold">Project No:</td><td style="padding:1px 3px">${ef('DSW/TRENDS/ZERO CONNECTION','150px')}</td></tr>
+          <tr><td style="padding:1px 3px;white-space:nowrap;font-weight:bold">Reference:</td><td style="padding:1px 3px">${ef(certNo,'90px')}</td></tr>
+          <tr><td style="padding:1px 3px;white-space:nowrap;font-weight:bold">Invoice Date:</td><td style="padding:1px 3px"><input class="ef ef-b" type="date" value="${new Date().toISOString().slice(0,10)}"></td></tr>
+          <tr><td style="padding:1px 3px;white-space:nowrap;font-weight:bold">Vendor No:</td><td style="padding:1px 3px">${ef(CO.vendor,'80px')}</td></tr>
+          <tr><td style="padding:1px 3px;white-space:nowrap;font-weight:bold">Terms:</td><td style="padding:1px 3px">${ef('45 Days','80px')}</td></tr>
+          <tr><td style="padding:1px 3px;white-space:nowrap;font-weight:bold">VAT No.:</td><td style="padding:1px 3px">${ef(CO.vat,'170px')}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+  <hr>
+  <table class="boq" style="margin-bottom:6px">
+    <thead>
+      <tr>
+        <th class="c" style="width:35px">Item</th>
+        <th>Description</th>
+        <th class="r" style="width:55px">Qty</th>
+        <th class="r" style="width:120px">Unit Price</th>
+        <th class="r" style="width:80px">Discount</th>
+        <th class="r" style="width:120px">Price</th>
+      </tr>
+    </thead>
     <tbody>
-      ${claimJobs.map((j,i)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return`<tr><td class="c">${i+1}</td><td>${j.cust} — ${j.loc.split(',')[0]} (${j.type})</td><td class="c">${j.wo}</td><td class="c">${j.phase}</td><td class="r">${BWP(t.total)}</td></tr>`;}).join('')}
-      <tr class="sr"><td colspan="4" class="r">Subtotal</td><td class="r">${BWP(gross)}</td></tr>
-      <tr><td colspan="4" class="r">Less Retention (5%)</td><td class="r" style="color:#c00">(${BWP(ret)})</td></tr>
-      <tr><td colspan="4" class="r">Less Withholding Tax (3%)</td><td class="r" style="color:#c00">(${BWP(wht)})</td></tr>
-      <tr class="tr"><td colspan="4" class="r"><strong>NET AMOUNT PAYABLE</strong></td><td class="r"><strong>P ${BWP(net)}</strong></td></tr>
+      <tr>
+        <td class="c">1</td>
+        <td>
+          <input class="ef ef-b" value="BPC DISTRIBUTION SMALL WORKS" style="width:98%;font-weight:bold"><br>
+          <input class="ef ef-b" value="PAYMENT CERTIFICATE NO. ${certNo}" style="width:98%;font-size:8pt"><br>
+          <input class="ef ef-b" value="PHASE ${phase} REVISED ZERO CONNECTION PROGRAMME RATE" style="width:98%;font-size:8pt">
+        </td>
+        <td class="r"><input class="ef ef-b" value="1" style="width:40px;text-align:right" id="inv_qty" oninput="recalcInv()"></td>
+        <td class="r"><input class="ef ef-b" value="${BWP(gross)}" style="width:110px;text-align:right" id="inv_unit" oninput="recalcInv()"></td>
+        <td class="r"><input class="ef ef-b" value="0" style="width:65px;text-align:right" id="inv_disc" oninput="recalcInv()"></td>
+        <td class="r" style="font-weight:bold" id="inv_price">${BWP(gross)}</td>
+      </tr>
     </tbody>
   </table>
-  <div style="margin-top:10px;background:#f0f5ff;border:1px solid #c8d8ff;padding:8px;font-size:8.5pt">
-    <div style="font-weight:bold;margin-bottom:4px">BANKING DETAILS — Please deposit to:</div>
-    <div>Bank: <strong>${CO.bank}</strong></div>
-    <div>Account Name: ${CO.name}</div>
-    <div>Account Number: <strong>${CO.acc}</strong></div>
-    <div>Branch: ${CO.branch} &nbsp; Branch Code: ${CO.bcode} &nbsp; SWIFT: ${CO.swift}</div>
-  </div>
-  <div style="margin-top:8px;font-size:8pt;text-align:center;font-style:italic">E. &amp; O. E. — Errors and Omissions Excepted</div>
-  <div class="sig-area">
-    ${sigBlank('Finance Officer · Trends Engineering')}
-    ${sigBlank('Authorised Signatory · Trends Engineering')}
-  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:8.5pt">
+    <tr>
+      <td style="width:55%;vertical-align:top">
+        <div style="font-weight:bold;margin-bottom:6px">BANKING DETAILS</div>
+        <div style="font-size:8.5pt">${ef(CO.name,'98%')}</div>
+        <div style="margin-top:2px">${ef(CO.bank,'130px')} &nbsp; Branch: ${ef(CO.branch,'130px')}</div>
+        <div style="margin-top:2px">Account No: ${ef(CO.acc,'130px')}</div>
+        <div style="margin-top:2px">Branch Code: ${ef(CO.bcode,'60px')} &nbsp; SWIFT Code: ${ef(CO.swift,'80px')}</div>
+        <div style="margin-top:8px;font-size:8pt;font-weight:bold">Terms of Payment</div>
+        <div style="font-size:7.5pt">1. Payment would be required to be made within 45 days of invoice date.</div>
+        <div style="font-size:7.5pt">2. Without prejudice to our right to payment, interest at prime overdraft rate, from the due date.</div>
+      </td>
+      <td style="vertical-align:top;padding-left:12px">
+        <table style="width:100%;font-size:8.5pt;border-collapse:collapse">
+          <tr><td style="padding:2px 5px">Invoice Subtotal</td><td style="text-align:right;padding:2px 5px;font-weight:bold" id="inv_sub">${BWP(gross)}</td></tr>
+          <tr><td style="padding:2px 5px">VAT 14%</td><td style="text-align:right;padding:2px 5px"><input class="ef ef-b" value="${BWP(vat)}" id="inv_vat" style="width:110px;text-align:right" oninput="recalcInv()"></td></tr>
+          <tr><td style="padding:2px 5px">Less Retention 5%</td><td style="text-align:right;padding:2px 5px;color:#c00"><input class="ef ef-b" value="${BWP(ret)}" id="inv_ret" style="width:110px;text-align:right;color:#c00" oninput="recalcInv()"></td></tr>
+          <tr><td style="padding:2px 5px">Less Witholding Tax 3%</td><td style="text-align:right;padding:2px 5px;color:#c00"><input class="ef ef-b" value="${BWP(wht)}" id="inv_wht" style="width:110px;text-align:right;color:#c00" oninput="recalcInv()"></td></tr>
+          <tr style="background:#d9d9d9;font-weight:bold;border-top:2px solid #000"><td style="padding:3px 5px">AMOUNT DUE</td><td style="text-align:right;padding:3px 5px;font-weight:bold" id="inv_due">${BWP(amountDue)}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
   </div>`;
 }
+function recalcInv(){
+  try{
+    const g=id=>parseFloat((document.getElementById(id)||{}).value?.replace(/,/g,'')||'0')||0;
+    const qty=g('inv_qty'),unit=g('inv_unit'),disc=g('inv_disc');
+    const sub=qty*unit-disc;
+    const vat=g('inv_vat'),ret=g('inv_ret'),wht=g('inv_wht');
+    const due=sub+vat-ret-wht;
+    const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=BWP(v);};
+    s('inv_price',sub);s('inv_sub',sub);s('inv_due',due);
+  }catch(e){}
+}
 
-/* ── LIST OF JOBS DONE ── */
+/* ── LIST OF JOBS DONE — Admin creates ── */
+function addListJobRow(){
+  const tb=document.getElementById('loj_tbody');if(!tb)return;
+  const i=tb.rows.length;
+  const inL=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:6.5pt;color:#000;padding:0 1px;outline:none;box-sizing:border-box">`;
+  const inD=(val)=>`<input type="date" value="${val||''}" style="width:98%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:6pt;color:#000;padding:0;outline:none;box-sizing:border-box">`;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${i+1}.0</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inL('Trends Engineering Services (PTY) Ltd','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inL('103913','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px;text-align:right">${inL('0.00','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${inL('100','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inD('')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inD('')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
+    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>`;
+  tb.appendChild(tr);
+}
 function docListOfJobs(job){
-  const certNo=job.claimRef||'TES-001';
-  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo||j.stage==='claim_docs_ready');
-  const total=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
-  return`<div class="paper">
-  <div style="font-size:12pt;font-weight:bold;text-align:center;margin-bottom:4px">LIST OF JOBS DONE</div>
-  <div style="font-size:9pt;text-align:center;margin-bottom:6px">Free Connections Phase ${job.phase} — ${certNo}</div><hr>
-  <table class="hdt">
-    <tr><td class="lbl">Contractor:</td><td>${CO.name}</td><td class="lbl">Vendor No.:</td><td>${CO.vendor}</td></tr>
-    <tr><td class="lbl">Certificate:</td><td>${certNo}</td><td class="lbl">Date:</td><td>${new Date().toLocaleDateString('en-BW',{day:'2-digit',month:'long',year:'numeric'})}</td></tr>
-  </table><hr>
-  <table class="jt">
-    <thead><tr><th>#</th><th>BPC W/O No.</th><th>Customer Name</th><th>Location / Ward</th><th>Connection Type</th><th>VO1 (BWP)</th><th>VO2 (BWP)</th><th>Completion Date</th></tr></thead>
-    <tbody>
-      ${claimJobs.map((j,i)=>{
-        const t1=jTotal(j,'vo1'),t2=jTotal(j,'vo2');
-        return`<tr><td class="c">${i+1}</td><td>${j.wo}</td><td>${j.cust}</td><td>${j.loc}</td><td>${j.type}</td><td class="r">${BWP(t1.total)}</td><td class="r">${t2.total>0?BWP(t2.total):'—'}</td><td>${j.actions.work_complete?.date||'—'}</td></tr>`;
-      }).join('')}
-      <tr class="tot"><td colspan="5" class="r"><strong>TOTAL</strong></td><td colspan="2" class="r"><strong>P ${BWP(total)}</strong></td><td></td></tr>
+  const allDoneJobs=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('work_complete'));
+  const claimJobs=job&&job.claimRef
+    ?Object.values(DB.jobs).filter(j=>j.claimRef===job.claimRef)
+    :allDoneJobs;
+  const displayJobs=claimJobs.length?claimJobs:allDoneJobs;
+  const total=displayJobs.reduce((s,j)=>{const t=j.vo2.items.length?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);
+  const certNo=job?.claimRef||'TES-001';
+  const inL=(val,w)=>`<input type="text" value="${(val||'').replace(/"/g,'&quot;')}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:6.5pt;color:#000;padding:0 1px;outline:none;box-sizing:border-box">`;
+  const inD=(val)=>`<input type="date" value="${val||''}" style="width:98%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:6pt;color:#000;padding:0;outline:none;box-sizing:border-box">`;
+  const rows=displayJobs.map((j,i)=>{
+    const t=j.vo2.items.length?jTotal(j,'vo2'):jTotal(j,'vo1');
+    const invNo=`INV_${certNo}.${new Date().getFullYear()}`;
+    return`<tr>
+      <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${i+1}.0</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inL(j.wo,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inL(CO.name,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inL(CO.vendor,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;text-align:right">${inL(BWP(t.total),'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${inL('100','98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inL(j.phase,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inL(invNo,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inL(j.loc,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.teams_notified?.date||'')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.work_complete?.date||'')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inL('Kagiso Jeff Kewagamang','98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inL('Poloko Moiseraela','98%')}</td>
+    </tr>`;
+  }).join('');
+  return`<div class="paper" style="overflow-x:auto">
+  <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+    <tr>
+      <td>
+        <div style="font-size:9pt;font-weight:bold"><input type="text" value="ZERO CONNECTION PROJECT - NORTH" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:9pt;font-weight:bold;color:#000;padding:0 2px;outline:none;width:280px"></div>
+        <div style="font-size:8.5pt;margin-top:2px">DATE: <input type="date" value="${new Date().toISOString().slice(0,10)}" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;width:120px"></div>
+      </td>
+      <td style="text-align:right;font-size:8.5pt;vertical-align:top">
+        CLAIM No. &nbsp; <input type="text" value="${certNo}" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;width:80px">
+      </td>
+    </tr>
+  </table>
+  <hr>
+  <div style="overflow-x:auto;width:100%">
+  <table style="width:100%;min-width:900px;border-collapse:collapse;font-size:6.5pt;table-layout:fixed">
+    <colgroup>
+      <col style="width:34px">
+      <col style="width:58px">
+      <col style="width:130px">
+      <col style="width:56px">
+      <col style="width:70px">
+      <col style="width:34px">
+      <col style="width:42px">
+      <col style="width:72px">
+      <col style="width:80px">
+      <col style="width:64px">
+      <col style="width:64px">
+      <col style="width:100px">
+      <col style="width:100px">
+    </colgroup>
+    <thead>
+      <tr style="background:#d9d9d9">
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">ITEM No.</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">PROJECT No.</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">VENDOR NAME</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">VENDOR No.</th>
+        <th style="border:1px solid #999;padding:2px 3px;text-align:right;overflow:hidden">AMOUNT</th>
+        <th style="border:1px solid #999;padding:2px 3px;text-align:center;overflow:hidden">%</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">PHASE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">INVOICE No.</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">LOCATION</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">START DATE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">COMPLETION</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">INTERNAL</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">EXTERNAL</th>
+      </tr>
+    </thead>
+    <tbody id="loj_tbody">
+      ${rows}
+      <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #999">
+        <td style="border:1px solid #bbb;padding:2px 3px" colspan="4"><strong>TOTAL CLAIM</strong></td>
+        <td style="border:1px solid #bbb;padding:2px 3px;text-align:right"><strong>${BWP(total)}</strong></td>
+        <td style="border:1px solid #bbb;padding:2px 3px" colspan="8"></td>
+      </tr>
     </tbody>
   </table>
-  <div style="margin-top:8px;font-size:8pt">Total Jobs: <strong>${claimJobs.length}</strong> &nbsp;&nbsp; Total Value: <strong>${P(total)}</strong></div>
-  <div class="sig-area">
-    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
-    ${sigBlank('Verified by (Managing Director · Trends Engineering)')}
+  </div>
+  <button onclick="addListJobRow()" style="margin-top:6px;font-size:8pt;padding:3px 10px;cursor:pointer;border:1px solid #bbb;border-radius:3px;background:#f8f8f8;font-family:Arial,sans-serif">+ Add Row</button>
+  <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div style="border-top:1px solid #000;padding-top:4px">
+      <div style="font-size:8pt;font-weight:bold;margin-bottom:16px">Prepared by (Admin · Trends Engineering)</div>
+      <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:3px"></div>
+      <div style="font-size:8pt">Name: <input type="text" value="" style="width:55%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none"> &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
+    </div>
+    <div style="border-top:1px solid #000;padding-top:4px">
+      <div style="font-size:8pt;font-weight:bold;margin-bottom:16px">Verified by (Managing Director · Trends Engineering)</div>
+      <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:3px"></div>
+      <div style="font-size:8pt">Name: <input type="text" value="" style="width:55%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none"> &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
+    </div>
   </div>
   </div>`;
 }
@@ -1970,10 +2429,17 @@ function recalcVO1(wo){
   const job=DB.jobs[wo];if(!job)return;
   let sub=0;
   job.vo1.items.forEach((it,i)=>{const v=(it.q||0)*(it.r||0);sub+=v;const el=document.getElementById(`vo1v${wo}${i}`);if(el)el.textContent=v.toFixed(2);});
-  const lf=job.vo1.lf||29.25,mk=job.vo1.mk||12.5;
-  const loc=sub*(lf/100),markup=(sub+loc)*(mk/100),tot=sub+loc+markup;
+  const lf=job.vo1.lf||29.25, mk=job.vo1.mk||0;
+  const loc=sub*(lf/100);
+  const markup=(sub+loc)*(mk/100);
+  const tot=sub+loc+markup;
+  job.vo1._cachedTotal=tot;
   const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  s(`vo1sub${wo}`,sub.toFixed(2));s(`vo1loc${wo}`,loc.toFixed(2));s(`vo1mk${wo}`,markup.toFixed(2));s(`vo1tot${wo}`,tot.toFixed(2));
+  s(`vo1rawsub${wo}`,sub.toFixed(2));
+  s(`vo1loc${wo}`,loc.toFixed(2));
+  s(`vo1sub${wo}`,(sub+loc).toFixed(2));
+  s(`vo1mk${wo}`,markup.toFixed(2));
+  s(`vo1tot${wo}`,tot.toFixed(2));
   saveDB();
 }
 function recalcVO2(wo){
@@ -2023,10 +2489,54 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
    PRINT
 ═══════════════════════════════════════ */
 function printModal(){
-  const pa=document.getElementById('printArea');
-  pa.innerHTML=document.getElementById('docModalBody').innerHTML;
-  pa.style.display='block';window.print();
-  setTimeout(()=>{pa.innerHTML='';pa.style.display='none';},1200);
+  const content=document.getElementById('docModalBody').innerHTML;
+  const title=document.getElementById('docModalTitle').textContent;
+  const pw=window.open('','_blank','width=860,height=760');
+  if(!pw){toast('Pop-up blocked — allow pop-ups for this site then try again','am');return;}
+  pw.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;font-size:9pt;background:#fff;color:#000;padding:20px}
+    .paper{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:9pt;line-height:1.45}
+    .paper *{box-sizing:border-box}
+    .paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
+    .lh-t{width:100%;border-collapse:collapse;margin-bottom:7px}
+    .lh-t td{vertical-align:top;padding:1px 3px;font-size:9pt}
+    .hdt{width:100%;border-collapse:collapse;margin-bottom:4px}
+    .hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
+    .hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
+    .ef{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;min-width:60px}
+    .ef-b{border-bottom:1px solid #000;color:#000}
+    .ef-c{color:#555;border-bottom:1px dotted #bbb}
+    .boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
+    .boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}
+    .boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
+    .boq td.r,.boq th.r{text-align:right}.boq td.c,.boq th.c{text-align:center}
+    .boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+    .boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
+    .p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
+    .sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
+    .sig-box{border-top:1px solid #000;padding-top:4px}
+    .sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}
+    .sig-line{border-bottom:1px solid #000;margin-bottom:3px;height:22px}
+    .sig-sub{font-size:7.5pt;color:#666}
+    .pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
+    .pc-row .n{width:25px;flex-shrink:0}.pc-row .d{flex:1}.pc-row .c{width:20px;text-align:right;flex-shrink:0}.pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
+    .pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
+    .pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px;font-size:9pt}
+    .pc-row.ded .v{color:#cc0000}
+    .pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
+    .jt{width:100%;border-collapse:collapse;font-size:7.5pt}
+    .jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
+    .jt td{border:1px solid #bbb;padding:3px 4px}
+    .jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+    input,textarea,select{border:none!important;border-bottom:1px solid #000!important;background:transparent!important;font-family:Arial,sans-serif;font-size:8.5pt;padding:0 2px;width:auto}
+    button,.btn,.scan-done,.ua,.pipe-step,.ac-dd{display:none!important}
+    @media print{body{padding:10px}}
+  </style></head><body>${content}</body></html>`);
+  pw.document.close();
+  pw.onload=()=>{pw.focus();pw.print();};
+  // Fallback if onload doesn't fire
+  setTimeout(()=>{try{pw.focus();pw.print();}catch(e){}},600);
 }
 
 /* ═══════════════════════════════════════
@@ -2062,11 +2572,15 @@ function doLogin(){
   const r=document.getElementById('loginRole').value;
   if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
   CU=r;
+  // Reset all screens — clear any stale job detail from a previous role session
+  detailWO=null;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('act'));
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
   document.getElementById('sbRn').textContent=RN[r];
 
-  // Role-specific nav
+  // Role-specific nav — always hide jobdetail first
   const show=id=>{const e=document.getElementById(id);if(e)e.style.display='flex';};
   const hide=id=>{const e=document.getElementById(id);if(e)e.style.display='none';};
   ['n-inbox','n-claims','n-rates','n-actlog','n-jobdetail'].forEach(hide);
@@ -2077,13 +2591,9 @@ function doLogin(){
   if(r==='md'){show('n-actlog');show('n-jobs');}
 
   addLog('','Signed in as '+RN[r]);
-  renderDashboard();renderNotifs();
-
-  // Seed demo data if empty
-  if(!Object.keys(DB.jobs).length&&r==='admin'){
-    WO_SEED.forEach(w=>{DB.jobs[w.wo]=newJob(w);addLog(w.wo,'Work order loaded from BPC email');});
-    saveDB();renderDashboard();renderInbox();
-  }
+  // Always land on dashboard — never carry over a screen from another role
+  nav('dashboard');
+  renderNotifs();
 }
 function doLogout(){
   addLog('','Signed out');saveDB();
