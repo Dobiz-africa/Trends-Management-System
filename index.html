@@ -308,7 +308,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
       <option value="">— Choose role —</option>
       <option value="admin">Admin</option>
       <option value="finance">Finance</option>
-            <option value="md">Managing Director</option>
+            <option value="md">Manager</option>
     </select>
     <button class="lc-btn" onclick="doLogin()">Enter Portal →</button>
     <p class="lc-hint">No password required · Demo mode</p>
@@ -317,36 +317,65 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- ADD WORK ORDER MODAL -->
 <div id="addWOModal" class="overlay">
-  <div class="modal">
+  <div class="modal" style="width:640px">
     <h3>Add New Work Order</h3>
-    <p>Enter details from the BPC work order email</p>
-    <div class="fr2">
-      <div class="fg"><label>WO Number *</label><input id="nw-num" placeholder="e.g. 449600"></div>
-      <div class="fg"><label>Connection Type *</label>
-        <select id="nw-type">
-          <option value="">— Select —</option>
-          <option value="U/G Conn">U/G Connection (Single Phase)</option>
-          <option value="U/G 3-Phase">U/G Connection (Three Phase)</option>
-          <option value="OHL 400V">Overhead Line 400V</option>
-          <option value="OHL 11kV">Overhead Line 11kV</option>
-          <option value="Transformer">Transformer</option>
-        </select>
+    <p>Upload the BPC Work Order PDF for auto-population, or enter details manually</p>
+    
+    <!-- PDF Upload Section -->
+    <div class="fg">
+      <label>📎 Upload BPC Work Order PDF (Auto-fill fields)</label>
+      <input type="file" id="nw-pdf" accept="application/pdf,image/*" style="background:transparent;color:var(--tx2);border:none;padding:0;font-size:.8rem" onchange="parseWorkOrderPDF(this)">
+      <div id="pdf-parse-status" style="font-size:.72rem;color:var(--tx3);margin-top:4px;display:none"></div>
+    </div>
+
+    <div style="border-top:1px solid var(--bd);margin:1rem 0;padding-top:1rem">
+      <div class="fr2">
+        <div class="fg"><label>WO Number *</label><input id="nw-num" placeholder="e.g. 462524"></div>
+        <div class="fg"><label>Date</label><input id="nw-date" type="date"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label>Connection Type *</label>
+          <select id="nw-type">
+            <option value="">— Select —</option>
+            <option value="U/G Conn">U/G Connection (Single Phase)</option>
+            <option value="U/G 3-Phase">U/G Connection (Three Phase)</option>
+            <option value="OHL 400V">Overhead Line 400V</option>
+            <option value="OHL 11kV">Overhead Line 11kV</option>
+            <option value="Transformer">Transformer</option>
+          </select>
+        </div>
+        <div class="fg"><label>Project Type</label><input id="nw-projtype" placeholder="e.g. NESC" value="NESC"></div>
+      </div>
+      <div class="fg"><label>Customer Name *</label><input id="nw-cust" placeholder="e.g. OMPHILE KAFIKWA"></div>
+      <div class="fr3">
+        <div class="fg"><label>Contract Account</label><input id="nw-contract" placeholder="e.g. 2001020589"></div>
+        <div class="fg"><label>Customer No.</label><input id="nw-custno" placeholder="e.g. 40602744"></div>
+        <div class="fg"><label>Plot No.</label><input id="nw-plotno" placeholder="e.g. 4824"></div>
+      </div>
+      <div class="fr3">
+        <div class="fg"><label>Town / Location *</label><input id="nw-loc" placeholder="e.g. SHAKAWE"></div>
+        <div class="fg"><label>Ward</label><input id="nw-ward" placeholder="e.g. LAYOUT"></div>
+        <div class="fg"><label>Mobile Number</label><input id="nw-mobile" placeholder="e.g. 71219411"></div>
+      </div>
+      <div class="fr3">
+        <div class="fg"><label>BPC Project No.</label><input id="nw-bpcprojno" placeholder="e.g. 0000429636"></div>
+        <div class="fg"><label>Project Number</label><input id="nw-projno" placeholder="e.g. DSW/TRENDS/ZC"></div>
+        <div class="fg"><label>Meter Number</label><input id="nw-meter" placeholder="e.g. 12345678"></div>
+      </div>
+      <div class="fg"><label>Customer Address</label><input id="nw-address" placeholder="e.g. Plot 4824, Block 5, Shakawe"></div>
+      <div class="fr2">
+        <div class="fg"><label>Phase</label>
+          <select id="nw-phase">
+            <option value="46">Phase 46</option>
+            <option value="47" selected>Phase 47</option>
+          </select>
+        </div>
+        <div class="fg"><label>Location Factor (%)</label><input id="nw-lf" type="number" value="29.25" step="0.01"></div>
       </div>
     </div>
-    <div class="fg"><label>Customer Name *</label><input id="nw-cust" placeholder="e.g. Kealeboga Motshabi"></div>
-    <div class="fr2">
-      <div class="fg"><label>Town / Location *</label><input id="nw-loc" placeholder="e.g. Shakawe, Gauxa Ward"></div>
-      <div class="fg"><label>Phase</label><input id="nw-phase" placeholder="e.g. 46" value="46"></div>
-    </div>
-    <div class="fr2">
-      <div class="fg"><label>Location Factor (%)</label><input id="nw-lf" type="number" value="29.25" step="0.01"></div>
-      <div class="fg"><label>Markup (%)</label><input id="nw-mk" type="number" value="12.5" step="0.1"></div>
-    </div>
-    <div class="fg"><label>Upload BPC Work Order Scan (optional)</label>
-      <input type="file" id="nw-scan" accept="image/*,application/pdf" style="background:transparent;color:var(--tx2);border:none;padding:0;font-size:.8rem">
-    </div>
+    
     <div class="modal-btns">
-      <button class="btn btn-gy" onclick="closeModal('addWOModal')">Cancel</button>
+      <button class="btn btn-gy" onclick="closeModal('addWOModal');clearWOForm()">Cancel</button>
       <button class="btn btn-am" onclick="saveNewWO()">Add Work Order</button>
     </div>
   </div>
@@ -674,33 +703,389 @@ const CO = {
 const BPC_CO = { name:'BOTSWANA POWER CORPORATION', addr:'Motlakase House, Macheng Way', po:'P.O. Box 48', city:'GABORONE', tel:'3607000' };
 
 /* ═══════════════════════════════════════
+   PDF PARSER (Claude API)
+═══════════════════════════════════════ */
+async function parseWorkOrderPDF(input){
+  if(!input.files[0])return;
+  const file=input.files[0];
+  const statusEl=document.getElementById('pdf-parse-status');
+  statusEl.style.display='block';
+  statusEl.textContent='⏳ Reading PDF...';
+  statusEl.style.color='var(--am)';
+
+  try{
+    // Load PDF.js from CDN
+    if(!window.pdfjsLib){
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload=resolve;s.onerror=reject;
+        document.head.appendChild(s);
+      });
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    const arrayBuffer=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    let fullText='';
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i);
+      const content=await page.getTextContent();
+      fullText+=content.items.map(item=>item.str).join(' ')+'\n';
+    }
+
+    // Helper: extract value after a label using regex
+    const get=(patterns,text)=>{
+      for(const pat of patterns){
+        const m=text.match(pat);
+        if(m&&m[1]&&m[1].trim())return m[1].trim();
+      }
+      return'';
+    };
+
+    const t=fullText;
+
+    // Sales Order Number / WO Number
+    const wo=get([/Sales Order Number[:\s]+(\d+)/i,/Sales Order[:\s]+(\d+)/i],t);
+
+    // Project Number (BPC project no)
+    const bpcProjNo=get([/Project Number[:\s]+([\d]+)/i],t);
+
+    // Date — format is DD.MM.YYYY in PDF, convert to YYYY-MM-DD
+    const rawDate=get([/Date\s*[:\s]+([\d]{2}\.[\d]{2}\.[\d]{4})/i,/Date\s*:\s*([\d\/\.\-]+)/i],t);
+    let date='';
+    if(rawDate){
+      const parts=rawDate.split('.');
+      if(parts.length===3)date=`${parts[2]}-${parts[1]}-${parts[0]}`;
+      else date=rawDate;
+    }
+
+    // Project Type
+    const projType=get([/Project Type[:\s]+([A-Z0-9]+)/i],t);
+
+    // Contract Account
+    const contract=get([/Contract Account No[:\s]+([\d]+)/i,/Contract Account[:\s]+([\d]+)/i],t);
+
+    // Customer No
+    const custNo=get([/Customer No[:\s]+([\d]+)/i],t);
+
+    // Plot No
+    const plotNo=get([/Plot No[:\s]+([\d]+)/i,/Plot\s*No\s*[:\s]+([\w\d]+)/i],t);
+
+    // Ward
+    const ward=get([/Ward\s*[:\s]+([A-Z0-9 ]+?)(?:\s+City|$|\n)/i,/Ward\s*:\s*([A-Z]+)/i],t);
+
+    // City/Town
+    const loc=get([/City\/Town\/Village\s*[:\s]+([A-Z]+)/i,/City\/Town[:\s]+([A-Z]+)/i],t);
+
+    // Customer name — appears before P.O.Box or mobile number block
+    // In this PDF it's the first capitalized full name block
+    const custMatch=t.match(/([A-Z]{2,}\s+[A-Z]{2,}(?:\s+[A-Z]{2,})?)\s*\n?\s*P\.O\.Box/i)
+                  ||t.match(/ELECTRICITY SUPPLY TO.*?\n.*?([A-Z]{3,}\s+[A-Z]{3,})/i);
+    const cust=custMatch?custMatch[1].trim():'';
+
+    // Mobile number — take the first one found
+    const mobile=get([/Mobile Number\s*[:\s]+([\d]+)/i],t);
+
+    // Connection type — derive from description
+    let connType='U/G Conn';
+    if(/three phase/i.test(t))connType='U/G 3-Phase';
+    else if(/overhead/i.test(t)||/OHL/i.test(t))connType='OHL 400V';
+    else if(/underground/i.test(t)||/U\/G/i.test(t))connType='U/G Conn';
+
+    // Location factor
+    const lfMatch=t.match(/location factor\s+([\d.]+)/i);
+    const lf=lfMatch?lfMatch[1]:'29.25';
+
+    // Populate form fields
+const set=(id,val)=>{const e=document.getElementById(id);if(e&&val)e.value=val;};
+set('nw-num',wo);
+set('nw-date',date);
+set('nw-projtype',projType||'NESC');
+set('nw-bpcprojno',bpcProjNo);
+set('nw-projno',bpcProjNo);
+set('nw-contract',contract);
+set('nw-custno',custNo);
+set('nw-cust',cust);
+set('nw-plotno',plotNo);
+set('nw-ward',ward);
+set('nw-loc',loc);
+set('nw-mobile',mobile);
+set('nw-lf',lf);
+set('nw-meter',meterNo);
+set('nw-address',address);
+if(connType){const el=document.getElementById('nw-type');if(el)el.value=connType;}
+
+    const filled=[wo,date,cust,loc,contract].filter(Boolean).length;
+    if(filled===0)throw new Error('Could not extract fields — fill in manually');
+
+    statusEl.textContent=`✓ Parsed: WO ${wo||'?'} · ${cust||'?'} · ${loc||'?'} — review and confirm`;
+    statusEl.style.color='var(--gn)';
+    setTimeout(()=>{statusEl.style.display='none';},5000);
+  }catch(e){
+    statusEl.textContent='✗ Parse failed: '+e.message;
+    statusEl.style.color='var(--rd)';
+  }
+}
+
+function clearWOForm(){
+  ['nw-num','nw-date','nw-type','nw-projtype','nw-cust','nw-contract','nw-custno','nw-plotno','nw-loc','nw-ward','nw-mobile','nw-bpcprojno','nw-projno','nw-meter','nw-address'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.value='';
+  });
+  document.getElementById('nw-phase').value='47';
+  document.getElementById('nw-lf').value='29.25';
+  document.getElementById('nw-pdf').value='';
+  const statusEl=document.getElementById('pdf-parse-status');
+  if(statusEl)statusEl.style.display='none';
+}
+
+/* ═══════════════════════════════════════
    RATES DATABASE
 ═══════════════════════════════════════ */
 const RATES_SEED = [
-  {id:'r1', d:'Service Conn; 230V; 60A; Single Phase; U/G',      u:'Ea', r:11987.42, c:'U/G Service Connection', on:true},
-  {id:'r2', d:'Service Conn; 230V; 80A; Single Phase; U/G',      u:'Ea', r:13240.10, c:'U/G Service Connection', on:true},
-  {id:'r3', d:'Service Conn; 400V; 100A; Three Phase; U/G',      u:'Ea', r:18540.00, c:'U/G Service Connection', on:true},
-  {id:'r4', d:'Service Conn; 230V; 60A; Overhead',               u:'Ea', r:8760.00,  c:'OH Service Connection',  on:true},
-  {id:'r5', d:'OHL; 400V; 50mm2; 4core; ABC',                    u:'M',  r:254.11,   c:'Overhead Line',          on:true},
-  {id:'r6', d:'OHL; 400V; 95mm2; 4core; ABC',                    u:'M',  r:312.40,   c:'Overhead Line',          on:true},
-  {id:'r7', d:'OHL; 400V; 35mm2; 4core; ABC',                    u:'M',  r:198.60,   c:'Overhead Line',          on:true},
-  {id:'r8', d:'OHL; 11kV; 50mm2; 3core; XLPE',                   u:'M',  r:520.00,   c:'Overhead Line',          on:false},
-  {id:'r9', d:'U/G Cable; 400V; 50mm2; 4core; XLPE',             u:'M',  r:285.30,   c:'Underground Cable',      on:true},
-  {id:'r10',d:'U/G Cable; 400V; 95mm2; 4core; XLPE',             u:'M',  r:365.80,   c:'Underground Cable',      on:true},
-  {id:'r11',d:'U/G Cable Trench; Excavation & Reinstatement',     u:'M',  r:95.40,    c:'Underground Cable',      on:true},
-  {id:'r12',d:'Pole Protector; Supply & Install; 9m Woodpole',    u:'Ea', r:639.17,   c:'Poles & Structures',     on:true},
-  {id:'r13',d:'Woodpole; 9m; Class 3; Supply & Erect',            u:'Ea', r:4200.00,  c:'Poles & Structures',     on:true},
-  {id:'r14',d:'Stay Wire Assembly; Supply & Install',              u:'Ea', r:1240.00,  c:'Poles & Structures',     on:true},
-  {id:'r15',d:'Transformer; 50kVA; 11kV/400V; Supply & Install',  u:'Ea', r:48000.00, c:'Transformers',           on:false},
-  {id:'r16',d:'Meter Box; Surface Mount; Supply & Install',        u:'Ea', r:1840.00,  c:'Metering',               on:true},
-  {id:'r17',d:'Energy Meter; Single Phase; Supply & Install',      u:'Ea', r:980.00,   c:'Metering',               on:true},
-  {id:'r18',d:'Cut Out; 60A; Supply & Install',                    u:'Ea', r:420.00,   c:'Metering',               on:true},
-  {id:'r19',d:'GIS RATE-Service connections',                      u:'Ea', r:593.59,   c:'GIS',                    on:true},
-  {id:'r20',d:'GIS RATE-Overhead Line',                            u:'Ea', r:850.00,   c:'GIS',                    on:true},
-  {id:'r21',d:'Excavation; Normal Soil; Per m3',                   u:'m3', r:180.00,   c:'Civil Works',            on:true},
-  {id:'r22',d:'Reinstatement; Gravel Road',                        u:'M',  r:85.00,    c:'Civil Works',            on:true},
-  {id:'r23',d:'Reinstatement; Tar Road',                           u:'M',  r:420.00,   c:'Civil Works',            on:true},
-  {id:'r24',d:'Transport & Sundries; Per work order',              u:'Ea', r:1500.00,  c:'Miscellaneous',          on:true},
+  // ── PHASE 46 ──────────────────────────────────────────────────────────────
+  {id:'r46_001',d:'OHL;33kV;3Ph;100m:Gopher',u:'m',r:133.91,c:'OHL 33kV',phase:'46',on:true},
+  {id:'r46_002',d:'OHL;33kV;3Ph;100m:Rabbit',u:'m',r:170.32,c:'OHL 33kV',phase:'46',on:true},
+  {id:'r46_003',d:'OHL;33kV;3Ph;100m:Weasel',u:'m',r:195.44,c:'OHL 33kV',phase:'46',on:true},
+  {id:'r46_004',d:'OHL;33kV;3Ph;100m:Dog',u:'m',r:232.10,c:'OHL 33kV',phase:'46',on:true},
+  {id:'r46_005',d:'OHL;11kV;3Ph;100m;Gopher',u:'m',r:110.84,c:'OHL 11kV',phase:'46',on:true},
+  {id:'r46_006',d:'OHL;11kV;3Ph;100m;Rabbit',u:'m',r:141.60,c:'OHL 11kV',phase:'46',on:true},
+  {id:'r46_007',d:'OHL;11kV;3Ph;100m;Weasel',u:'m',r:162.55,c:'OHL 11kV',phase:'46',on:true},
+  {id:'r46_008',d:'OHL;11kV;3Ph;100m;Dog',u:'m',r:195.44,c:'OHL 11kV',phase:'46',on:true},
+  {id:'r46_009',d:'OHL;400V;3Ph;100m;Rabbit ABC',u:'m',r:98.32,c:'OHL 400V',phase:'46',on:true},
+  {id:'r46_010',d:'OHL;400V;3Ph;100m;Weasel ABC',u:'m',r:112.45,c:'OHL 400V',phase:'46',on:true},
+  {id:'r46_011',d:'OHL;400V;1Ph;100m;Rabbit ABC',u:'m',r:65.20,c:'OHL 400V',phase:'46',on:true},
+  {id:'r46_012',d:'OHL;400V;1Ph;100m;Weasel ABC',u:'m',r:74.88,c:'OHL 400V',phase:'46',on:true},
+  {id:'r46_013',d:'Service Conn;230V;60A;Single Phase;U/G',u:'Ea',r:11987.42,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_014',d:'Service Conn;230V;60A;Single Phase;OHL',u:'Ea',r:9845.30,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_015',d:'Service Conn;400V;80A;Three Phase;U/G',u:'Ea',r:18432.65,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_016',d:'Service Conn;400V;80A;Three Phase;OHL',u:'Ea',r:15320.40,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_017',d:'Service Conn;230V;100A;Single Phase;U/G',u:'Ea',r:13250.80,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_018',d:'GIS rate- Service Connections',u:'Ea',r:593.59,c:'GIS',phase:'46',on:true},
+  {id:'r46_019',d:'GIS rate- OHL Lines',u:'m',r:12.45,c:'GIS',phase:'46',on:true},
+  {id:'r46_020',d:'GIS rate- U/G Cables',u:'m',r:15.20,c:'GIS',phase:'46',on:true},
+  {id:'r46_021',d:'GIS rate- Transformers',u:'Ea',r:892.30,c:'GIS',phase:'46',on:true},
+  {id:'r46_022',d:'Single Phase Split Smart Meter (DIN-RAIL)',u:'Ea',r:1818.15,c:'Metering',phase:'46',on:true},
+  {id:'r46_023',d:'Three Phase Smart Meter (DIN-RAIL)',u:'Ea',r:2845.60,c:'Metering',phase:'46',on:true},
+  {id:'r46_024',d:'Single Phase Prepaid Meter',u:'Ea',r:1650.00,c:'Metering',phase:'46',on:true},
+  {id:'r46_025',d:'Three Phase Prepaid Meter',u:'Ea',r:2580.00,c:'Metering',phase:'46',on:true},
+  {id:'r46_026',d:'Meter Box (Surface Mount)',u:'Ea',r:485.20,c:'Metering',phase:'46',on:true},
+  {id:'r46_027',d:'Meter Box (Flush Mount)',u:'Ea',r:520.40,c:'Metering',phase:'46',on:true},
+  {id:'r46_028',d:'11kV/400V Transformer 25kVA',u:'Ea',r:45820.00,c:'Transformer',phase:'46',on:true},
+  {id:'r46_029',d:'11kV/400V Transformer 50kVA',u:'Ea',r:62450.00,c:'Transformer',phase:'46',on:true},
+  {id:'r46_030',d:'11kV/400V Transformer 100kVA',u:'Ea',r:89300.00,c:'Transformer',phase:'46',on:true},
+  {id:'r46_031',d:'11kV/400V Transformer 200kVA',u:'Ea',r:128500.00,c:'Transformer',phase:'46',on:true},
+  {id:'r46_032',d:'11kV/400V Transformer 315kVA',u:'Ea',r:165400.00,c:'Transformer',phase:'46',on:true},
+  {id:'r46_033',d:'11kV/400V Transformer 500kVA',u:'Ea',r:218600.00,c:'Transformer',phase:'46',on:true},
+  {id:'r46_034',d:'Pole; Concrete; 9m',u:'Ea',r:2845.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_035',d:'Pole; Concrete; 11m',u:'Ea',r:3620.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_036',d:'Pole; Concrete; 12m',u:'Ea',r:4150.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_037',d:'Pole; Steel; 9m',u:'Ea',r:3200.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_038',d:'Pole; Steel; 11m',u:'Ea',r:4100.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_039',d:'Pole; Steel; 12m',u:'Ea',r:4800.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_040',d:'Stay Wire Set (Complete)',u:'Ea',r:1240.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_041',d:'Crossarm; Timber; 1.8m',u:'Ea',r:685.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_042',d:'Crossarm; Steel; 1.8m',u:'Ea',r:890.00,c:'Poles',phase:'46',on:true},
+  {id:'r46_043',d:'ABC Cable; 3x95+54.6mm2',u:'m',r:185.40,c:'Cable',phase:'46',on:true},
+  {id:'r46_044',d:'ABC Cable; 3x50+35mm2',u:'m',r:142.60,c:'Cable',phase:'46',on:true},
+  {id:'r46_045',d:'ABC Cable; 3x16+25mm2',u:'m',r:98.20,c:'Cable',phase:'46',on:true},
+  {id:'r46_046',d:'U/G Cable; 3x95mm2 XLPE',u:'m',r:245.80,c:'Cable',phase:'46',on:true},
+  {id:'r46_047',d:'U/G Cable; 3x35mm2 XLPE',u:'m',r:168.40,c:'Cable',phase:'46',on:true},
+  {id:'r46_048',d:'U/G Cable; 1x95mm2 XLPE',u:'m',r:125.60,c:'Cable',phase:'46',on:true},
+  {id:'r46_049',d:'U/G Cable; 1x35mm2 XLPE',u:'m',r:85.40,c:'Cable',phase:'46',on:true},
+  {id:'r46_050',d:'U/G Cable; 1x16mm2 XLPE',u:'m',r:58.20,c:'Cable',phase:'46',on:true},
+  {id:'r46_051',d:'Cable Trench Excavation (Soft ground)',u:'m',r:125.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_052',d:'Cable Trench Excavation (Hard/Rocky)',u:'m',r:285.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_053',d:'Cable Trench Backfill and Compaction',u:'m',r:65.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_054',d:'Cable Warning Tape',u:'m',r:8.50,c:'Civil',phase:'46',on:true},
+  {id:'r46_055',d:'Cable Sand Bedding',u:'m',r:18.40,c:'Civil',phase:'46',on:true},
+  {id:'r46_056',d:'Pole Hole Excavation (Soft)',u:'Ea',r:385.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_057',d:'Pole Hole Excavation (Hard/Rocky)',u:'Ea',r:850.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_058',d:'Concrete for Pole Foundation',u:'Ea',r:420.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_059',d:'Road Crossing (Tar road; open cut)',u:'m',r:1850.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_060',d:'Road Crossing (Gravel road; open cut)',u:'m',r:680.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_061',d:'Road Crossing (Trenchless/Boring)',u:'m',r:2400.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_062',d:'Fence Crossing',u:'Ea',r:245.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_063',d:'River Crossing (OHL)',u:'Ea',r:4500.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_064',d:'Mini Sub 11kV/400V 200kVA (Complete)',u:'Ea',r:185400.00,c:'Sub Station',phase:'46',on:true},
+  {id:'r46_065',d:'Mini Sub 11kV/400V 315kVA (Complete)',u:'Ea',r:225800.00,c:'Sub Station',phase:'46',on:true},
+  {id:'r46_066',d:'Mini Sub 11kV/400V 500kVA (Complete)',u:'Ea',r:285600.00,c:'Sub Station',phase:'46',on:true},
+  {id:'r46_067',d:'Distribution Pillar Box (4-way)',u:'Ea',r:12450.00,c:'LV Network',phase:'46',on:true},
+  {id:'r46_068',d:'Distribution Pillar Box (6-way)',u:'Ea',r:16800.00,c:'LV Network',phase:'46',on:true},
+  {id:'r46_069',d:'Distribution Pillar Box (8-way)',u:'Ea',r:21200.00,c:'LV Network',phase:'46',on:true},
+  {id:'r46_070',d:'LV Overhead Line Termination (1Ph)',u:'Ea',r:485.00,c:'LV Network',phase:'46',on:true},
+  {id:'r46_071',d:'LV Overhead Line Termination (3Ph)',u:'Ea',r:845.00,c:'LV Network',phase:'46',on:true},
+  {id:'r46_072',d:'11kV Overhead Line Termination',u:'Ea',r:2450.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_073',d:'11kV Cable Sealing End',u:'Ea',r:3200.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_074',d:'11kV Dropout Fuse',u:'Ea',r:1850.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_075',d:'11kV Lightning Arrester',u:'Ea',r:1240.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_076',d:'400V Circuit Breaker 100A',u:'Ea',r:2850.00,c:'Protection',phase:'46',on:true},
+  {id:'r46_077',d:'400V Circuit Breaker 200A',u:'Ea',r:4200.00,c:'Protection',phase:'46',on:true},
+  {id:'r46_078',d:'400V Circuit Breaker 400A',u:'Ea',r:6800.00,c:'Protection',phase:'46',on:true},
+  {id:'r46_079',d:'Isolator Switch 11kV (Outdoor)',u:'Ea',r:8500.00,c:'Protection',phase:'46',on:true},
+  {id:'r46_080',d:'Isolator Switch 400V (Outdoor)',u:'Ea',r:2100.00,c:'Protection',phase:'46',on:true},
+  {id:'r46_081',d:'Street Light; LED; 30W on existing pole',u:'Ea',r:3850.00,c:'Street Lighting',phase:'46',on:true},
+  {id:'r46_082',d:'Street Light; LED; 60W on existing pole',u:'Ea',r:4650.00,c:'Street Lighting',phase:'46',on:true},
+  {id:'r46_083',d:'Street Light Pole; 6m with LED 30W',u:'Ea',r:6200.00,c:'Street Lighting',phase:'46',on:true},
+  {id:'r46_084',d:'Street Light Pole; 8m with LED 60W',u:'Ea',r:8400.00,c:'Street Lighting',phase:'46',on:true},
+  {id:'r46_085',d:'Street Light Cabling; U/G per meter',u:'m',r:42.00,c:'Street Lighting',phase:'46',on:true},
+  {id:'r46_086',d:'Earthing System (Ground rod + tape)',u:'Ea',r:1850.00,c:'Earthing',phase:'46',on:true},
+  {id:'r46_087',d:'Earthing Conductor (bare copper)',u:'m',r:45.00,c:'Earthing',phase:'46',on:true},
+  {id:'r46_088',d:'Earthing Test Point',u:'Ea',r:320.00,c:'Earthing',phase:'46',on:true},
+  {id:'r46_089',d:'Cable Joint (LV; 3-phase)',u:'Ea',r:2450.00,c:'Cable',phase:'46',on:true},
+  {id:'r46_090',d:'Cable Joint (LV; single phase)',u:'Ea',r:1650.00,c:'Cable',phase:'46',on:true},
+  {id:'r46_091',d:'Cable Joint (11kV)',u:'Ea',r:5800.00,c:'Cable',phase:'46',on:true},
+  {id:'r46_092',d:'Cable Duct (PVC; 100mm dia)',u:'m',r:185.00,c:'Cable',phase:'46',on:true},
+  {id:'r46_093',d:'Cable Duct (PVC; 150mm dia)',u:'m',r:265.00,c:'Cable',phase:'46',on:true},
+  {id:'r46_094',d:'Pillar Box Foundation (concrete)',u:'Ea',r:2800.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_095',d:'Transformer Platform/Plinth (concrete)',u:'Ea',r:4500.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_096',d:'Boundary Wall/Fencing for Substation',u:'m',r:850.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_097',d:'Gravel Access Road to Substation',u:'m',r:320.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_098',d:'Service Cable U/G 16mm2 (Single Phase)',u:'m',r:65.40,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_099',d:'Service Cable U/G 25mm2 (Single Phase)',u:'m',r:82.60,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_100',d:'Service Cable U/G 35mm2 (Three Phase)',u:'m',r:98.80,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_101',d:'Consumer Intake Unit (CIU) 60A',u:'Ea',r:1850.00,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_102',d:'Consumer Intake Unit (CIU) 100A',u:'Ea',r:2450.00,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_103',d:'Consumer Intake Unit (CIU) 200A',u:'Ea',r:3800.00,c:'Service Connection',phase:'46',on:true},
+  {id:'r46_104',d:'Fuse Cut Out 11kV (Dropout)',u:'Ea',r:2100.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_105',d:'Surge Arrester 11kV',u:'Ea',r:1450.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_106',d:'Surge Arrester 400V',u:'Ea',r:650.00,c:'LV Network',phase:'46',on:true},
+  {id:'r46_107',d:'Load Break Switch 11kV (Manual)',u:'Ea',r:18500.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_108',d:'Load Break Switch 11kV (Auto)',u:'Ea',r:42000.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_109',d:'Current Transformer 11kV',u:'Ea',r:4200.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_110',d:'Voltage Transformer 11kV',u:'Ea',r:5800.00,c:'MV Network',phase:'46',on:true},
+  {id:'r46_111',d:'Testing and Commissioning (per connection)',u:'Ea',r:850.00,c:'Testing',phase:'46',on:true},
+  {id:'r46_112',d:'Testing and Commissioning (per transformer)',u:'Ea',r:3500.00,c:'Testing',phase:'46',on:true},
+  {id:'r46_113',d:'Vegetation Clearing (per 100m OHL)',u:'100m',r:2450.00,c:'Vegetation',phase:'46',on:true},
+  {id:'r46_114',d:'Tree Felling (medium; dia 200-400mm)',u:'Ea',r:1850.00,c:'Vegetation',phase:'46',on:true},
+  {id:'r46_115',d:'Tree Felling (large; dia >400mm)',u:'Ea',r:3200.00,c:'Vegetation',phase:'46',on:true},
+  {id:'r46_116',d:'Stump Removal',u:'Ea',r:650.00,c:'Vegetation',phase:'46',on:true},
+  {id:'r46_117',d:'Reinstatement (Tar road)',u:'m2',r:485.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_118',d:'Reinstatement (Paved/brick)',u:'m2',r:320.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_119',d:'Reinstatement (Gravel)',u:'m2',r:85.00,c:'Civil',phase:'46',on:true},
+  {id:'r46_120',d:'Wayleave/Servitude Survey',u:'Ea',r:4500.00,c:'Survey',phase:'46',on:true},
+  // ── PHASE 47 ──────────────────────────────────────────────────────────────
+  {id:'r47_001',d:'OHL;33kV;3Ph;100m:Gopher',u:'m',r:138.66,c:'OHL 33kV',phase:'47',on:true},
+  {id:'r47_002',d:'OHL;33kV;3Ph;100m:Rabbit',u:'m',r:177.06,c:'OHL 33kV',phase:'47',on:true},
+  {id:'r47_003',d:'OHL;33kV;3Ph;100m:Weasel',u:'m',r:202.48,c:'OHL 33kV',phase:'47',on:true},
+  {id:'r47_004',d:'OHL;33kV;3Ph;100m:Dog',u:'m',r:240.42,c:'OHL 33kV',phase:'47',on:true},
+  {id:'r47_005',d:'OHL;11kV;3Ph;100m;Gopher',u:'m',r:115.03,c:'OHL 11kV',phase:'47',on:true},
+  {id:'r47_006',d:'OHL;11kV;3Ph;100m;Rabbit',u:'m',r:146.76,c:'OHL 11kV',phase:'47',on:true},
+  {id:'r47_007',d:'OHL;11kV;3Ph;100m;Weasel',u:'m',r:168.44,c:'OHL 11kV',phase:'47',on:true},
+  {id:'r47_008',d:'OHL;11kV;3Ph;100m;Dog',u:'m',r:202.48,c:'OHL 11kV',phase:'47',on:true},
+  {id:'r47_009',d:'OHL;400V;3Ph;100m;Rabbit ABC',u:'m',r:101.88,c:'OHL 400V',phase:'47',on:true},
+  {id:'r47_010',d:'OHL;400V;3Ph;100m;Weasel ABC',u:'m',r:116.52,c:'OHL 400V',phase:'47',on:true},
+  {id:'r47_011',d:'OHL;400V;1Ph;100m;Rabbit ABC',u:'m',r:67.56,c:'OHL 400V',phase:'47',on:true},
+  {id:'r47_012',d:'OHL;400V;1Ph;100m;Weasel ABC',u:'m',r:77.58,c:'OHL 400V',phase:'47',on:true},
+  {id:'r47_013',d:'Service Conn;230V;60A;Single Phase;U/G',u:'Ea',r:12426.82,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_014',d:'Service Conn;230V;60A;Single Phase;OHL',u:'Ea',r:10200.55,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_015',d:'Service Conn;400V;80A;Three Phase;U/G',u:'Ea',r:19102.90,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_016',d:'Service Conn;400V;80A;Three Phase;OHL',u:'Ea',r:15876.81,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_017',d:'Service Conn;230V;100A;Single Phase;U/G',u:'Ea',r:13732.58,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_018',d:'GIS rate- Service Connections',u:'Ea',r:615.42,c:'GIS',phase:'47',on:true},
+  {id:'r47_019',d:'GIS rate- OHL Lines',u:'m',r:12.90,c:'GIS',phase:'47',on:true},
+  {id:'r47_020',d:'GIS rate- U/G Cables',u:'m',r:15.76,c:'GIS',phase:'47',on:true},
+  {id:'r47_021',d:'GIS rate- Transformers',u:'Ea',r:924.84,c:'GIS',phase:'47',on:true},
+  {id:'r47_022',d:'Single Phase Split Smart Meter (DIN-RAIL)',u:'Ea',r:1884.69,c:'Metering',phase:'47',on:true},
+  {id:'r47_023',d:'Three Phase Smart Meter (DIN-RAIL)',u:'Ea',r:2948.30,c:'Metering',phase:'47',on:true},
+  {id:'r47_024',d:'Single Phase Prepaid Meter',u:'Ea',r:1709.25,c:'Metering',phase:'47',on:true},
+  {id:'r47_025',d:'Three Phase Prepaid Meter',u:'Ea',r:2675.43,c:'Metering',phase:'47',on:true},
+  {id:'r47_026',d:'Meter Box (Surface Mount)',u:'Ea',r:502.89,c:'Metering',phase:'47',on:true},
+  {id:'r47_027',d:'Meter Box (Flush Mount)',u:'Ea',r:539.21,c:'Metering',phase:'47',on:true},
+  {id:'r47_028',d:'11kV/400V Transformer 25kVA',u:'Ea',r:47500.35,c:'Transformer',phase:'47',on:true},
+  {id:'r47_029',d:'11kV/400V Transformer 50kVA',u:'Ea',r:64746.75,c:'Transformer',phase:'47',on:true},
+  {id:'r47_030',d:'11kV/400V Transformer 100kVA',u:'Ea',r:92535.90,c:'Transformer',phase:'47',on:true},
+  {id:'r47_031',d:'11kV/400V Transformer 200kVA',u:'Ea',r:133158.50,c:'Transformer',phase:'47',on:true},
+  {id:'r47_032',d:'11kV/400V Transformer 315kVA',u:'Ea',r:171439.60,c:'Transformer',phase:'47',on:true},
+  {id:'r47_033',d:'11kV/400V Transformer 500kVA',u:'Ea',r:226551.60,c:'Transformer',phase:'47',on:true},
+  {id:'r47_034',d:'Pole; Concrete; 9m',u:'Ea',r:2949.68,c:'Poles',phase:'47',on:true},
+  {id:'r47_035',d:'Pole; Concrete; 11m',u:'Ea',r:3752.70,c:'Poles',phase:'47',on:true},
+  {id:'r47_036',d:'Pole; Concrete; 12m',u:'Ea',r:4303.53,c:'Poles',phase:'47',on:true},
+  {id:'r47_037',d:'Pole; Steel; 9m',u:'Ea',r:3318.40,c:'Poles',phase:'47',on:true},
+  {id:'r47_038',d:'Pole; Steel; 11m',u:'Ea',r:4249.35,c:'Poles',phase:'47',on:true},
+  {id:'r47_039',d:'Pole; Steel; 12m',u:'Ea',r:4975.68,c:'Poles',phase:'47',on:true},
+  {id:'r47_040',d:'Stay Wire Set (Complete)',u:'Ea',r:1285.44,c:'Poles',phase:'47',on:true},
+  {id:'r47_041',d:'Crossarm; Timber; 1.8m',u:'Ea',r:710.03,c:'Poles',phase:'47',on:true},
+  {id:'r47_042',d:'Crossarm; Steel; 1.8m',u:'Ea',r:922.35,c:'Poles',phase:'47',on:true},
+  {id:'r47_043',d:'ABC Cable; 3x95+54.6mm2',u:'m',r:192.15,c:'Cable',phase:'47',on:true},
+  {id:'r47_044',d:'ABC Cable; 3x50+35mm2',u:'m',r:147.80,c:'Cable',phase:'47',on:true},
+  {id:'r47_045',d:'ABC Cable; 3x16+25mm2',u:'m',r:101.80,c:'Cable',phase:'47',on:true},
+  {id:'r47_046',d:'U/G Cable; 3x95mm2 XLPE',u:'m',r:254.81,c:'Cable',phase:'47',on:true},
+  {id:'r47_047',d:'U/G Cable; 3x35mm2 XLPE',u:'m',r:174.51,c:'Cable',phase:'47',on:true},
+  {id:'r47_048',d:'U/G Cable; 1x95mm2 XLPE',u:'m',r:130.25,c:'Cable',phase:'47',on:true},
+  {id:'r47_049',d:'U/G Cable; 1x35mm2 XLPE',u:'m',r:88.54,c:'Cable',phase:'47',on:true},
+  {id:'r47_050',d:'U/G Cable; 1x16mm2 XLPE',u:'m',r:60.35,c:'Cable',phase:'47',on:true},
+  {id:'r47_051',d:'Cable Trench Excavation (Soft ground)',u:'m',r:129.56,c:'Civil',phase:'47',on:true},
+  {id:'r47_052',d:'Cable Trench Excavation (Hard/Rocky)',u:'m',r:295.59,c:'Civil',phase:'47',on:true},
+  {id:'r47_053',d:'Cable Trench Backfill and Compaction',u:'m',r:67.38,c:'Civil',phase:'47',on:true},
+  {id:'r47_054',d:'Cable Warning Tape',u:'m',r:8.81,c:'Civil',phase:'47',on:true},
+  {id:'r47_055',d:'Cable Sand Bedding',u:'m',r:19.06,c:'Civil',phase:'47',on:true},
+  {id:'r47_056',d:'Pole Hole Excavation (Soft)',u:'Ea',r:399.08,c:'Civil',phase:'47',on:true},
+  {id:'r47_057',d:'Pole Hole Excavation (Hard/Rocky)',u:'Ea',r:881.14,c:'Civil',phase:'47',on:true},
+  {id:'r47_058',d:'Concrete for Pole Foundation',u:'Ea',r:435.42,c:'Civil',phase:'47',on:true},
+  {id:'r47_059',d:'Road Crossing (Tar road; open cut)',u:'m',r:1918.35,c:'Civil',phase:'47',on:true},
+  {id:'r47_060',d:'Road Crossing (Gravel road; open cut)',u:'m',r:704.94,c:'Civil',phase:'47',on:true},
+  {id:'r47_061',d:'Road Crossing (Trenchless/Boring)',u:'m',r:2488.56,c:'Civil',phase:'47',on:true},
+  {id:'r47_062',d:'Fence Crossing',u:'Ea',r:253.98,c:'Civil',phase:'47',on:true},
+  {id:'r47_063',d:'River Crossing (OHL)',u:'Ea',r:4665.45,c:'Civil',phase:'47',on:true},
+  {id:'r47_064',d:'Mini Sub 11kV/400V 200kVA (Complete)',u:'Ea',r:192189.90,c:'Sub Station',phase:'47',on:true},
+  {id:'r47_065',d:'Mini Sub 11kV/400V 315kVA (Complete)',u:'Ea',r:234054.30,c:'Sub Station',phase:'47',on:true},
+  {id:'r47_066',d:'Mini Sub 11kV/400V 500kVA (Complete)',u:'Ea',r:296007.60,c:'Sub Station',phase:'47',on:true},
+  {id:'r47_067',d:'Distribution Pillar Box (4-way)',u:'Ea',r:12904.43,c:'LV Network',phase:'47',on:true},
+  {id:'r47_068',d:'Distribution Pillar Box (6-way)',u:'Ea',r:17410.32,c:'LV Network',phase:'47',on:true},
+  {id:'r47_069',d:'Distribution Pillar Box (8-way)',u:'Ea',r:21983.04,c:'LV Network',phase:'47',on:true},
+  {id:'r47_070',d:'LV Overhead Line Termination (1Ph)',u:'Ea',r:502.73,c:'LV Network',phase:'47',on:true},
+  {id:'r47_071',d:'LV Overhead Line Termination (3Ph)',u:'Ea',r:875.93,c:'LV Network',phase:'47',on:true},
+  {id:'r47_072',d:'11kV Overhead Line Termination',u:'Ea',r:2539.73,c:'MV Network',phase:'47',on:true},
+  {id:'r47_073',d:'11kV Cable Sealing End',u:'Ea',r:3317.28,c:'MV Network',phase:'47',on:true},
+  {id:'r47_074',d:'11kV Dropout Fuse',u:'Ea',r:1917.83,c:'MV Network',phase:'47',on:true},
+  {id:'r47_075',d:'11kV Lightning Arrester',u:'Ea',r:1285.44,c:'MV Network',phase:'47',on:true},
+  {id:'r47_076',d:'400V Circuit Breaker 100A',u:'Ea',r:2954.48,c:'Protection',phase:'47',on:true},
+  {id:'r47_077',d:'400V Circuit Breaker 200A',u:'Ea',r:4352.34,c:'Protection',phase:'47',on:true},
+  {id:'r47_078',d:'400V Circuit Breaker 400A',u:'Ea',r:7048.32,c:'Protection',phase:'47',on:true},
+  {id:'r47_079',d:'Isolator Switch 11kV (Outdoor)',u:'Ea',r:8809.25,c:'Protection',phase:'47',on:true},
+  {id:'r47_080',d:'Isolator Switch 400V (Outdoor)',u:'Ea',r:2177.61,c:'Protection',phase:'47',on:true},
+  {id:'r47_081',d:'Street Light; LED; 30W on existing pole',u:'Ea',r:3991.48,c:'Street Lighting',phase:'47',on:true},
+  {id:'r47_082',d:'Street Light; LED; 60W on existing pole',u:'Ea',r:4820.48,c:'Street Lighting',phase:'47',on:true},
+  {id:'r47_083',d:'Street Light Pole; 6m with LED 30W',u:'Ea',r:6427.44,c:'Street Lighting',phase:'47',on:true},
+  {id:'r47_084',d:'Street Light Pole; 8m with LED 60W',u:'Ea',r:8710.44,c:'Street Lighting',phase:'47',on:true},
+  {id:'r47_085',d:'Street Light Cabling; U/G per meter',u:'m',r:43.53,c:'Street Lighting',phase:'47',on:true},
+  {id:'r47_086',d:'Earthing System (Ground rod + tape)',u:'Ea',r:1918.35,c:'Earthing',phase:'47',on:true},
+  {id:'r47_087',d:'Earthing Conductor (bare copper)',u:'m',r:46.67,c:'Earthing',phase:'47',on:true},
+  {id:'r47_088',d:'Earthing Test Point',u:'Ea',r:331.84,c:'Earthing',phase:'47',on:true},
+  {id:'r47_089',d:'Cable Joint (LV; 3-phase)',u:'Ea',r:2539.73,c:'Cable',phase:'47',on:true},
+  {id:'r47_090',d:'Cable Joint (LV; single phase)',u:'Ea',r:1710.08,c:'Cable',phase:'47',on:true},
+  {id:'r47_091',d:'Cable Joint (11kV)',u:'Ea',r:6011.94,c:'Cable',phase:'47',on:true},
+  {id:'r47_092',d:'Cable Duct (PVC; 100mm dia)',u:'m',r:191.85,c:'Cable',phase:'47',on:true},
+  {id:'r47_093',d:'Cable Duct (PVC; 150mm dia)',u:'m',r:274.71,c:'Cable',phase:'47',on:true},
+  {id:'r47_094',d:'Pillar Box Foundation (concrete)',u:'Ea',r:2902.68,c:'Civil',phase:'47',on:true},
+  {id:'r47_095',d:'Transformer Platform/Plinth (concrete)',u:'Ea',r:4665.45,c:'Civil',phase:'47',on:true},
+  {id:'r47_096',d:'Boundary Wall/Fencing for Substation',u:'m',r:881.14,c:'Civil',phase:'47',on:true},
+  {id:'r47_097',d:'Gravel Access Road to Substation',u:'m',r:331.84,c:'Civil',phase:'47',on:true},
+  {id:'r47_098',d:'Service Cable U/G 16mm2 (Single Phase)',u:'m',r:67.80,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_099',d:'Service Cable U/G 25mm2 (Single Phase)',u:'m',r:85.62,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_100',d:'Service Cable U/G 35mm2 (Three Phase)',u:'m',r:102.44,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_101',d:'Consumer Intake Unit (CIU) 60A',u:'Ea',r:1918.35,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_102',d:'Consumer Intake Unit (CIU) 100A',u:'Ea',r:2539.73,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_103',d:'Consumer Intake Unit (CIU) 200A',u:'Ea',r:3939.59,c:'Service Connection',phase:'47',on:true},
+  {id:'r47_104',d:'Fuse Cut Out 11kV (Dropout)',u:'Ea',r:2177.61,c:'MV Network',phase:'47',on:true},
+  {id:'r47_105',d:'Surge Arrester 11kV',u:'Ea',r:1503.23,c:'MV Network',phase:'47',on:true},
+  {id:'r47_106',d:'Surge Arrester 400V',u:'Ea',r:673.79,c:'LV Network',phase:'47',on:true},
+  {id:'r47_107',d:'Load Break Switch 11kV (Manual)',u:'Ea',r:19174.25,c:'MV Network',phase:'47',on:true},
+  {id:'r47_108',d:'Load Break Switch 11kV (Auto)',u:'Ea',r:43534.20,c:'MV Network',phase:'47',on:true},
+  {id:'r47_109',d:'Current Transformer 11kV',u:'Ea',r:4352.34,c:'MV Network',phase:'47',on:true},
+  {id:'r47_110',d:'Voltage Transformer 11kV',u:'Ea',r:6011.94,c:'MV Network',phase:'47',on:true},
+  {id:'r47_111',d:'Testing and Commissioning (per connection)',u:'Ea',r:881.14,c:'Testing',phase:'47',on:true},
+  {id:'r47_112',d:'Testing and Commissioning (per transformer)',u:'Ea',r:3628.25,c:'Testing',phase:'47',on:true},
+  {id:'r47_113',d:'Vegetation Clearing (per 100m OHL)',u:'100m',r:2539.73,c:'Vegetation',phase:'47',on:true},
+  {id:'r47_114',d:'Tree Felling (medium; dia 200-400mm)',u:'Ea',r:1918.35,c:'Vegetation',phase:'47',on:true},
+  {id:'r47_115',d:'Tree Felling (large; dia >400mm)',u:'Ea',r:3317.28,c:'Vegetation',phase:'47',on:true},
+  {id:'r47_116',d:'Stump Removal',u:'Ea',r:673.79,c:'Vegetation',phase:'47',on:true},
+  {id:'r47_117',d:'Reinstatement (Tar road)',u:'m2',r:502.73,c:'Civil',phase:'47',on:true},
+  {id:'r47_118',d:'Reinstatement (Paved/brick)',u:'m2',r:331.84,c:'Civil',phase:'47',on:true},
+  {id:'r47_119',d:'Reinstatement (Gravel)',u:'m2',r:88.14,c:'Civil',phase:'47',on:true},
+  {id:'r47_120',d:'Wayleave/Servitude Survey',u:'Ea',r:4665.45,c:'Survey',phase:'47',on:true},
 ];
 
 /* ═══════════════════════════════════════
@@ -712,13 +1097,13 @@ const STAGES = [
   {id:'linesman_notified',        lbl:'Linesman Notified (External)',               role:'admin'},
   {id:'field_received',           lbl:'Linesman Findings Uploaded',                role:'admin'},
   {id:'vo2_created',              lbl:'Variation Order (VO2) Created',             role:'admin'},
+  {id:'works_valuation_created',  lbl:'Works Valuation Document Created',          role:'admin'},
   {id:'work_instruction_ready',   lbl:'Works Instruction Prepared',                role:'admin'},
   {id:'teams_notified',           lbl:'Teams Notified to Start Work (External)',   role:'admin'},
   {id:'work_complete',            lbl:'Teams Reported Work Complete',              role:'admin'},
   {id:'gis_notified',             lbl:'GIS Consultant Notified',                   role:'admin'},
   {id:'gis_complete',             lbl:'GIS Report Received & Uploaded',             role:'admin'},
   {id:'claim_docs_ready',         lbl:'Claim Documents Generated by Finance',      role:'finance'},
-  {id:'job_complete',             lbl:'Job Complete — Recorded by Admin',          role:'admin'},
 ];
 const STAGE_IDS = STAGES.map(s=>s.id);
 
@@ -735,9 +1120,10 @@ function stageBadge(id){
 
 const STAGE_DOCS = {
   wo_received:'bpc_wo', vo1_created:'vo1', linesman_notified:null, field_received:'field_report',
-  vo2_created:'vo2', work_instruction_ready:'works_instruction', teams_notified:null, work_complete:null,
-  gis_notified:'gis_report', gis_complete:'gis_report', claim_docs_ready:'annexure,payment_cert,invoice',
-  job_complete:null,
+  vo2_created:'vo2', works_valuation_created:'works_valuation', work_instruction_ready:'works_instruction', 
+  teams_notified:null, work_complete:null,
+  gis_notified:'gis_report', gis_complete:'gis_report', 
+  claim_docs_ready:'annexure,payment_cert,invoice,list_of_jobs,bpc_spreadsheet',
 };
 
 /* ═══════════════════════════════════════
@@ -759,7 +1145,7 @@ const WO_SEED = [
 
 function initDB(){
   // Always start fresh - no saved data from previous sessions
-  DB={version:3,jobs:{},notifs:{},actLog:[],rates:[...RATES_SEED],certSeq:1};
+  DB={version:3,jobs:{},notifs:{},actLog:[],rates:[...RATES_SEED],certSeq:1,batchScans:{},batchSaved:{}};
   saveDB();
 }
 initDB();
@@ -767,24 +1153,38 @@ initDB();
 function newJob(data){
   return {
     wo:data.wo, cust:data.cust||data.customer, loc:data.loc||data.location,
-    type:data.type, phase:data.phase||'46', lf:data.lf||29.25, mk:data.mk||12.5,
+    type:data.type, phase:data.phase||'47', lf:data.lf||29.25, mk:data.mk||12.5,
+    date:data.date||'', projType:data.projType||'NESC',
+    contract:data.contract||'', custNo:data.custNo||'', plotNo:data.plotNo||'',
+    ward:data.ward||'', mobile:data.mobile||'',
+    bpcProjNo:data.bpcProjNo||'', projNo:data.projNo||'',
+    meterNo:data.meterNo||'', address:data.address||'',
     createdAt:new Date().toISOString(), stage:'wo_received',
     vo1:{items:[
-      {d:'Service Conn; 230V; 60A; Single Phase; U/G', u:'Ea', q:1, r:11987.42},
-      {d:'GIS RATE-Service connections',               u:'Ea', q:1, r:593.59},
-    ], lf:data.lf||29.25, mk:12.5},
-    vo2:{items:[], lf:data.lf||29.25, mk:10, startDate:'', compDate:''},
+  {d:'Service Conn; 230V; 60A; Single Phase; U/G', u:'Ea', q:1, r:data.phase==='46'?11987.42:12426.82},
+  {d:'GIS RATE-Service connections',               u:'Ea', q:1, r:data.phase==='46'?593.59:615.42},
+], lf:data.lf||29.25, mk:data.mk||12.5, phase:data.phase||'47'},
+vo2:{items:[], lf:data.lf||29.25, mk:10, startDate:'', compDate:'', phase:data.phase||'47'},
+    worksValuation:{created:false},
     fieldData:{}, gisData:{},
-    actions:{}, // keyed by stage: { date, notes, extra }
-    scans:{},   // keyed by docType: { dataUrl, filename, uploadedAt, role }
+    actions:{},
+    scans:{},
     claimRef:'',
   };
 }
 
+function safeVO2(job){
+  if(job.vo2&&job.vo2.items&&job.vo2.items.length>0)return job.vo2;
+  return{items:[],lf:job.vo1?job.vo1.lf:29.25,mk:10};
+}
+function bestTotal(job){
+  return(job.vo2&&job.vo2.items&&job.vo2.items.length>0)?jTotal(job,'vo2'):jTotal(job,'vo1');
+}
 function jTotal(job, which){
-  const items=which==='vo2'?job.vo2.items:job.vo1.items;
-  const lf=which==='vo2'?job.vo2.lf:job.vo1.lf;
-  const mk=which==='vo2'?job.vo2.mk:job.vo1.mk||0;
+  const vo2=safeVO2(job);
+  const items=which==='vo2'?vo2.items:(job.vo1&&job.vo1.items?job.vo1.items:[]);
+  const lf=which==='vo2'?vo2.lf:(job.vo1?job.vo1.lf:29.25);
+  const mk=which==='vo2'?vo2.mk:(job.vo1?job.vo1.mk||0:0);
   const sub=items.reduce((s,i)=>s+(parseFloat(i.q)||0)*(parseFloat(i.r)||0),0);
   const loc=sub*(lf/100);
   const markup=(sub+loc)*(mk/100);
@@ -803,7 +1203,7 @@ let detailWO=null;
 let selClaimJobs=new Set();
 let recordCb=null;
 
-const RN={admin:'Admin',finance:'Finance',md:'Managing Director'};
+const RN={admin:'Admin',finance:'Finance',md:'Manager'};
 
 /* ═══════════════════════════════════════
    NOTIFICATIONS + LOG
@@ -1045,39 +1445,45 @@ function renderMDDash(){
   document.getElementById('m-val').textContent=P(val);
 
   // Who is doing what right now
-  const PARTY_MAP={
-    wo_received:{who:'Admin',doing:'Reviewing WO — Creating VO1',color:'var(--am)'},
-    vo1_created:{who:'Admin',doing:'Notifying Linesman (external)',color:'var(--am)'},
-    linesman_notified:{who:'Linesman',doing:'Conducting field measurements',color:'var(--bl)'},
-    field_received:{who:'Admin',doing:'Processing findings — Creating VO2',color:'var(--am)'},
-    vo2_created:{who:'Admin',doing:'Preparing Works Instruction',color:'var(--am)'},
-    work_instruction_ready:{who:'Admin',doing:'Sending Works Instruction to teams',color:'var(--am)'},
-    teams_notified:{who:'Field Teams',doing:'Executing work on site',color:'var(--bl)'},
-    work_complete:{who:'Admin',doing:'Notifying GIS consultant',color:'var(--am)'},
-    gis_notified:{who:'Admin',doing:'Awaiting GIS consultant report (external)',color:'var(--am)'},
-    gis_complete:{who:'Finance',doing:'Generating claim documents',color:'var(--gn)'},
-    claim_docs_ready:{who:'Admin',doing:'Reviewing docs — Recording job complete',color:'var(--gn)'},
-    job_complete:{who:'—',doing:'Job complete',color:'var(--tx3)'},
-  };
+  // ── MD per-job pipeline + doc download tracker ──
+  const MD_STEPS=[
+    {sid:'vo1_created',     dt:'vo1',            lbl:'VO1'},
+    {sid:'vo2_created',     dt:'vo2',            lbl:'VO2'},
+    {sid:'works_valuation_created',dt:'works_valuation',lbl:'WV'},
+    {sid:'work_instruction_ready', dt:'works_instruction',lbl:'WI'},
+    {sid:'gis_complete',    dt:'gis_report',     lbl:'GIS'},
+  ];
+  const ST_LBL={wo_received:'Admin — Create VO1',vo1_created:'Admin — Notify Linesman',linesman_notified:'Linesman — Field Survey',field_received:'Admin — Create VO2',vo2_created:'Admin — Works Valuation',works_valuation_created:'Admin — Works Instruction',work_instruction_ready:'Admin — Send to Teams',teams_notified:'Teams — On Site',work_complete:'Admin — Notify GIS',gis_notified:'GIS — On Site',gis_complete:'Done — Claim Ready'};
+  const ST_COL={wo_received:'var(--am)',vo1_created:'var(--am)',linesman_notified:'var(--bl)',field_received:'var(--am)',vo2_created:'var(--am)',works_valuation_created:'var(--am)',work_instruction_ready:'var(--am)',teams_notified:'var(--bl)',work_complete:'var(--am)',gis_notified:'var(--bl)',gis_complete:'var(--gn)'};
   const wwEl=document.getElementById('m-whoswhat');
-  if(!active.length){wwEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--tx3);font-size:.8rem">No active jobs in pipeline</div>';}
-  else{
-    const grouped={};
-    active.forEach(j=>{const pm=PARTY_MAP[j.stage];const k=pm?.who||'—';if(!grouped[k])grouped[k]={...pm,jobs:[]};grouped[k].jobs.push(j);});
-    wwEl.innerHTML=Object.entries(grouped).map(([party,info])=>`
-      <div style="padding:.75rem 1rem;border-bottom:1px solid var(--bd)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-          <div style="width:8px;height:8px;border-radius:50%;background:${info.color};flex-shrink:0"></div>
-          <span style="font-size:.82rem;font-weight:600;color:var(--tx)">${party}</span>
-          <span style="font-size:.72rem;color:var(--tx2)">— ${info.doing}</span>
-          <span class="badge b-gy" style="margin-left:auto">${info.jobs.length} job${info.jobs.length!==1?'s':''}</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:5px;padding-left:16px">
-          ${info.jobs.map(j=>`<span onclick="openJobDetail('${j.wo}')" style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:2px 8px;font-size:.72rem;color:var(--tx2);cursor:pointer" onmouseover="this.style.color='var(--am)'" onmouseout="this.style.color='var(--tx2)'">WO ${j.wo} · ${j.cust.split(' ')[0]}</span>`).join('')}
-        </div>
-      </div>`).join('');}
+  if(!jobs.length){wwEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No jobs yet</div>';}
+  else{wwEl.innerHTML=jobs.map(j=>{
+    const saved=j.savedDocs||{}, scans=j.scans||{};
+    const col=ST_COL[j.stage]||'var(--tx3)';
+    const tv=jTotal(j,(j.vo2&&j.vo2.items&&j.vo2.items.length)?'vo2':'vo1');
+    const docBtns=MD_STEPS.map(s=>{
+      const done=stageIdx(j.stage)>=stageIdx(s.sid);
+      if(!done) return`<span style="font-size:.62rem;color:var(--tx3);padding:1px 4px;border:1px solid var(--bd);border-radius:3px;opacity:.35">${s.lbl}</span>`;
+      if(scans[s.dt]) return`<button class="btn btn-gn btn-sm" style="font-size:.62rem;padding:2px 5px" onclick="downloadScan('${j.wo}','${s.dt}')">&#11015;${s.lbl}&#10003;</button>`;
+      if(saved[s.dt]) return`<button class="btn btn-bl btn-sm" style="font-size:.62rem;padding:2px 5px" onclick="downloadSavedDoc('${j.wo}','${s.dt}')">&#11015;${s.lbl}</button>`;
+      return`<button class="btn btn-gy btn-sm" style="font-size:.62rem;padding:2px 5px" onclick="openDocForAction('${j.wo}','${s.dt}')">&#128065;${s.lbl}</button>`;
+    }).join(' ');
+    return`<div style="padding:.65rem 1rem;border-bottom:1px solid var(--bd)">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+        <span class="mono" style="font-size:.76rem;color:var(--am);cursor:pointer;flex-shrink:0" onclick="openJobDetail('${j.wo}')">WO ${j.wo}</span>
+        <span style="font-size:.8rem;font-weight:600;color:var(--tx);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${j.cust}</span>
+        <span class="mono" style="font-size:.73rem;color:var(--am);flex-shrink:0">${P(tv.total)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px">
+        <div style="width:6px;height:6px;border-radius:50%;background:${col};flex-shrink:0"></div>
+        <span style="font-size:.69rem;color:${col}">${ST_LBL[j.stage]||j.stage}</span>
+        <span style="font-size:.66rem;color:var(--tx3);margin-left:auto">${j.loc.split(',')[0]}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px">${docBtns}</div>
+    </div>`;
+  }).join('');}
 
-  // Completed jobs — List of Jobs Done
+    // Completed jobs — List of Jobs Done
   const doneEl=document.getElementById('m-done-jobs');
   if(doneEl){
     if(!jobsDone.length){
@@ -1161,31 +1567,38 @@ function saveNewWO(){
   const type=document.getElementById('nw-type').value;
   if(!num||!cust||!loc||!type){toast('Fill in all required fields','am');return;}
   if(DB.jobs[num]){toast('WO number already exists','rd');return;}
-  const job=newJob({wo:num,cust,loc,type,phase:document.getElementById('nw-phase').value||'46',lf:parseFloat(document.getElementById('nw-lf').value)||29.25,mk:parseFloat(document.getElementById('nw-mk').value)||12.5});
-  // Handle BPC WO scan upload
+  const phase=document.getElementById('nw-phase').value||'47';
+  const lf=parseFloat(document.getElementById('nw-lf').value)||29.25;
+  const date=document.getElementById('nw-date').value||'';
+  const projType=document.getElementById('nw-projtype').value.trim()||'NESC';
+  const contract=document.getElementById('nw-contract').value.trim()||'';
+  const custNo=document.getElementById('nw-custno').value.trim()||'';
+  const plotNo=document.getElementById('nw-plotno').value.trim()||'';
+  const ward=document.getElementById('nw-ward').value.trim()||'';
+  const mobile=document.getElementById('nw-mobile').value.trim()||'';
+  const bpcProjNo=document.getElementById('nw-bpcprojno').value.trim()||'';
+  const projNo=document.getElementById('nw-projno').value.trim()||'';
+  const meterNo=document.getElementById('nw-meter').value.trim()||'';
+  const address=document.getElementById('nw-address').value.trim()||'';
+  const job=newJob({wo:num,cust,loc,type,phase,lf,date,projType,contract,custNo,plotNo,ward,mobile,bpcProjNo,projNo,meterNo,address});
   const scanInput=document.getElementById('nw-scan');
-  if(scanInput.files[0]){
+  if(scanInput&&scanInput.files[0]){
     const f=scanInput.files[0];
     const reader=new FileReader();
     reader.onload=e=>{
       job.scans.bpc_wo={dataUrl:e.target.result,filename:f.name,uploadedAt:new Date().toISOString(),role:CU};
       DB.jobs[num]=job;addLog(num,'Work order created with BPC scan uploaded');saveDB();
       notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system`,num);
-      closeModal('addWOModal');resetAddWOForm();refreshAll();toast(`Work Order WO ${num} added`);
+      closeModal('addWOModal');clearWOForm();refreshAll();toast(`Work Order WO ${num} added`);
     };reader.readAsDataURL(f);
   } else {
     DB.jobs[num]=job;addLog(num,'Work order created from BPC email');saveDB();
     notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system`,num);
-    closeModal('addWOModal');resetAddWOForm();refreshAll();toast(`Work Order WO ${num} added`);
+    closeModal('addWOModal');clearWOForm();refreshAll();toast(`Work Order WO ${num} added`);
   }
 }
 function resetAddWOForm(){
-  ['nw-num','nw-cust','nw-loc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('nw-type').value='';
-  document.getElementById('nw-phase').value='46';
-  document.getElementById('nw-lf').value='29.25';
-  document.getElementById('nw-mk').value='12.5';
-  document.getElementById('nw-scan').value='';
+  clearWOForm();
 }
 
 /* ═══════════════════════════════════════
@@ -1327,19 +1740,19 @@ function renderJobDetail(wo){
     let actBtns='';
     // Show actions for: done steps, active step, or the very next pending step for each role
     const adminNextSteps = {
-      wo_received:    'vo1_created',
-      vo1_created:    'linesman_notified',
-      linesman_notified: 'field_received',
-      field_received: 'vo2_created',
-      vo2_created:    'work_instruction_ready',
-      work_instruction_ready: 'teams_notified',
-      teams_notified: 'work_complete',
-      work_complete:  'gis_notified',
-      gis_notified:   'gis_complete',
-      gis_complete:   null,
-      claim_docs_ready:'job_complete',
-      job_complete:   null,
-    };
+  wo_received:    'vo1_created',
+  vo1_created:    'linesman_notified',
+  linesman_notified: 'field_received',
+  field_received: 'vo2_created',
+  vo2_created:    'works_val_created',
+  works_val_created: 'work_instruction_ready',
+  work_instruction_ready: 'teams_notified',
+  teams_notified: 'work_complete',
+  work_complete:  'gis_notified',
+  gis_notified:   'gis_complete',
+  gis_complete:   null,
+  claim_docs_ready: null,
+};
     const isAdminNext = canEdit && adminNextSteps[job.stage] === st.id;
     const isMyNextStep = isAdminNext
                       || (isFinance && st.id==='claim_docs_ready' && job.stage==='gis_complete');
@@ -1360,11 +1773,20 @@ function renderJobDetail(wo){
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">📝 Create VO2 from Field Findings</button>`;
         if(st.id==='field_received'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button>`;
-        if(st.id==='vo2_created'&&(state==='active'||state==='pending'))
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">📝 Create VO2 from Field Findings</button>`;
+        if(st.id==='vo2_created'&&state==='active')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button><button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">📄 Create Works Valuation Document →</button>`;
+        // vo2_created pending: handled by field_received active state
         if(st.id==='vo2_created'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button>`;
-        if(st.id==='work_instruction_ready'&&(state==='active'||state==='pending'))
+        if(st.id==='works_valuation_created'&&state==='active')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">✓ Save Works Valuation — Proceed to Works Instruction</button>`;
+        if(st.id==='works_valuation_created'&&state==='pending')
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">📄 Create Works Valuation Document</button>`;
+        if(st.id==='works_valuation_created'&&state==='done')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button>`;
+        if(st.id==='work_instruction_ready'&&state==='active')
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="advanceStageWI('${wo}')">✓ Works Instruction Ready — Send to Teams</button>`;
+        if(st.id==='work_instruction_ready'&&state==='pending')
           actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">📄 Prepare Works Instruction</button>`;
         if(st.id==='work_instruction_ready'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button>`;
@@ -1420,29 +1842,43 @@ function renderJobDetail(wo){
   }).join('');
 
   // Documents panel - FILTERED BY ROLE
-  const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_instruction','gis_report','annexure','payment_cert','invoice'];
+  const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_valuation','works_instruction','gis_report','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   let visibleDocTypes = [...allDocTypes];
   if(CU === 'finance') {
-    visibleDocTypes = ['annexure','payment_cert','invoice'];
+    visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  }
+  // MD sees everything
+  if(CU === 'md') {
+    visibleDocTypes = [...allDocTypes];
   }
   
-  const docLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',field_report:'Linesman Field Findings',vo2:'Variation Order (VO2)',works_instruction:'Works Instruction',gis_report:'GIS Geo-Analysis Report',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice'};
-  const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]).length;
-  document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} scanned`;
+  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',field_report:'Linesman Field Findings',vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'GIS Geo-Analysis Report',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
+  const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]||(job.savedDocs&&job.savedDocs[d])).length;
+  document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} ready`;
   document.getElementById('jdDocsList').innerHTML=visibleDocTypes.map(d=>{
-    const s=job.scans[d];
-    const hasGenerated=['vo1','vo2','field_report','works_instruction','annexure','payment_cert','invoice','list_of_jobs'].includes(d);
+    const scan=job.scans[d];
+    const saved=job.savedDocs&&job.savedDocs[d];
+    const hasGenerated=['vo1','vo2','field_report','works_valuation','works_instruction','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(d);
+    const isMultiJob=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(d);
+    const isReady=!!(scan||saved);
+    const statusBadge=scan?'b-gn':saved?'b-bl':'b-gy';
+    const statusText=scan?'Signed Copy':saved?'Soft Copy':'Pending';
+    const iconClass=scan?'uploaded':saved?'generated':'pending';
+    // MD and everyone can view if saved or scan exists, or if generated doc type
+    const canView=hasGenerated&&(!isMultiJob||job.claimRef);
     return`<div class="doc-card">
       <div class="doc-card-top">
-        <div class="doc-card-icon ${s?'uploaded':hasGenerated?'generated':'pending'}">${s?'✓':'📄'}</div>
-        <div class="doc-card-name">${docLabels[d]}</div>
-        <span class="badge ${s?'b-gn':'b-gy'}">${s?'Scan Ready':'Pending'}</span>
+        <div class="doc-card-icon ${iconClass}">${scan?'✓':saved?'📄':'⏳'}</div>
+        <div class="doc-card-name">${localDocLabels[d]}${isMultiJob?' (Batch)':''}</div>
+        <span class="badge ${statusBadge}">${statusText}</span>
       </div>
       <div class="doc-card-btns">
-        ${hasGenerated&&CU!=='md'?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">📄 View / Edit / Print</button>`:''}
-        ${s?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ Download Scan</button><button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
-        ${(CU!=='md')&&!s?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload Scan<input type="file" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
-        ${CU==='md'&&!s?`<span style="font-size:.72rem;color:var(--tx3)">Not yet uploaded</span>`:''}
+        ${canView?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View / Print</button>`:''}
+        ${saved?`<button class="btn btn-bl btn-sm" onclick="downloadSavedDoc('${wo}','${d}')">⬇ Download</button>`:''}
+        ${scan?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ Signed</button>`:''}
+        ${CU!=='md'&&scan?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
+        ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 ${scan?'Replace':'Upload'}<input type="file" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
+        ${!isReady&&!canView&&CU==='md'?`<span style="font-size:.72rem;color:var(--tx3)">Not yet available</span>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1484,33 +1920,96 @@ function renderJobDetail(wo){
 ═══════════════════════════════════════ */
 function openDocForAction(wo,docType){
   const job=wo?DB.jobs[wo]:null;
-  const titles={vo1:'Works Valuation (VO1)'+(wo?' · WO '+wo:''),vo2:'Variation Order (VO2)'+(wo?' · WO '+wo:''),field_report:'Linesman Field Findings'+(wo?' · WO '+wo:''),works_instruction:'Works Instruction'+(wo?' · WO '+wo:''),gis_report:'GIS Geo-Analysis Report'+(wo?' · WO '+wo:''),bpc_wo:'BPC Work Order'+(wo?' · WO '+wo:''),annexure:'Annexure to Payment Certificate'+(wo?' · WO '+wo:''),payment_cert:'Payment Certificate'+(wo?' · WO '+wo:''),invoice:'Tax Invoice'+(wo?' · WO '+wo:''),list_of_jobs:'List of Jobs Done — Trends Engineering Services'};
+  const titles={vo1:'Works Valuation (VO1)'+(wo?' · WO '+wo:''),vo2:'Variation Order (VO2)'+(wo?' · WO '+wo:''),works_valuation:'Works Valuation Document'+(wo?' · WO '+wo:''),field_report:'Linesman Field Findings'+(wo?' · WO '+wo:''),works_instruction:'Works Instruction'+(wo?' · WO '+wo:''),gis_report:'GIS Geo-Analysis Report'+(wo?' · WO '+wo:''),bpc_wo:'BPC Work Order'+(wo?' · WO '+wo:''),annexure:'Annexure to Payment Certificate'+(wo?' · WO '+wo:''),payment_cert:'Payment Certificate'+(wo?' · WO '+wo:''),invoice:'Tax Invoice'+(wo?' · WO '+wo:''),list_of_jobs:'List of Jobs Done — Trends Engineering Services',bpc_spreadsheet:'BPC Spreadsheet — Batch Claim Document'};
   document.getElementById('docModalTitle').textContent=titles[docType]||docType;
-  const html=buildDoc(docType,job);
+
+  // For claim docs, try to find the Finance-saved version first
+  const claimDocTypes=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  let html='';
+
+  if(claimDocTypes.includes(docType)){
+    // First check if this job has a saved version from Finance
+    if(job&&job.savedDocs&&job.savedDocs[docType]&&job.savedDocs[docType].html){
+      html=job.savedDocs[docType].html;
+    } else {
+      // Try to find from batch — look for any job with same claimRef that has it saved
+      const certNo=job?.claimRef;
+      if(certNo){
+        const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.savedDocs&&j.savedDocs[docType]&&j.savedDocs[docType].html);
+        if(batchJobs.length){
+          html=batchJobs[0].savedDocs[docType].html;
+        }
+      }
+      // Fall back to regenerating if nothing saved yet
+      if(!html){
+        if(CU==='md'){
+          // MD sees a message if Finance hasn't saved yet
+          html=`<div class="ua ua-am" style="margin:1rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Finance has not yet saved this document. Once Finance generates and saves the claim documents, they will appear here automatically.</div>`;
+        } else {
+          html=buildDoc(docType,job);
+        }
+      }
+    }
+  } else {
+    // For non-claim docs, check savedDocs first then rebuild
+    if(job&&job.savedDocs&&job.savedDocs[docType]&&job.savedDocs[docType].html){
+      html=job.savedDocs[docType].html;
+    } else {
+      html=buildDoc(docType,job);
+    }
+  }
+
   document.getElementById('docModalBody').innerHTML=html;
   document.getElementById('docModalFoot').innerHTML=buildDocFoot(docType,job);
   openModal('docModal');
 }
 function buildDocFoot(docType,job){
-  if(CU==='md')return'<span style="font-size:.75rem;color:var(--tx3)">Read-only view — print or download scan from the documents panel</span>';
   const wo=job?job.wo:'';
-  let btns=`<button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print Document</button>`;
+  const isMDView=CU==='md';
+  let btns=`<button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>`;
+
   if(wo){
-    btns+=`<label class="scan-upload-label">📎 Upload Signed Scan<input type="file" id="scan-input-modal-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this);closeModal('docModal')" style="display:none"></label>`;
-    if(job.scans&&job.scans[docType])btns+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${docType}')">⬇ Download Scan</button>`;
+    // MD can download saved/signed copies
+    if(job&&job.savedDocs&&job.savedDocs[docType]){
+      btns+=`<button class="btn btn-bl btn-sm" onclick="downloadSavedDoc('${wo}','${docType}')">&#11015; Download</button>`;
+    }
+    if(job&&job.scans&&job.scans[docType]){
+      btns+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${docType}')">&#11015; Signed Copy</button>`;
+    }
+    if(!isMDView){
+      // Save button auto-attaches doc
+      btns+=`<button class="btn btn-gn btn-sm" onclick="saveDocToStep('${wo}','${docType}')">&#128190; Save &amp; Attach</button>`;
+      // Upload to replace
+      btns+=`<label class="scan-upload-label">📎 Upload / Replace<input type="file" id="scan-input-modal-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this);closeModal('docModal')" style="display:none"></label>`;
+    }
   }
-  // Stage advance buttons
-  if(CU==='admin'&&job){
-    if(docType==='vo1'&&job.stage==='wo_received')btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','vo1_created')">✓ Mark VO1 Complete — Move to Next Step</button>`;
-    if(docType==='field_report'&&(job.stage==='linesman_notified'||job.stage==='field_received'))btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','field_received')">✓ Save Field Findings — Now Create VO2</button>`;
-    if(docType==='vo2'&&(job.stage==='field_received'||job.stage==='vo2_created'))btns+=`<button class="btn btn-am" onclick="saveVO2('${wo}')">✓ Save VO2 — Proceed to Works Instruction</button>`;
-    if(docType==='works_instruction'&&(job.stage==='vo2_created'||job.stage==='work_instruction_ready'))btns+=`<button class="btn btn-am" onclick="advanceStageWI('${wo}')">✓ Works Instruction Ready — Send to Teams</button>`;
+
+  if(!isMDView&&CU==='admin'&&job){
+    if(docType==='vo1'&&job.stage==='wo_received')
+      btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','vo1_created')">✓ Mark VO1 Complete</button>`;
+    if(docType==='field_report'&&(job.stage==='linesman_notified'||job.stage==='field_received'))
+      btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','field_received')">✓ Save Field Findings</button>`;
+    if(docType==='vo2'&&(job.stage==='field_received'||job.stage==='vo2_created'))
+      btns+=`<button class="btn btn-am" onclick="saveVO2('${wo}')">✓ Save VO2</button>`;
+    if(docType==='works_instruction'&&(job.stage==='vo2_created'||job.stage==='work_instruction_ready'))
+      btns+=`<button class="btn btn-am" onclick="advanceStageWI('${wo}')">✓ Works Instruction Ready</button>`;
+    if(docType==='gis_report'&&['gis_notified','gis_complete'].includes(job.stage)&&job.stage!=='gis_complete')
+      btns+=`<button class="btn btn-am" onclick="advanceStage('${job.wo}','gis_complete')">✓ Mark GIS Complete</button>`;
   }
-  // Admin records GIS report complete
-  if(CU==='admin'&&job&&docType==='gis_report'&&['gis_notified','gis_complete'].includes(job.stage)){
-    if(job.stage!=='gis_complete')btns+=`<button class="btn btn-am" onclick="advanceStage('${job.wo}','gis_complete')">✓ Mark GIS Report Received &amp; Complete</button>`;
+  if(!isMDView&&CU==='finance'&&job){
+    if(docType==='payment_cert'||docType==='invoice'||docType==='annexure'||docType==='list_of_jobs'||docType==='bpc_spreadsheet')
+      btns+=`<button class="btn btn-gn btn-sm" onclick="saveDocToStep('${wo}','${docType}')">&#128190; Save &amp; Attach</button>`;
   }
   return btns;
+}
+function advanceStageWV(wo){
+  const job=DB.jobs[wo];if(!job)return;
+  job.stage='work_instruction_ready';
+  addLog(wo,'Works Valuation saved — advancing to Works Instruction');
+  notify(['md'],`Works Valuation completed for WO ${wo} — ${job.cust}. Next: Works Instruction.`,wo);
+  saveDB();closeModal('docModal');refreshDetail();refreshAll();
+  toast('Works Valuation saved — next: prepare Works Instruction');
+  setTimeout(()=>openDocForAction(wo,'works_instruction'),400);
 }
 function advanceStageWI(wo){
   const job=DB.jobs[wo];if(!job)return;
@@ -1528,11 +2027,31 @@ function advanceStage(wo,newStage){
   job.stage=newStage;
   job.actions[newStage]={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
   addLog(wo,stageLabel(newStage)+' — stage advanced');
-  if(newStage==='vo1_created')notify(['md'],`VO1 created for WO ${wo} — ${job.cust}`,wo);
-  if(newStage==='field_received')notify(['md'],`Field findings recorded for WO ${wo}`,wo);
-  if(newStage==='gis_complete'){notify(['md'],`GIS report uploaded for WO ${wo} — ${job.cust}. Finance can now generate claim documents.`,wo);}
+  // Auto-save the document for this stage so MD can see it immediately
+  const stageDocMap={
+    vo1_created:'vo1',
+    field_received:'field_report',
+    vo2_created:'vo2',
+    works_valuation_created:'works_valuation',
+    work_instruction_ready:'works_instruction',
+    gis_complete:'gis_report',
+  };
+  const autoDocType=stageDocMap[newStage];
+  if(autoDocType){
+    if(!job.savedDocs)job.savedDocs={};
+    job.savedDocs[autoDocType]={
+      html:buildDoc(autoDocType,job),
+      savedAt:new Date().toISOString(),
+      role:CU,
+      autoSaved:true
+    };
+    addLog(wo,`Auto-saved document: ${autoDocType}`);
+  }
+  if(newStage==='vo1_created')notify(['md'],`VO1 created &amp; attached for WO ${wo} — ${job.cust}. Click to view.`,wo);
+  if(newStage==='field_received')notify(['md'],`Linesman findings recorded &amp; attached for WO ${wo}`,wo);
+  if(newStage==='gis_complete')notify(['md'],`GIS report attached for WO ${wo} — ${job.cust}. Finance can now generate claim docs.`,wo);
   saveDB();closeModal('docModal');refreshDetail();refreshAll();
-  toast(stageLabel(newStage)+' ✓');
+  toast(stageLabel(newStage)+' ✓ — document auto-attached for MD');
 }
 function saveVO2(wo){
   const job=DB.jobs[wo];if(!job)return;
@@ -1549,11 +2068,11 @@ function saveVO2(wo){
   const t1=jTotal(job,'vo1'),t2=jTotal(job,'vo2');
   const diff=t2.total-t1.total;
   const pctDiff=t1.total>0?((diff/t1.total)*100):0;
-  let msg=diff>0?`VO2 exceeds VO1 by ${P(diff)} (${pctDiff.toFixed(1)}%). Review before notifying teams.`:`VO2 saved within VO1 budget. Next: Prepare Works Instruction.`;
+  let msg=diff>0?`VO2 exceeds VO1 by ${P(diff)} (${pctDiff.toFixed(1)}%). Review before creating Works Valuation.`:`VO2 saved within VO1 budget. Next: Create Works Valuation Document.`;
   addLog(wo,'VO2 (Variation Order) created');
-  notify(['md'],`VO2 created for WO ${wo} — ${job.cust}. Next: Works Instruction.`,wo);
+  notify(['md'],`VO2 created for WO ${wo} — ${job.cust}. Next: Works Valuation Document.`,wo);
   saveDB();closeModal('docModal');refreshDetail();refreshAll();
-  toast('VO2 saved — next step: prepare Works Instruction');
+  toast('VO2 saved — next step: create Works Valuation');
   setTimeout(()=>toast(msg,diff>0?'am':'gn'),400);
 }
 
@@ -1588,15 +2107,161 @@ function generateClaimDocs(){
   if(!selClaimJobs.size){toast('Select at least one job','am');return;}
   const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
   DB.certSeq++;
-  selClaimJobs.forEach(wo=>{
-    const job=DB.jobs[wo];if(!job)return;
+  const batchWOs=Array.from(selClaimJobs);
+  const batchJobs=batchWOs.map(wo=>DB.jobs[wo]).filter(j=>j&&j.vo1&&j.vo1.items);
+  
+  if(!batchJobs.length){toast('Selected jobs are missing data — please re-add them','rd');return;}
+
+  // Set claimRef on all selected jobs FIRST before generating docs
+  batchJobs.forEach(job=>{
     job.claimRef=certNo;
     job.stage='claim_docs_ready';
-    addLog(wo,`Claim documents generated by Finance — Cert: ${certNo}`);
+    addLog(job.wo,`Claim docs generated — Cert: ${certNo}`);
   });
-  notify(['admin','md'],`Finance generated claim docs — Cert ${certNo} (${selClaimJobs.size} job${selClaimJobs.size>1?'s':''}). Admin: review and record each job as complete.`);
-  selClaimJobs.clear();saveDB();renderClaims();renderInbox();renderDashboard();
-  toast(`Claim ${certNo} documents generated — Admin notified`);
+  
+  saveDB();
+  
+  // Store batch documents — pass the first job with claimRef already set
+  if(!DB.batchDocs)DB.batchDocs={};
+  const firstJob=batchJobs[0];
+  DB.batchDocs[certNo]={
+    jobs:batchJobs,
+    annexure:docAnnexure(firstJob),
+    paymentCert:docPaymentCert(firstJob),
+    invoice:docInvoice(firstJob),
+    listOfJobs:docListOfJobs(firstJob),
+    bpcSpreadsheet:docBPCSpreadsheet(batchJobs,certNo)
+  };
+  
+  // Auto-save all claim docs on each job so MD can view them
+  batchJobs.forEach(job=>{
+    if(!job.savedDocs)job.savedDocs={};
+    job.savedDocs['annexure']={html:docAnnexure(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['payment_cert']={html:docPaymentCert(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['invoice']={html:docInvoice(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['list_of_jobs']={html:docListOfJobs(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['bpc_spreadsheet']={html:docBPCSpreadsheet(batchJobs,certNo),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+  });
+  saveDB();
+  notify(['admin','md'],`Claim ${certNo} generated — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
+  renderClaims();renderInbox();renderDashboard();
+  
+  // Show batch doc modal
+  document.getElementById('docModalTitle').textContent=`Claim Batch ${certNo} — ${batchJobs.length} Jobs`;
+  document.getElementById('docModalBody').innerHTML=docBatchSummary(batchJobs,certNo);
+ document.getElementById('docModalFoot').innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">Open document:</span>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','annexure')">Annexure</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','payment_cert')">Payment Cert</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','invoice')">Invoice</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','list_of_jobs')">List of Jobs</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','bpc_spreadsheet')">BPC Spreadsheet</button>
+      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
+    </div>`;
+  openModal('docModal');
+  selClaimJobs.clear();
+  toast(`Claim ${certNo} generated — ${batchJobs.length} jobs`);
+}
+
+// Add this function to view batch docs
+function viewBatchDoc(certNo,docType){
+  const batch=DB.batchDocs?.[certNo];
+  const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
+  const firstJob=batchJobs[0];
+  const titles={
+    annexure:'Annexure to Payment Certificate',
+    payment_cert:'Payment Certificate',
+    invoice:'Tax Invoice',
+    list_of_jobs:'List of Jobs Done',
+    bpc_spreadsheet:'BPC Spreadsheet'
+  };
+  // Regenerate doc live so values are always current
+  let html='';
+  if(docType==='annexure')       html=docAnnexure(firstJob);
+  else if(docType==='payment_cert') html=docPaymentCert(firstJob);
+  else if(docType==='invoice')   html=docInvoice(firstJob);
+  else if(docType==='list_of_jobs') html=docListOfJobs(firstJob);
+  else if(docType==='bpc_spreadsheet') html=docBPCSpreadsheet(batchJobs,certNo);
+  else if(batch)                 html=batch[docType]||'';
+  if(!html){toast('Document not available','rd');return;}
+  document.getElementById('docModalTitle').textContent=`${titles[docType]||docType} — Cert ${certNo}`;
+  document.getElementById('docModalBody').innerHTML=html;
+  const docOrder=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  const currentIdx=docOrder.indexOf(docType);
+  const prevDoc=currentIdx>0?docOrder[currentIdx-1]:null;
+  const nextDoc=currentIdx<docOrder.length-1?docOrder[currentIdx+1]:null;
+  const docTitleShort={annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Spreadsheet'};
+
+  document.getElementById('docModalFoot').innerHTML=`
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%">
+      <div style="display:flex;gap:5px;align-items:center;flex:1">
+        ${prevDoc?`<button class="btn btn-gy btn-sm" onclick="viewBatchDoc('${certNo}','${prevDoc}')">← ${docTitleShort[prevDoc]}</button>`:'<span style="width:80px"></span>'}
+        <span style="font-size:.68rem;color:var(--tx3);margin:0 4px">${currentIdx+1} of ${docOrder.length}</span>
+        ${nextDoc?`<button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','${nextDoc}')">${docTitleShort[nextDoc]} →</button>`:'<span style="width:80px"></span>'}
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>
+        ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Attach</button>`:''}
+        ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload / Replace<input type="file" accept="image/*,application/pdf" onchange="handleBatchScan('${certNo}','${docType}',this)" style="display:none"></label>`:''}
+        ${(DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType])?`<button class="btn btn-gn btn-sm" onclick="downloadBatchScan('${certNo}','${docType}')">⬇ Signed</button>`:''}
+        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
+      </div>
+    </div>`;
+}
+
+function openBatchDoc(docType,certNo){
+  const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
+  const titles={annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
+  document.getElementById('docModalTitle').textContent=`${titles[docType]||docType} — Cert ${certNo}`;
+  document.getElementById('docModalBody').innerHTML=buildBatchDoc(docType,batchJobs,certNo);
+}
+
+function buildBatchDoc(docType,batchJobs,certNo){
+  const firstJob=batchJobs[0];
+  switch(docType){
+    case 'annexure': return docAnnexure(firstJob);
+    case 'payment_cert': return docPaymentCert(firstJob);
+    case 'invoice': return docInvoice(firstJob);
+    case 'list_of_jobs': return docListOfJobs(firstJob);
+    case 'bpc_spreadsheet': return docBPCSpreadsheet(batchJobs,certNo);
+    default: return '<p style="padding:1rem;color:#555">Document not available</p>';
+  }
+}
+
+function docBatchSummary(batchJobs,certNo){
+  const gross=batchJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
+  const ret=gross*.05,wht=gross*.03,net=gross-ret-wht;
+  return`<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;margin-bottom:8px">CLAIM BATCH: ${certNo}</div><hr>
+  <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:10px">
+    <thead><tr style="background:#d9d9d9">
+      <th style="border:1px solid #999;padding:4px 6px;text-align:left">WO No.</th>
+      <th style="border:1px solid #999;padding:4px 6px;text-align:left">Customer</th>
+      <th style="border:1px solid #999;padding:4px 6px;text-align:left">Location</th>
+      <th style="border:1px solid #999;padding:4px 6px;text-align:right">Amount</th>
+    </tr></thead>
+    <tbody>
+      ${batchJobs.map(j=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return`<tr>
+        <td style="border:1px solid #bbb;padding:3px 6px">${j.wo}</td>
+        <td style="border:1px solid #bbb;padding:3px 6px">${j.cust}</td>
+        <td style="border:1px solid #bbb;padding:3px 6px">${j.loc}</td>
+        <td style="border:1px solid #bbb;padding:3px 6px;text-align:right">${P(t.total)}</td>
+      </tr>`;}).join('')}
+      <tr style="background:#d9d9d9;font-weight:bold">
+        <td colspan="3" style="border:1px solid #999;padding:4px 6px;text-align:right">GROSS TOTAL</td>
+        <td style="border:1px solid #999;padding:4px 6px;text-align:right">${P(gross)}</td>
+      </tr>
+    </tbody>
+  </table>
+  <table style="width:50%;margin-left:auto;font-size:8.5pt;border-collapse:collapse">
+    <tr><td style="padding:3px 6px">Gross Total</td><td style="text-align:right;padding:3px 6px">${P(gross)}</td></tr>
+    <tr><td style="padding:3px 6px;color:#c00">Less Retention (5%)</td><td style="text-align:right;padding:3px 6px;color:#c00">(${P(ret)})</td></tr>
+    <tr><td style="padding:3px 6px;color:#c00">Less WHT (3%)</td><td style="text-align:right;padding:3px 6px;color:#c00">(${P(wht)})</td></tr>
+    <tr style="background:#d9d9d9;font-weight:bold"><td style="padding:4px 6px;border-top:2px solid #000">NET PAYABLE</td><td style="text-align:right;padding:4px 6px;border-top:2px solid #000">${P(net)}</td></tr>
+  </table>
+  <div style="margin-top:12px;font-size:8pt;color:#555">Click buttons below to view, edit and print each document in the batch.</div>
+  </div>`;
 }
 
 /* ═══════════════════════════════════════
@@ -1656,6 +2321,7 @@ function buildDoc(docType,job){
   switch(docType){
     case 'vo1': return docVO1(job);
     case 'vo2': return docVO2(job);
+    case 'works_valuation': return docWorksValuation(job);
     case 'field_report': return docFieldReport(job);
     case 'works_instruction': return docWorksInstruction(job);
     case 'gis_report': return docGISReport(job);
@@ -1663,6 +2329,7 @@ function buildDoc(docType,job){
     case 'payment_cert': return docPaymentCert(job);
     case 'invoice': return docInvoice(job);
     case 'list_of_jobs': return docListOfJobs(job);
+    case 'bpc_spreadsheet': return docBPCSpreadsheet(job);
     case 'bpc_wo': return`<div class="ua ua-bl" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Upload the scanned BPC work order document you received by email. This is the original BPC document — upload it here so it is stored in the system for reference.</div>`;
     default: return'<p style="padding:1rem;color:#555">Document not available</p>';
   }
@@ -1671,6 +2338,8 @@ function buildDoc(docType,job){
 /* ── WORKS VALUATION VO1 ── */
 function docVO1(job){
   const t=jTotal(job,'vo1');
+  const canEdit=CU==='admin'&&job.stage==='wo_received';
+  const phaseOpts=['46','47'].map(p=>`<option value="${p}" ${(job.vo1.phase||job.phase||'47')===p?'selected':''}'>Phase ${p}</option>`).join('');
   const rows=job.vo1.items.map((it,i)=>`<tr>
     <td class="c">${i+1}</td>
     <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
@@ -1679,7 +2348,7 @@ function docVO1(job){
     <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
     <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
   </tr>`).join('');
-  const custPayDate=job.actions.wo_received?.date||'';
+  const custPayDate=job.date||job.actions.wo_received?.date||'';
   return`<div class="paper">
   <table style="width:100%;border-collapse:collapse;margin-bottom:6px">
     <tr>
@@ -1697,7 +2366,7 @@ function docVO1(job){
   <div style="margin-bottom:6px"><span style="font-weight:bold;font-size:9pt">BPC &nbsp; W/O No. :</span> &nbsp; <input class="ef ef-b" value="${job.wo}" style="width:80px" onchange="DB.jobs['${job.wo}'].wo=this.value;saveDB()"></div>
   <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Project Details</div>
   <table class="hdt">
-    <tr><td class="lbl">Contract :</td><td colspan="3">FREE CONNECTIONS PHASE ${job.phase} PROJECT &nbsp;&nbsp;&nbsp;&nbsp; BPC Project No. : <input class="ef ef-b" value="${job.wo}" style="width:70px"></td></tr>
+    <tr><td class="lbl">Contract :</td><td colspan="3"><input class="ef ef-b" value="FREE CONNECTIONS PHASE ${job.phase} PROJECT" style="width:235px" onchange="DB.jobs['${job.wo}'].contractDesc=this.value;saveDB()"> &nbsp; BPC Project No.: <input class="ef ef-b" value="${job.bpcProjNo||job.wo}" style="width:90px" onchange="DB.jobs['${job.wo}'].bpcProjNo=this.value;saveDB()"></td></tr>
     <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
     <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" onchange="DB.jobs['${job.wo}'].cust=this.value;saveDB()" style="width:98%"></td>
       <td class="lbl" style="white-space:nowrap">Location Factor :</td><td><input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo1.lf=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td></tr>
@@ -1706,7 +2375,7 @@ function docVO1(job){
     <tr><td class="lbl">Wayleave Approval :</td><td>BPC</td><td class="lbl">Date Wayleave Available :</td><td><input class="ef ef-b" value="Not Required" style="width:98%"></td></tr>
   </table><hr>
   <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Details of BPC &nbsp; W/O No. : &nbsp; ${job.wo}</div>
-  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1</div>
+  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1 — Phase ${job.vo1.phase||job.phase||'47'}</div>
   <table class="boq">
     <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
     <tbody id="vo1rows${job.wo}">${rows}</tbody>
@@ -1719,19 +2388,104 @@ function docVO1(job){
     <tr><td style="text-align:right;padding:2px 5px">Markup @ <input class="ef ef-b" value="${job.vo1.mk||12.5}" style="width:36px;text-align:center" onchange="DB.jobs['${job.wo}'].vo1.mk=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px" id="vo1mk${job.wo}">${t.markup.toFixed(2)}</td></tr>
     <tr style="background:#d9d9d9"><td style="text-align:right;padding:3px 5px;font-weight:bold;font-size:9pt">TOTAL (BWP)</td><td style="text-align:right;border:2px solid #000;padding:3px 5px;font-weight:bold;font-size:9.5pt" id="vo1tot${job.wo}">${t.total.toFixed(2)}</td></tr>
   </table>
-  <div style="font-size:8pt;color:#555;margin-top:8px;padding:5px 8px;border:1px solid #e0e0e0;background:#fafafa">Print → Hand-sign below → Scan → Upload signed scan</div>
-  <br>
-  <div style="font-size:9pt">Name : …..…………………………………………………………………………………………….</div>
-  <br>
-  <div style="font-size:9pt">Name : …..…………………………………………………………………………………………….
-  <span style="font-size:8pt">(Inspector-BPC)</span></div>
+  <div style="font-size:8pt;color:#555;margin-top:8px;padding:5px 8px;border:1px solid #e0e0e0;background:#fafafa">  </div>`;
+}
+
+/* ── WORKS VALUATION DOCUMENT (combines VO1 + VO2) ── */
+function docWorksValuation(job){
+  const t1=jTotal(job,'vo1');
+  const t2=jTotal(job,'vo2');
+  const custPayDate=job.date||job.actions.wo_received?.date||'';
+  const phase=job.vo1.phase||job.phase||'47';
+
+  const vo1rows=job.vo1.items.map((it,i)=>`<tr>
+    <td class="c">${i+1}</td>
+    <td>${it.d||''}</td>
+    <td class="c">${it.u||'Ea'}</td>
+    <td class="r">${it.q||0}</td>
+    <td class="r">${(it.r||0).toFixed(2)}</td>
+    <td class="r">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+  </tr>`).join('');
+
+  const vo2rows=job.vo2.items.map((it,i)=>`<tr>
+    <td class="c">${i+1}</td>
+    <td>${it.d||''}</td>
+    <td class="c">${it.u||'Ea'}</td>
+    <td class="r">${it.q||0}</td>
+    <td class="r">${(it.r||0).toFixed(2)}</td>
+    <td class="r">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+  </tr>`).join('');
+
+  return`<div class="paper">
+  <table style="width:100%;border-collapse:collapse;margin-bottom:6px">
+    <tr>
+      <td style="width:60%;vertical-align:top">
+        <div style="font-weight:bold;font-size:10pt">BOTSWANA POWER CORPORATION</div>
+        <div style="font-size:8.5pt">P. O. Box 48 &nbsp;&nbsp;&nbsp; Tel &nbsp; 3607000</div>
+        <div style="font-size:8.5pt">Gaborone &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Fax &nbsp; 3607731</div>
+      </td>
+      <td style="text-align:right;vertical-align:top">
+        <div style="font-size:11pt;font-weight:bold">Works Valuation</div>
+      </td>
+    </tr>
+  </table>
+  <hr>
+  <div style="margin-bottom:6px"><span style="font-weight:bold;font-size:9pt">BPC W/O No. :</span> &nbsp; <input class="ef ef-b" value="${job.wo}" style="width:80px"></div>
+  <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Project Details</div>
+  <table class="hdt">
+    <tr><td class="lbl">Contract :</td><td colspan="3">FREE CONNECTIONS PHASE ${phase} PROJECT &nbsp;&nbsp;&nbsp;&nbsp; BPC Project No. : <input class="ef ef-b" value="${job.bpcProjNo||''}" style="width:90px"></td></tr>
+    <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
+    <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" style="width:98%"></td>
+      <td class="lbl" style="white-space:nowrap">Location Factor :</td><td><input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:40px">%</td></tr>
+    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${job.loc}" style="width:98%"></td>
+      <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td><input class="ef ef-b" type="date" value="${custPayDate}" style="width:110px"></td></tr>
+    <tr><td class="lbl">Wayleave Approval :</td><td>BPC</td><td class="lbl">Date Wayleave Available :</td><td><input class="ef ef-b" value="Not Required" style="width:98%"></td></tr>
+  </table><hr>
+  <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Details of BPC W/O No. : ${job.wo}</div>
+
+  <div style="font-weight:bold;font-size:9pt;margin:6px 0 3px;background:#d9d9d9;padding:2px 5px">VO1 — Phase ${phase}</div>
+  <table class="boq">
+    <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
+    <tbody>${vo1rows}</tbody>
+  </table>
+  <table style="width:100%;margin-top:5px;font-size:8.5pt;border-collapse:collapse">
+    <tr><td style="width:70%;text-align:right;padding:2px 5px">Items Subtotal</td><td style="text-align:right;padding:2px 5px">${t1.sub.toFixed(2)}</td></tr>
+    <tr><td style="text-align:right;padding:2px 5px">Location Factor @ ${job.vo1.lf||29.25}%</td><td style="text-align:right;padding:2px 5px">${t1.loc.toFixed(2)}</td></tr>
+    <tr><td style="text-align:right;padding:2px 5px">Markup @ ${job.vo1.mk||12.5}%</td><td style="text-align:right;padding:2px 5px">${t1.markup.toFixed(2)}</td></tr>
+    <tr style="background:#d9d9d9;font-weight:bold"><td style="text-align:right;padding:3px 5px;border-top:2px solid #000">VO1 TOTAL (BWP)</td><td style="text-align:right;padding:3px 5px;border-top:2px solid #000;border:2px solid #000">${t1.total.toFixed(2)}</td></tr>
+  </table>
+
+  <div style="font-weight:bold;font-size:9pt;margin:10px 0 3px;background:#d9d9d9;padding:2px 5px">VO2 — Phase ${job.vo2.phase||phase}</div>
+  <table class="boq">
+    <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
+    <tbody>${vo2rows||'<tr><td colspan="6" style="text-align:center;padding:6px;color:#999">No VO2 items</td></tr>'}</tbody>
+  </table>
+  <table style="width:100%;margin-top:5px;font-size:8.5pt;border-collapse:collapse">
+  <tr><td style="width:70%;text-align:right;padding:2px 5px">Items Subtotal</td><td style="text-align:right;padding:2px 5px">${t2.sub.toFixed(2)}</td></tr>
+  <tr><td style="text-align:right;padding:2px 5px">Location Factor @ ${job.vo2.lf||29.25}%</td><td style="text-align:right;padding:2px 5px">${t2.loc.toFixed(2)}</td></tr>
+  <tr><td style="text-align:right;padding:2px 5px">Markup @ ${job.vo2.mk||10}%</td><td style="text-align:right;padding:2px 5px">${t2.markup.toFixed(2)}</td></tr>
+  <tr style="background:#d9d9d9;font-weight:bold"><td style="text-align:right;padding:3px 5px;border-top:2px solid #000">VO2 TOTAL (BWP)</td><td style="text-align:right;padding:3px 5px;border-top:2px solid #000;border:2px solid #000">${t2.total.toFixed(2)}</td></tr>
+</table>
+
+  <table style="width:100%;margin-top:10px;font-size:8.5pt;border-collapse:collapse">
+    <tr style="background:#d9d9d9;font-weight:bold;font-size:9.5pt">
+      <td style="padding:4px 5px;text-align:right;border:2px solid #000">CLAIM AMOUNT (VO2) (BWP)</td>
+      <td style="padding:4px 5px;text-align:right;border:2px solid #000;width:110px">${t2.total>0?t2.total.toFixed(2):t1.total.toFixed(2)}</td>
+    </tr>
+  </table>
+
+  <div class="sig-area" style="margin-top:14px">
+    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
+    ${sigBlank('Approved by (BPC Representative)')}
+  </div>
   </div>`;
 }
 
 /* ── VARIATION ORDER VO2 ── */
 function docVO2(job){
-  if(!job.vo2.items.length) job.vo2.items=job.vo1.items.map(i=>({...i}));
-  const t=jTotal(job,'vo2'), t1=jTotal(job,'vo1'), diff=t.total-t1.total;
+  if(!(job.vo2&&job.vo2.items&&job.vo2.items.length)) job.vo2.items=(job.vo1&&job.vo1.items||[]).map(i=>({...i}));
+  const t=jTotal(job,'vo2'), t1=jTotal(job,'vo1');
+  const custPayDate=job.date||job.actions.wo_received?.date||'';
   const rows=job.vo2.items.map((it,i)=>`<tr>
     <td>${i+1}.0</td>
     <td style="min-width:190px"><div class="ac-wrap"><input class="ac-in" id="vo2d${job.wo}${i}" value="${(it.d||'').replace(/"/g,'&quot;')}" placeholder="Search rates..." oninput="acS('${job.wo}','vo2',${i},this.value)" onfocus="acS('${job.wo}','vo2',${i},this.value)" onblur="setTimeout(()=>acC('acd-vo2-${job.wo}-${i}'),180)" onkeydown="acK(event,'${job.wo}','vo2',${i})"><div class="ac-dd" id="acd-vo2-${job.wo}-${i}" style="display:none"></div></div></td>
@@ -1743,12 +2497,14 @@ function docVO2(job){
   return`<div class="paper">
   ${lh('Variation Order')}
   <table class="hdt">
+    <tr><td class="lbl">Contract :</td><td colspan="3"><input class="ef ef-b" value="FREE CONNECTIONS PHASE ${job.phase} PROJECT" style="width:235px"> &nbsp; BPC Project No.: <input class="ef ef-b" value="${job.bpcProjNo||job.wo}" style="width:90px"></td></tr>
     <tr><td class="lbl">PROJECT TITLE:</td><td>${job.cust}</td><td class="lbl">PHASE:</td><td>${job.phase}</td></tr>
     <tr><td class="lbl">LOCATION:</td><td>${job.loc}</td><td class="lbl">BPC W/O No.:</td><td>${job.wo}</td></tr>
-    <tr><td class="lbl">Location Factor:</td><td><input class="ef ef-b" value="${job.vo2.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.lf=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td>
-      <td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||10}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td></tr>
+    <tr><td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td><input class="ef ef-b" type="date" value="${custPayDate}" style="width:120px"></td>
+      <td class="lbl">Location Factor:</td><td><input class="ef ef-b" value="${job.vo2.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.lf=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td></tr>
+    <tr><td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||10}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td><td></td><td></td></tr>
   </table><hr>
-  <span class="p-grey">VO2 — Actual Quantities After Field Inspection</span>
+  <span class="p-grey">VO2 — Actual Quantities After Field Inspection — Phase ${job.vo2.phase||job.phase||'47'}</span>
   <table class="boq">
     <thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:46px">QTY</th><th class="r" style="width:78px">UNIT COST</th><th class="r" style="width:90px">TOTAL (BWP)</th></tr></thead>
     <tbody>${rows}</tbody>
@@ -1759,11 +2515,6 @@ function docVO2(job){
     <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0"><span>SUB TOTAL</span><span id="vo2sub${job.wo}">${(t.sub+t.loc).toFixed(2)}</span></div>
     <div style="display:flex;justify-content:space-between;font-size:8.5pt;padding:1px 0"><span>Markup</span><span id="vo2mk${job.wo}">${t.markup.toFixed(2)}</span></div>
     <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:9pt;padding:3px 0;border-top:2px solid #000;margin-top:2px"><span>TOTAL (BWP)</span><span id="vo2tot${job.wo}">${t.total.toFixed(2)}</span></div>
-  </div>
-  ${diff>0?`<div style="background:#fff3cd;border:1px solid #f0a500;padding:5px 8px;margin-top:6px;font-size:8pt;color:#7a4f00">⚠ VO2 (${P(t.total)}) exceeds VO1 (${P(t1.total)}) by ${P(diff)}. Consult BPC before notifying teams if this is a large difference.</div>`:`<div style="background:#d9f7e8;border:1px solid #4caf50;padding:5px 8px;margin-top:6px;font-size:8pt;color:#1a5c30">✓ VO2 within VO1 budget. Proceed to notify teams.</div>`}
-  <div class="sig-area">
-    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
-    ${sigBlank('Approved by (BPC Representative)')}
   </div>
   </div>`;
 }
@@ -1821,7 +2572,7 @@ function docWorksInstruction(job){
   <div style="font-weight:bold;font-size:9pt;background:#f0f0f0;padding:2px 6px;margin-bottom:3px">Contract Details</div>
   <table class="hdt">
     <tr><td class="lbl">Contract :</td><td>${ef('wi_contract','FREE CONNECTIONS PHASE '+job.phase+' PROJECT','65%')}</td>
-      <td class="lbl" style="white-space:nowrap">BPC Contract No. :</td><td>${ef('wi_contractno','2000921000','90px')}</td></tr>
+      <td class="lbl" style="white-space:nowrap">BPC Contract No. :</td><td>${ef('wi_contractno',job.contract||'','90px')}</td></tr>
     <tr><td class="lbl">Contractor :</td><td colspan="3">${ef('wi_contractor',CO.name,'98%')}</td></tr>
   </table>
   <div style="font-weight:bold;font-size:9pt;background:#f0f0f0;padding:2px 6px;margin:3px 0">Work Details</div>
@@ -1829,7 +2580,7 @@ function docWorksInstruction(job){
     <tr><td class="lbl">Project Title :</td><td>${ef('wi_title',job.cust,'98%')}</td>
       <td class="lbl" style="white-space:nowrap">Location Factor :</td><td>${ef('wi_lf',String(job.vo1.lf||29.25),'50px')}</td></tr>
     <tr><td class="lbl">Location :</td><td>${ef('wi_loc',job.loc,'98%')}</td>
-      <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td>${ef('wi_custdate',job.actions.wo_received?.date||'','110px','date')}</td></tr>
+      <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td>${ef('wi_custdate',job.date||'','110px','date')}</td></tr>
     <tr><td class="lbl">Drawings :</td><td>${ef('wi_drawings','Attached','80px')}</td>
       <td class="lbl" style="white-space:nowrap">Date Wayleave Available :</td><td>${ef('wi_wayleave','','110px')}</td></tr>
     <tr><td class="lbl">Wayleave Approval :</td><td>${ef('wi_wayleaveapproval','BPC','60px')}</td><td></td><td></td></tr>
@@ -1919,25 +2670,26 @@ function docGISReport(job){
 /* ── ANNEXURE TO PAYMENT CERTIFICATE ── */
 function docAnnexure(job){
   const certNo=job?.claimRef||'TES-001';
-  const claimJobs=job
+  const claimJobs=(job
     ?(certNo!=='TES-001'
       ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
       :[job])
-    :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
-  const totalFinal=claimJobs.reduce((s,j)=>{const t=j.vo2.items.length?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);
+    :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete')
+  ).filter(j=>j&&j.vo1&&j.vo1.items);
+  const totalFinal=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const inL=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none">`;
   const inR=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;text-align:right">`;
   const rows=claimJobs.map(j=>{
-    const tVO2=j.vo2.items.length?jTotal(j,'vo2'):null;
     const tVO1=jTotal(j,'vo1');
+    const tVO2=(j.vo2&&j.vo2.items&&j.vo2.items.length)?jTotal(j,'vo2'):null;
     const amt=tVO2?BWP(tVO2.total):BWP(tVO1.total);
     return`<tr>
       <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.wo,'70px')}</td>
       <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.cust,'99%')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px">${inL('','120px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.meterNo||'','110px')}</td>
       <td style="border:1px solid #bbb;padding:3px 5px">${inR(amt,'100px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px"><div style="text-align:right">P 0.00</div></td>
-      <td style="border:1px solid #bbb;padding:3px 5px"><div style="text-align:right">P 0.00</div></td>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inR('0.00','65px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px">${inR('0.00','80px')}</td>
       <td style="border:1px solid #bbb;padding:3px 5px">${inR(amt,'100px')}</td>
     </tr>`;
   }).join('');
@@ -2026,7 +2778,7 @@ function docPaymentCert(job){
   const claimJobs=job
     ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
     :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
-  const gross=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
   const ef=(val,w,id)=>`<input class="ef ef-b" ${id?`id="${id}"`:''}  value="${val||''}" style="width:${w||'90%'}">`;
   return`<div class="paper">
@@ -2052,7 +2804,7 @@ function docPaymentCert(job){
     <tr><td style="padding:2px 5px">2.</td><td>Value of Interim Work previously claimed but now 100% completed (see Annexure)</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px"><input class="ef ef-b" id="pcr2" value="0.00" style="width:120px;text-align:right" oninput="recalcPC()"></td></tr>
     <tr><td style="padding:2px 5px">3.</td><td>Interim Value of work completed (see Annexure)</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px"><input class="ef ef-b" id="pcr3" value="0.00" style="width:120px;text-align:right" oninput="recalcPC()"></td></tr>
     <tr style="background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999"><td style="padding:2px 5px">4.</td><td>Sub total of Work completed</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px;font-weight:bold" id="pcr4">${BWP(gross)}</td></tr>
-    <tr><td style="padding:2px 5px">5.</td><td>Plus VAT @ 14%</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px"><input class="ef ef-b" id="pcr5" value="0.00" style="width:120px;text-align:right" oninput="recalcPC()"></td></tr>
+    <tr><td style="padding:2px 5px">5.</td><td>Plus VAT @ 14%</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px"><input class="ef ef-b" id="pcr5" value="${BWP(gross*0.14)}" style="width:120px;text-align:right" oninput="recalcPC()"></td></tr>
     <tr style="background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999"><td style="padding:2px 5px">6.</td><td>Total Valuation Certified To Date</td><td style="text-align:right;padding:2px">P</td><td style="text-align:right;padding:2px;font-weight:bold" id="pcr6">${BWP(gross)}</td></tr>
   </table>
   <div style="background:#d9d9d9;font-weight:bold;padding:2px 5px;font-size:9pt;margin:5px 0 2px">Deductions</div>
@@ -2107,7 +2859,7 @@ function docInvoice(job){
     ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
     :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
   const phase=job?.phase||claimJobs[0]?.phase||'46';
-  const gross=claimJobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const vat=gross*.14;
   const ret=gross*.05, wht=gross*.03;
   const amountDue=gross+vat-ret-wht;
@@ -2191,7 +2943,7 @@ function docInvoice(job){
       <td style="vertical-align:top">
         <table style="width:100%;font-size:8.5pt;border-collapse:collapse">
           <tr><td style="padding:3px 6px;border:1px solid #e0e0e0">Invoice Subtotal</td><td style="text-align:right;padding:3px 6px;border:1px solid #e0e0e0;font-weight:bold" id="inv_sub">${BWP(gross)}</td></tr>
-          <tr style="background:#d9edff"><td style="padding:3px 6px;border:1px solid #e0e0e0">VAT 14%</td><td style="text-align:right;padding:3px 6px;border:1px solid #e0e0e0"><input class="ef ef-b" value="${BWP(vat)}" id="inv_vat" style="width:110px;text-align:right" oninput="recalcInv()"></td></tr>
+          <tr style="background:#d9edff"><td style="padding:3px 6px;border:1px solid #e0e0e0">VAT 14%</td><td style="text-align:right;padding:3px 6px;border:1px solid #e0e0e0"><input class="ef ef-b" value="${BWP(gross*0.14)}" id="inv_vat" style="width:110px;text-align:right" oninput="recalcInv()"></td></tr>
           <tr style="background:#d9edff"><td style="padding:3px 6px;border:1px solid #e0e0e0">Less Retention 5%</td><td style="text-align:right;padding:3px 6px;border:1px solid #e0e0e0"><input class="ef ef-b" value="${BWP(ret)}" id="inv_ret" style="width:110px;text-align:right" oninput="recalcInv()"></td></tr>
           <tr style="background:#d9edff"><td style="padding:3px 6px;border:1px solid #e0e0e0">Less Witholding Tax 3%</td><td style="text-align:right;padding:3px 6px;border:1px solid #e0e0e0"><input class="ef ef-b" value="${BWP(wht)}" id="inv_wht" style="width:110px;text-align:right" oninput="recalcInv()"></td></tr>
           <tr style="background:#1a3a8f"><td style="padding:4px 6px;color:#fff;font-weight:bold;border:1px solid #1a3a8f">AMOUNT DUE</td><td style="text-align:right;padding:4px 6px;color:#fff;font-weight:bold;border:1px solid #1a3a8f" id="inv_due">${BWP(amountDue)}</td></tr>
@@ -2217,6 +2969,83 @@ function recalcInv(){
     const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=BWP(v);};
     s('inv_price',sub);s('inv_sub',sub);s('inv_due',due);
   }catch(e){}
+}
+
+/* ── BPC SPREADSHEET (Finance generates for batch) ── */
+function docBPCSpreadsheet(jobsOrJob,certNoOverride){
+  // Accept either an array of jobs (batch) or a single job (legacy)
+  let batchJobs, certNo;
+  if(Array.isArray(jobsOrJob)){
+    batchJobs=jobsOrJob;
+    certNo=certNoOverride||batchJobs[0]?.claimRef||'TES-001';
+  } else {
+    const job=jobsOrJob;
+    certNo=certNoOverride||job?.claimRef||'TES-001';
+    batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
+    if(!batchJobs.length&&job)batchJobs=[job];
+  }
+
+  const ei=(v,w)=>`<input type="text" value="${(v||'').toString().replace(/"/g,'&quot;')}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial;font-size:6.5pt;color:#000;padding:0 1px;outline:none">`;
+  const eir=(v,w)=>`<input type="text" value="${(v||'').toString()}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial;font-size:6.5pt;color:#000;padding:0 1px;outline:none;text-align:right">`;
+  const eid=(v)=>`<input type="date" value="${v||''}" style="width:98%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial;font-size:6pt;color:#000;padding:0;outline:none">`;
+
+  const rows=batchJobs.map((j,i)=>{
+    const t=bestTotal(j);
+    const invNo=`INV_${certNo}.${new Date().getFullYear()}`;
+    const startDate=j.actions.vo2_created?.date||j.actions.teams_notified?.date||'';
+    const compDate=j.actions.work_complete?.date||'';
+    return`<tr>
+      <td style="border:1px solid #bbb;padding:2px;text-align:center;font-size:6.5pt">${i+1}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.wo,'55px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'80px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.meterNo||'','75px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'125px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.vendor,'52px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eir(BWP(t.total),'80px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('100','28px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eid(j.date)}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('Ph '+j.phase+'-Free Con','78px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(invNo,'100px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.loc,'88px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eid(startDate)}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eid(compDate)}</td>
+    </tr>`;
+  }).join('');
+
+  const grandTotal=batchJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
+
+  return`<div class="paper" style="overflow-x:auto">
+  <div style="font-size:10pt;font-weight:bold;margin-bottom:5px">BPC SPREADSHEET — CLAIM ${certNo} (${batchJobs.length} job${batchJobs.length!==1?'s':''})</div>
+  <hr>
+  <table style="width:100%;border-collapse:collapse;font-size:7.5pt;margin-top:6px">
+    <thead>
+      <tr style="background:#d9d9d9">
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">WO No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Project No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Meter No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Vendor Name</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Vendor No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Amount (BWP)</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">%</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">WO Date</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Phase</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Invoice No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Location</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Start Date</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Completion</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows}
+      <tr style="background:#d9d9d9;font-weight:bold;border-top:2px solid #999">
+        <td colspan="6" style="border:1px solid #999;padding:3px;text-align:right"><strong>TOTAL</strong></td>
+        <td style="border:1px solid #999;padding:3px;text-align:right"><strong>${BWP(grandTotal)}</strong></td>
+        <td colspan="7" style="border:1px solid #999;padding:3px"></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>`;
 }
 
 /* ── LIST OF JOBS DONE — Admin creates ── */
@@ -2248,12 +3077,12 @@ function docListOfJobs(job){
     ?Object.values(DB.jobs).filter(j=>j.claimRef===job.claimRef)
     :allDoneJobs;
   const displayJobs=claimJobs.length?claimJobs:allDoneJobs;
-  const total=displayJobs.reduce((s,j)=>{const t=j.vo2.items.length?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);
+  const total=displayJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const certNo=job?.claimRef||'TES-001';
   const inL=(val,w)=>`<input type="text" value="${(val||'').replace(/"/g,'&quot;')}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:6.5pt;color:#000;padding:0 1px;outline:none;box-sizing:border-box">`;
   const inD=(val)=>`<input type="date" value="${val||''}" style="width:98%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:6pt;color:#000;padding:0;outline:none;box-sizing:border-box">`;
   const rows=displayJobs.map((j,i)=>{
-    const t=j.vo2.items.length?jTotal(j,'vo2'):jTotal(j,'vo1');
+    const t=bestTotal(j);
     const invNo=`INV_${certNo}.${new Date().getFullYear()}`;
     return`<tr>
       <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${i+1}.0</td>
@@ -2265,7 +3094,7 @@ function docListOfJobs(job){
       <td style="border:1px solid #bbb;padding:1px 3px">${inL(j.phase,'98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inL(invNo,'98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inL(j.loc,'98%')}</td>
-      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.teams_notified?.date||'')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.vo2_created?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.work_complete?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inL('Kagiso Jeff Kewagamang','98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inL('Poloko Moiseraela','98%')}</td>
@@ -2349,6 +3178,134 @@ function numWords(n){const m=Math.floor(n),c=Math.round((n-m)*100);return`${m.to
 /* ═══════════════════════════════════════
    LIVE RECALC
 ═══════════════════════════════════════ */
+
+/* ─── FIX 9: Save doc to step & download ─── */
+function saveDocToStep(wo,docType){
+  const job=DB.jobs[wo];if(!job)return;
+  if(!job.savedDocs)job.savedDocs={};
+  // If the doc modal is currently open with this doc, capture edited values
+  const modalBody=document.getElementById('docModalBody');
+  let html;
+  if(modalBody&&modalBody.innerHTML.trim()){
+    serializeFormValues(modalBody);
+    html=modalBody.innerHTML;
+  } else {
+    html=buildDoc(docType,job);
+  }
+  job.savedDocs[docType]={html,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+  addLog(wo,`Document saved: ${docType} by ${RN[CU]}`);
+  notify(['md'],`New document saved for WO ${wo}: ${docLabels[docType]||docType} — click to view`,wo);
+  saveDB();
+  toast('✓ Document saved and attached — MD can now view it','gn');
+  refreshDetail();
+}
+
+// Global doc labels for notifications
+const docLabels={
+  bpc_wo:'BPC Work Order',vo1:'Works Valuation (VO1)',field_report:'Linesman Field Report',
+  vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',
+  works_instruction:'Works Instruction',gis_report:'GIS Report',
+  annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',
+  invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'
+};
+function downloadSavedDoc(wo,docType){
+  const job=DB.jobs[wo];
+  const saved=job&&job.savedDocs&&job.savedDocs[docType];
+  if(!saved){toast('Not saved yet — click 💾 Save first','am');return;}
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:20px;background:#fff;color:#000;font-size:9pt}.paper{font-family:Arial}.boq{width:100%;border-collapse:collapse}.boq th,.boq td{border:1px solid #bbb;padding:3px 5px}.hdt{width:100%;border-collapse:collapse}.hdt td{padding:2px 5px;font-size:8.5pt}.lbl{font-weight:bold;white-space:nowrap}.ef,.ef-b{border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial;font-size:8.5pt}.p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;display:block;margin:5px 0}hr{border:none;border-top:1.5px solid #000;margin:6px 0}button,.btn,.scan-upload-label,.pipe-step,.ua,.notif-bar{display:none!important}</style></head><body>'+saved.html+'</body></html>';
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=docType.replace(/_/g,'-')+'_WO'+wo+'.html';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},800);
+}
+/* ─── FIX 7: Batch doc save/scan helpers ─── */
+function saveBatchDocRecord(certNo,docType){
+  if(!DB.batchSaved)DB.batchSaved={};
+  DB.batchSaved[certNo+'_'+docType]={savedAt:new Date().toISOString(),role:CU};
+  saveDB();toast('Saved: '+docType.replace(/_/g,' '),'gn');
+  const all=['list_of_jobs','annexure','payment_cert','invoice','bpc_spreadsheet'];
+  if(all.every(d=>DB.batchSaved[certNo+'_'+d])){
+    notify(['admin','md'],'Claim batch '+certNo+': all 5 documents saved — ready for submission.');
+    toast('All 5 saved — Admin notified','gn');
+  }
+}
+
+function serializeFormValues(container){
+  // Bake current input values into the HTML so they survive innerHTML round-trips
+  container.querySelectorAll('input').forEach(el=>{
+    if(el.type==='checkbox'||el.type==='radio'){
+      if(el.checked)el.setAttribute('checked','checked');
+      else el.removeAttribute('checked');
+    } else {
+      el.setAttribute('value',el.value);
+    }
+  });
+  container.querySelectorAll('textarea').forEach(el=>{
+    el.textContent=el.value;
+  });
+  container.querySelectorAll('select').forEach(el=>{
+    Array.from(el.options).forEach(opt=>{
+      if(opt.selected)opt.setAttribute('selected','selected');
+      else opt.removeAttribute('selected');
+    });
+  });
+}
+
+function saveBatchDocAttach(certNo,docType){
+  // Save the current edited state of the doc and attach to all jobs in this batch
+  const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
+  if(!batchJobs.length){toast('No jobs found for this batch','rd');return;}
+  // Serialize all input values into attributes before capturing HTML
+  const modalBody=document.getElementById('docModalBody');
+  serializeFormValues(modalBody);
+  const currentHtml=modalBody.innerHTML;
+  batchJobs.forEach(job=>{
+    if(!job.savedDocs)job.savedDocs={};
+    job.savedDocs[docType]={
+      html:currentHtml,
+      savedAt:new Date().toISOString(),
+      role:CU,
+      autoSaved:false,
+      certNo:certNo
+    };
+  });
+  // Also store in batchSaved
+  if(!DB.batchSaved)DB.batchSaved={};
+  DB.batchSaved[certNo+'_'+docType]={savedAt:new Date().toISOString(),role:CU};
+  addLog('',`Claim doc saved & attached: ${docType} — Batch ${certNo}`);
+  notify(['admin','md'],`Finance saved ${(docLabels&&docLabels[docType])||docType} for Claim ${certNo} — available to view`,batchJobs[0]?.wo||'');
+  saveDB();
+  toast(`✓ ${(docLabels&&docLabels[docType])||docType} saved & attached — Admin and MD can now view it`,'gn');
+  // Check if all 5 are now saved
+  const all=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  if(all.every(d=>DB.batchSaved[certNo+'_'+d])){
+    notify(['admin','md'],`Claim ${certNo}: ALL 5 documents saved and ready for submission!`,batchJobs[0]?.wo||'');
+    toast('🎉 All 5 claim docs saved — ready for submission!','gn');
+  }
+}
+function handleBatchScan(certNo,docType,input){
+  if(!input.files[0])return;
+  const file=input.files[0];
+  if(file.size>5*1024*1024){toast('Max 5MB','am');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    if(!DB.batchScans)DB.batchScans={};
+    DB.batchScans['bs_'+certNo+'_'+docType]={dataUrl:e.target.result,filename:file.name,uploadedAt:new Date().toISOString()};
+    addLog('','Signed scan: '+docType+' Batch '+certNo);
+    saveDB();notify(['admin','md'],'Finance uploaded signed '+docType.replace(/_/g,' ')+' — Batch '+certNo);
+    toast('Scan saved: '+file.name);
+    if(typeof viewBatchDoc==='function')viewBatchDoc(certNo,docType);
+  };reader.readAsDataURL(file);
+}
+function downloadBatchScan(certNo,docType){
+  const s=DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType];
+  if(!s){toast('No scan','am');return;}
+  const a=document.createElement('a');a.href=s.dataUrl;a.download=s.filename||docType+'.pdf';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
 function recalcVO1(wo){
   const job=DB.jobs[wo];if(!job)return;
   let sub=0;
@@ -2378,6 +3335,29 @@ function recalcVO2(wo){
 }
 function addVO1Row(wo){DB.jobs[wo].vo1.items.push({d:'New Item',u:'Ea',q:1,r:0});saveDB();openDocForAction(wo,'vo1');}
 function addVO2Row(wo){DB.jobs[wo].vo2.items.push({d:'New Item',u:'Ea',q:1,r:0});saveDB();openDocForAction(wo,'vo2');}
+function createWorksValuation(wo){
+  const job=DB.jobs[wo];
+  if(!job||!job.vo2.items.length){toast('VO2 must be created first','am');return;}
+  job.worksValuation={created:true,date:new Date().toISOString()};
+  job.stage='works_valuation_created';
+  job.actions.works_valuation_created={date:new Date().toISOString().slice(0,10),notes:'Works Valuation document created'};
+  addLog(wo,'Works Valuation document created');
+  notify(['md'],'Works Valuation created for WO '+wo,wo);
+  saveDB();
+  toast('✓ Works Valuation created');
+  openDocForAction(wo,'works_valuation');
+  refreshDetail();
+}
+function changeVO1Phase(wo,phase){
+  DB.jobs[wo].vo1.phase=phase;
+  saveDB();
+  toast('VO1 phase updated to Phase '+phase);
+}
+function changeVO2Phase(wo,phase){
+  DB.jobs[wo].vo2.phase=phase;
+  saveDB();
+  toast('VO2 phase updated to Phase '+phase);
+}
 
 /* ═══════════════════════════════════════
    AUTOCOMPLETE
@@ -2390,11 +3370,13 @@ function acInput(wo,dt,idx){
 }
 function acS(wo,dt,idx,q){
   const did=`acd-${dt}-${wo}-${idx}`, dd=document.getElementById(did);if(!dd)return;
+  const job=DB.jobs[wo];
+  const jobPhase=(dt==='vo1'?job.vo1.phase:job.vo2.phase)||job.phase||'47';
   const ql=q.trim().toLowerCase();
-  const active=DB.rates.filter(r=>r.on);
+  const active=DB.rates.filter(r=>r.on&&r.phase===jobPhase);
   const m=ql.length===0?active.slice(0,12):active.filter(r=>r.d.toLowerCase().includes(ql)||r.c.toLowerCase().includes(ql)).slice(0,12);
-  if(!m.length){dd.innerHTML='<div class="ac-empty">No match — type freely to add custom item</div>';dd.style.display='block';return;}
-  dd.innerHTML=m.map(r=>`<div class="ac-it" onmousedown="acSel('${wo}','${dt}',${idx},'${r.d.replace(/'/g,"\\'")}','${r.u}',${r.r},'${did}')"><div class="ac-desc">${r.d}</div><div class="ac-meta"><span class="ac-rate">BWP ${r.r.toLocaleString('en-BW',{minimumFractionDigits:2})}</span><span>per ${r.u}</span><span class="ac-cat">${r.c}</span></div></div>`).join('');
+  if(!m.length){dd.innerHTML='<div class="ac-empty">No match in Phase '+jobPhase+' — type freely to add custom item</div>';dd.style.display='block';return;}
+  dd.innerHTML=m.map(r=>`<div class="ac-it" onmousedown="acSel('${wo}','${dt}',${idx},'${r.d.replace(/'/g,"\\'")}','${r.u}',${r.r},'${did}')"><div class="ac-desc">${r.d}</div><div class="ac-meta"><span class="ac-rate">BWP ${r.r.toLocaleString('en-BW',{minimumFractionDigits:2})}</span><span>per ${r.u}</span><span class="ac-cat">Phase ${r.phase}</span></div></div>`).join('');
   dd.style.display='block';
 }
 function acSel(wo,dt,idx,desc,unit,rate,did){
@@ -2413,7 +3395,9 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
    PRINT
 ═══════════════════════════════════════ */
 function printModal(){
-  const content=document.getElementById('docModalBody').innerHTML;
+  const modalBody=document.getElementById('docModalBody');
+  serializeFormValues(modalBody);
+  const content=modalBody.innerHTML;
   const title=document.getElementById('docModalTitle').textContent;
   const pw=window.open('','_blank','width=860,height=760');
   if(!pw){toast('Pop-up blocked — allow pop-ups for this site then try again','am');return;}
