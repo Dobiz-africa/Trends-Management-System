@@ -4,40 +4,121 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trends Engineering Services · Document Portal</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0d1117;--sf:#161b22;--sf2:#1e2333;--sf3:#252d40;
-  --bd:#2c3347;--bd2:#374059;
-  --tx:#dde3f0;--tx2:#8492aa;--tx3:#4e5a72;
-  --am:#f5a623;--am-bg:rgba(245,166,35,.1);--am-b:rgba(245,166,35,.22);
-  --gn:#2ea56e;--gn-bg:rgba(46,165,110,.1);--gn-b:rgba(46,165,110,.22);
-  --rd:#e05252;--rd-bg:rgba(224,82,82,.1);--rd-b:rgba(224,82,82,.22);
-  --bl:#4a8fe8;--bl-bg:rgba(74,143,232,.1);--bl-b:rgba(74,143,232,.22);
-  --r:7px;--rs:5px;
+  --bg:#080c14;--sf:#0f1520;--sf2:#161e2e;--sf3:#1d2638;
+  --bd:#243044;--bd2:#2e3d58;
+  --tx:#e8eef8;--tx2:#8a9ab8;--tx3:#4a5a78;
+  --am:#f0a500;--am-bg:rgba(240,165,0,.1);--am-b:rgba(240,165,0,.25);
+  --gn:#1db87a;--gn-bg:rgba(29,184,122,.1);--gn-b:rgba(29,184,122,.25);
+  --rd:#e84545;--rd-bg:rgba(232,69,69,.1);--rd-b:rgba(232,69,69,.25);
+  --bl:#3d8ef0;--bl-bg:rgba(61,142,240,.1);--bl-b:rgba(61,142,240,.25);
+  --r:8px;--rs:6px;
+  --font-display:'Sora',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+}
+[data-theme="light"]{
+  --bg:#eef0f5;--sf:#ffffff;--sf2:#e8ecf4;--sf3:#dde2ee;
+  --bd:#c4ccdc;--bd2:#aab5cb;
+  --tx:#07101f;--tx2:#1a2840;--tx3:#3d4f6e;
+  --am:#b87200;--am-bg:rgba(184,114,0,.1);--am-b:rgba(184,114,0,.28);
+  --gn:#136b43;--gn-bg:rgba(19,107,67,.1);--gn-b:rgba(19,107,67,.28);
+  --rd:#b52222;--rd-bg:rgba(181,34,34,.1);--rd-b:rgba(181,34,34,.28);
+  --bl:#1a4fc4;--bl-bg:rgba(26,79,196,.1);--bl-b:rgba(26,79,196,.28);
+}
+
+/* ── LIGHT MODE LOGIN OVERRIDES ── */
+[data-theme="light"] .lc select {
+  background: #f0f2f7 !important;
+  color: #1a1a2e !important;
+  border-color: #b0b8c8 !important;
+}
+[data-theme="light"] .lc select option {
+  background: #ffffff !important;
+  color: #1a1a2e !important;
+}
+[data-theme="light"] .lc {
+  background: rgba(255,255,255,0.95) !important;
+  border-color: rgba(184,114,0,0.25) !important;
+  box-shadow: 0 0 0 1px rgba(184,114,0,0.08), 0 24px 48px rgba(0,0,0,0.1) !important;
+}
+[data-theme="light"] .lc-brand h1 {
+  color: #1a1a2e !important;
+}
+[data-theme="light"] .lc-brand p {
+  color: #4a5a7a !important;
+}
+[data-theme="light"] .lc label {
+  color: #2a3a5a !important;
+}
+[data-theme="light"] .lc-hint {
+  color: #5a6a8a !important;
+}
+[data-theme="light"] .lc-roles {
+  background: #e8ecf4 !important;
+  border-color: #c4ccdc !important;
+} 
+[data-theme="light"] .lc-role-name {
+  color: #b87200 !important;
+}
+[data-theme="light"] .lc-role-desc {
+  color: #3d4f6e !important;
+}
+[data-theme="light"] #loginScreen {
+  background: #eef0f5 !important;
+}
+[data-theme="light"] .login-bg-lines svg {
+  opacity: 0.06 !important;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh}
+body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-height:100vh}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--sf)}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
 
+/* THEME TOGGLE */
+.theme-toggle{background:var(--sf2);border:1px solid var(--bd);border-radius:20px;padding:.28rem .65rem;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:.7rem;color:var(--tx2);transition:all .2s;letter-spacing:.03em}
+.theme-toggle:hover{border-color:var(--am);color:var(--am);background:var(--am-bg)}
+.theme-toggle .tog-icon{font-size:.85rem;transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+[data-theme="light"] .theme-toggle .tog-icon{transform:rotate(360deg)}
+
 /* LOGIN */
-#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse 70% 50% at 50% -10%,rgba(245,166,35,.06),transparent)}
-.lc{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:2.25rem;width:400px}
-.lc-brand{display:flex;align-items:center;gap:11px;margin-bottom:1.75rem}
-.lc-icon{width:38px;height:38px;background:var(--am);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.lc-icon svg{width:20px;height:20px;fill:#000}
-.lc-brand h1{font-size:.92rem;font-weight:600;color:var(--tx);line-height:1.25}
-.lc-brand p{font-size:.62rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em}
-.lc hr{border:none;border-top:1px solid var(--bd);margin-bottom:1.4rem}
-.lc label{display:block;font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--tx2);margin-bottom:6px}
-.lc select{width:100%;padding:.65rem .9rem;background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);color:var(--tx);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%238492aa' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:10px;cursor:pointer}
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;position:relative;overflow:hidden;background:#060a11}
+#loginScreen::before{content:'';position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 60% at 20% 50%,rgba(240,165,0,.07) 0%,transparent 60%),
+  radial-gradient(ellipse 60% 80% at 80% 30%,rgba(61,142,240,.06) 0%,transparent 60%),
+  radial-gradient(ellipse 40% 40% at 50% 100%,rgba(29,184,122,.04) 0%,transparent 60%);
+  z-index:0}
+#loginScreen::after{content:'';position:absolute;inset:0;background-image:
+  linear-gradient(rgba(240,165,0,.04) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(240,165,0,.04) 1px,transparent 1px);
+  background-size:48px 48px;z-index:0;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%)}
+.login-bg-lines{position:absolute;inset:0;z-index:0;overflow:hidden}
+.login-bg-lines svg{width:100%;height:100%;opacity:.08}
+.lc{background:rgba(15,21,32,.92);border:1px solid rgba(240,165,0,.18);border-radius:16px;padding:2.5rem 2.25rem;width:420px;position:relative;z-index:1;
+  box-shadow:0 0 0 1px rgba(240,165,0,.05),0 32px 64px rgba(0,0,0,.6),0 0 80px rgba(240,165,0,.05);
+  animation:lc-in .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes lc-in{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+.lc-brand{display:flex;align-items:center;gap:14px;margin-bottom:2rem}
+.lc-logo{width:48px;height:48px;flex-shrink:0;position:relative}
+.lc-logo svg{width:48px;height:48px;filter:drop-shadow(0 0 12px rgba(240,165,0,.5))}
+.lc-brand h1{font-family:var(--font-display);font-size:1rem;font-weight:700;color:var(--tx);line-height:1.2;letter-spacing:-.01em}
+.lc-brand p{font-size:.6rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-top:2px}
+.lc-divider{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
+.lc-divider::before,.lc-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--bd),transparent)}
+.lc-divider span{font-size:.6rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em;white-space:nowrap}
+.lc label{display:block;font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3);margin-bottom:7px;font-family:var(--font-display)}
+.lc select{width:100%;padding:.7rem 1rem;background:rgba(22,30,46,.8);border:1px solid var(--bd2);border-radius:var(--rs);color:var(--tx);font-family:var(--font-body);font-size:.88rem;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%238a9ab8' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:9px;cursor:pointer;transition:border-color .2s,box-shadow .2s}
 .lc select:focus{border-color:var(--am);box-shadow:0 0 0 3px var(--am-bg)}
-.lc select option{background:var(--sf2)}
-.lc-btn{width:100%;margin-top:1.3rem;padding:.7rem;background:var(--am);border:none;border-radius:var(--rs);color:#000;font-family:'Inter',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;transition:.15s}
-.lc-btn:hover{background:#e09500}
-.lc-hint{text-align:center;font-size:.67rem;color:var(--tx3);margin-top:.75rem}
+.lc select option{background:#0f1520;color:var(--tx)}
+.lc-btn{width:100%;margin-top:1.4rem;padding:.75rem;background:linear-gradient(135deg,#f0a500,#e08c00);border:none;border-radius:var(--rs);color:#000;font-family:var(--font-display);font-weight:700;font-size:.9rem;cursor:pointer;transition:all .2s;letter-spacing:.02em;position:relative;overflow:hidden}
+.lc-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.15),transparent);opacity:0;transition:opacity .2s}
+.lc-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(240,165,0,.35)}
+.lc-btn:hover::after{opacity:1}
+.lc-btn:active{transform:translateY(0)}
+.lc-hint{text-align:center;font-size:.65rem;color:var(--tx3);margin-top:.85rem;letter-spacing:.04em}
+.lc-hint::before{content:'⚡ ';font-size:.7rem}
 .lc-roles{margin-top:1.1rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.7rem .9rem}
 .lc-role-row{display:flex;align-items:flex-start;gap:8px;padding:3px 0;font-size:.72rem}
 .lc-role-name{color:var(--am);font-weight:600;min-width:90px}
@@ -45,36 +126,82 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 /* SHELL */
 #mainApp{display:none}
-.shell{display:grid;grid-template-columns:242px 1fr;min-height:100vh}
-.sb{background:var(--sf);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
-.sb-hd{padding:1rem 1.1rem .85rem;border-bottom:1px solid var(--bd)}
-.sb-brand{display:flex;align-items:center;gap:9px}
-.sb-icon{width:28px;height:28px;background:var(--am);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sb-icon svg{width:14px;height:14px;fill:#000}
-.sb-brand h1{font-size:.8rem;font-weight:600;color:var(--tx);line-height:1.3}
-.sb-brand p{font-size:.58rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em}
-.sb-role{margin:.8rem 1.1rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.5rem .7rem}
-.sb-rl{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3);margin-bottom:2px}
-.sb-rn{font-size:.8rem;font-weight:600;color:var(--am)}
-.sb-sec{padding:.7rem 1.1rem .18rem;font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);font-weight:600}
-.ni{display:flex;align-items:center;gap:9px;padding:.48rem 1.1rem;font-size:.81rem;color:var(--tx2);cursor:pointer;transition:.1s;border-left:2px solid transparent;margin:1px 0}
-.ni:hover{background:var(--sf2);color:var(--tx)}
-.ni.act{background:var(--am-bg);color:var(--am);border-left-color:var(--am);font-weight:600}
+.shell{display:grid;grid-template-columns:252px 1fr;min-height:100vh}
+.sb{background:linear-gradient(180deg,var(--sf) 0%,rgba(8,12,20,.98) 100%);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sb-hd{padding:1.1rem 1.2rem .9rem;border-bottom:1px solid var(--bd);background:linear-gradient(135deg,rgba(240,165,0,.04),transparent)}
+.sb-brand{display:flex;align-items:center;gap:11px}
+.sb-logo{width:34px;height:34px;flex-shrink:0}
+.sb-logo svg{width:34px;height:34px;filter:drop-shadow(0 0 6px rgba(240,165,0,.4))}
+.sb-brand h1{font-family:var(--font-display);font-size:.82rem;font-weight:700;color:var(--tx);line-height:1.2;letter-spacing:-.01em}
+.sb-brand p{font-size:.55rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em;margin-top:1px}
+
+/* ── LIGHT MODE SIDEBAR BRAND ── */
+[data-theme="light"] .sb-brand h1 {
+  color: #1a1a2e !important;
+}
+[data-theme="light"] .sb-brand p {
+  color: #3d4f6e !important;
+}
+[data-theme="light"] .sb {
+  background: #ffffff !important;
+}
+.sb-role{margin:.85rem 1.2rem;background:linear-gradient(135deg,rgba(240,165,0,.07),rgba(240,165,0,.03));border:1px solid rgba(240,165,0,.18);border-radius:var(--rs);padding:.55rem .8rem}
+.sb-rl{font-size:.55rem;text-transform:uppercase;letter-spacing:.12em;color:var(--tx3);margin-bottom:2px;font-family:var(--font-display)}
+.sb-rn{font-size:.82rem;font-weight:700;color:var(--am);font-family:var(--font-display)}
+.sb-sec{padding:.75rem 1.2rem .2rem;font-size:.55rem;text-transform:uppercase;letter-spacing:.14em;color:var(--tx3);font-weight:600;font-family:var(--font-display)}
+.ni{display:flex;align-items:center;gap:10px;padding:.5rem 1.2rem;font-size:.8rem;color:var(--tx2);cursor:pointer;transition:all .15s;border-left:2px solid transparent;margin:1px 0;font-family:var(--font-body)}
+.ni:hover{background:var(--sf2);color:var(--tx);border-left-color:var(--bd2)}
+.ni.act{background:linear-gradient(90deg,rgba(240,165,0,.12),rgba(240,165,0,.03));color:var(--am);border-left-color:var(--am);font-weight:600}
+
+/* ── LIGHT MODE NAV ITEMS ── */
+[data-theme="light"] .ni {
+  color: #2a3a5a !important;
+}
+[data-theme="light"] .ni:hover {
+  background: #eef0f5 !important;
+  color: #1a1a2e !important;
+  border-left-color: #b0b8c8 !important;
+}
+[data-theme="light"] .ni.act {
+  background: linear-gradient(90deg, rgba(184,114,0,0.15), rgba(184,114,0,0.05)) !important;
+  color: #b87200 !important;
+  border-left-color: #b87200 !important;
+}
 .ni svg{width:14px;height:14px;flex-shrink:0}
-.nbadge{margin-left:auto;background:var(--am);color:#000;font-size:.58rem;font-weight:700;border-radius:10px;padding:1px 6px;min-width:17px;text-align:center}
-.sb-ft{margin-top:auto;padding:.85rem 1.1rem;border-top:1px solid var(--bd);display:flex;flex-direction:column;gap:6px}
-.sbfbtn{padding:.42rem .7rem;background:transparent;border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx2);font-family:'Inter',sans-serif;font-size:.74rem;cursor:pointer;transition:.12s;display:flex;align-items:center;gap:7px;width:100%}
-.sbfbtn:hover{border-color:var(--am);color:var(--am)}
-.sbfbtn.logout:hover{border-color:var(--rd);color:var(--rd)}
+.nbadge{margin-left:auto;background:var(--am);color:#000;font-size:.58rem;font-weight:700;border-radius:10px;padding:1px 7px;min-width:18px;text-align:center;font-family:var(--font-display)}
+.sb-ft{margin-top:auto;padding:.9rem 1.2rem;border-top:1px solid var(--bd);display:flex;flex-direction:column;gap:6px}
+.sbfbtn{padding:.45rem .75rem;background:transparent;border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx2);font-family:var(--font-body);font-size:.74rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:7px;width:100%}
+.sbfbtn:hover{border-color:var(--am);color:var(--am);background:var(--am-bg)}
+.sbfbtn.logout:hover{border-color:var(--rd);color:var(--rd);background:var(--rd-bg)}
 
 /* TOPBAR */
 .mc{display:flex;flex-direction:column;overflow:hidden}
-.tb{background:var(--sf);border-bottom:1px solid var(--bd);padding:.65rem 1.4rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.tb-t{font-size:.93rem;font-weight:600;color:var(--tx)}
-.tb-m{font-size:.67rem;color:var(--tx3);margin-top:2px}
-.tb-r{display:flex;align-items:center;gap:.6rem}
-.tb-tag{font-size:.7rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.3rem .7rem;color:var(--tx2)}
-.tb-tag span{color:var(--am);font-weight:600}
+.tb{background:rgba(15,21,32,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--bd);padding:.7rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-t{font-size:.95rem;font-weight:700;color:var(--tx);font-family:var(--font-display);letter-spacing:-.01em}
+.tb-m{font-size:.65rem;color:var(--tx3);margin-top:2px;letter-spacing:.03em}
+.tb-r{display:flex;align-items:center;gap:.65rem}
+.tb-tag{font-size:.68rem;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.3rem .75rem;color:var(--tx2);font-family:var(--font-display);letter-spacing:.02em}
+.tb-tag span{color:var(--am);font-weight:700}
+
+/* ── LIGHT MODE TOPBAR OVERRIDES ── */
+[data-theme="light"] .tb {
+  background: rgba(255,255,255,0.95) !important;
+  border-bottom-color: #c4ccdc !important;
+}
+[data-theme="light"] .tb-t {
+  color: #1a1a2e !important;
+}
+[data-theme="light"] .tb-m {
+  color: #3d4f6e !important;
+}
+[data-theme="light"] .tb-tag {
+  background: #e8ecf4 !important;
+  color: #1a2840 !important;
+  border-color: #c4ccdc !important;
+}
+[data-theme="light"] .tb-tag span {
+  color: #b87200 !important;
+}
 /* NOTIF */
 .notif-wrap{position:relative}
 .nbell{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.3rem .52rem;cursor:pointer;display:flex;align-items:center;color:var(--tx2);transition:.12s;position:relative}
@@ -100,19 +227,23 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .n-empty{padding:1.5rem;text-align:center;color:var(--tx3);font-size:.78rem}
 
 /* CONTENT */
-.ca{flex:1;overflow-y:auto;padding:1.35rem}
-.screen{display:none}.screen.act{display:block}
+.ca{flex:1;overflow-y:auto;padding:1.4rem}
+.screen{display:none}.screen.act{display:block;animation:screen-in .25s cubic-bezier(.16,1,.3,1) both}
+@keyframes screen-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* STATS */
 .srow{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.4rem}
-.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem 1.1rem}
-.sc-l{font-size:.62rem;text-transform:uppercase;letter-spacing:.09em;color:var(--tx2);margin-bottom:5px}
-.sc-v{font-size:1.7rem;font-weight:600;color:var(--tx);line-height:1}
-.sc-s{font-size:.67rem;color:var(--tx3);margin-top:3px}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--am),transparent);opacity:0;transition:opacity .2s}
+.sc:hover{border-color:var(--bd2);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.sc:hover::before{opacity:1}
+.sc-l{font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--tx3);margin-bottom:6px;font-family:var(--font-display);font-weight:600}
+.sc-v{font-size:1.75rem;font-weight:700;color:var(--tx);line-height:1;font-family:var(--font-display)}
+.sc-s{font-size:.65rem;color:var(--tx3);margin-top:4px}
 
 /* CARDS */
-.crd{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:1rem}
-.crd-hd{padding:.8rem 1rem;border-bottom:1px solid var(--bd);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);display:flex;align-items:center;justify-content:space-between;gap:7px}
+.crd{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:1rem;transition:border-color .2s}
+.crd-hd{padding:.85rem 1.1rem;border-bottom:1px solid var(--bd);font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--tx2);display:flex;align-items:center;justify-content:space-between;gap:7px;font-family:var(--font-display)}
 .crd-hd-l{display:flex;align-items:center;gap:7px}
 .crd-hd svg{width:13px;height:13px;flex-shrink:0}
 
@@ -125,7 +256,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 .b-gy{background:var(--sf3);color:var(--tx2);border:1px solid var(--bd)}
 
 /* BUTTONS */
-.btn{padding:.45rem .9rem;border:1px solid var(--bd2);border-radius:var(--rs);font-family:'Inter',sans-serif;font-size:.77rem;font-weight:600;cursor:pointer;transition:.12s;display:inline-flex;align-items:center;gap:5px;letter-spacing:.01em}
+.btn{padding:.45rem .9rem;border:1px solid var(--bd2);border-radius:var(--rs);font-family:var(--font-body);font-size:.77rem;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;letter-spacing:.02em}
 .btn svg{width:13px;height:13px;flex-shrink:0}
 .btn-am{background:var(--am);border-color:var(--am);color:#000}.btn-am:hover{background:#e09500}
 .btn-gy{background:transparent;color:var(--tx2);border-color:var(--bd2)}.btn-gy:hover{background:var(--sf2);color:var(--tx)}
@@ -146,7 +277,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 /* FORMS */
 .fg{margin-bottom:.8rem}
 .fg label{display:block;font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--tx2);margin-bottom:5px}
-.fg input,.fg select,.fg textarea{width:100%;background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.5rem .72rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.84rem;outline:none;transition:.12s}
+.fg input,.fg select,.fg textarea{width:100%;background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.5rem .75rem;color:var(--tx);font-family:var(--font-body);font-size:.84rem;outline:none;transition:all .15s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--am);box-shadow:0 0 0 3px var(--am-bg)}
 .fg select option{background:var(--sf2)}
 .fg textarea{resize:vertical;min-height:58px;line-height:1.5}
@@ -214,9 +345,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 /* TOAST */
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:300;padding:.6rem 1rem;border-radius:var(--r);font-size:.78rem;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slu .2s ease;max-width:380px}
 .toast svg{width:14px;height:14px;flex-shrink:0}
-.toast-gn{background:#0f2d1c;border:1px solid var(--gn-b);color:var(--gn)}
-.toast-rd{background:#2d0f0f;border:1px solid var(--rd-b);color:var(--rd)}
-.toast-am{background:#2d1c00;border:1px solid var(--am-b);color:var(--am)}
+.toast-gn{background:#071a10;border:1px solid var(--gn-b);color:var(--gn);backdrop-filter:blur(8px)}
+.toast-rd{background:#1a0707;border:1px solid var(--rd-b);color:var(--rd);backdrop-filter:blur(8px)}
+.toast-am{background:#1a1000;border:1px solid var(--am-b);color:var(--am);backdrop-filter:blur(8px)}
 @keyframes slu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* PAPER DOCS */
@@ -297,18 +428,72 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <!-- LOGIN -->
 <div id="loginScreen">
+  <!-- Animated background lines -->
+  <div class="login-bg-lines">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <!-- Power line towers -->
+      <g stroke="#f0a500" stroke-width="1.2" fill="none">
+        <!-- Tower 1 -->
+        <line x1="100" y1="800" x2="130" y2="500"/><line x1="160" y1="800" x2="130" y2="500"/>
+        <line x1="90" y1="600" x2="170" y2="600"/><line x1="95" y1="580" x2="165" y2="580"/>
+        <line x1="115" y1="540" x2="145" y2="540"/><line x1="130" y1="500" x2="130" y2="480"/>
+        <line x1="115" y1="480" x2="145" y2="480"/>
+        <!-- Tower 2 -->
+        <line x1="380" y1="820" x2="410" y2="520"/><line x1="440" y1="820" x2="410" y2="520"/>
+        <line x1="370" y1="620" x2="450" y2="620"/><line x1="375" y1="600" x2="445" y2="600"/>
+        <line x1="395" y1="560" x2="425" y2="560"/><line x1="410" y1="520" x2="410" y2="500"/>
+        <line x1="395" y1="500" x2="425" y2="500"/>
+        <!-- Tower 3 -->
+        <line x1="1280" y1="800" x2="1310" y2="500"/><line x1="1340" y1="800" x2="1310" y2="500"/>
+        <line x1="1270" y1="600" x2="1350" y2="600"/><line x1="1275" y1="580" x2="1345" y2="580"/>
+        <line x1="1295" y1="540" x2="1325" y2="540"/><line x1="1310" y1="500" x2="1310" y2="480"/>
+        <line x1="1295" y1="480" x2="1325" y2="480"/>
+        <!-- Wires connecting towers -->
+        <path d="M115 480 Q250 520 395 500" stroke-dasharray="6,4"/>
+        <path d="M130 500 Q270 540 410 520" stroke-dasharray="6,4"/>
+        <path d="M115 580 Q270 560 375 600" stroke-dasharray="4,6"/>
+      </g>
+      <!-- Circuit nodes -->
+      <g fill="#3d8ef0" opacity="0.4">
+        <circle cx="720" cy="200" r="3"/><circle cx="800" cy="350" r="2"/>
+        <circle cx="650" cy="400" r="2.5"/><circle cx="900" cy="250" r="2"/>
+        <circle cx="600" cy="180" r="1.5"/><circle cx="850" cy="450" r="2"/>
+      </g>
+      <g stroke="#3d8ef0" stroke-width=".8" opacity="0.25" fill="none">
+        <line x1="720" y1="200" x2="800" y2="350"/>
+        <line x1="800" y1="350" x2="650" y2="400"/>
+        <line x1="720" y1="200" x2="650" y2="400"/>
+        <line x1="800" y1="350" x2="900" y2="250"/>
+        <line x1="720" y1="200" x2="600" y2="180"/>
+        <line x1="800" y1="350" x2="850" y2="450"/>
+      </g>
+    </svg>
+  </div>
+
   <div class="lc">
     <div class="lc-brand">
-      <div class="lc-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-      <div><h1>Trends Engineering Services</h1><p>Document Management Portal</p></div>
+      <!-- Hexagonal logo mark with lightning bolt -->
+      <div class="lc-logo">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="rgba(240,165,0,0.1)" stroke="#f0a500" stroke-width="1.5"/>
+          <polygon points="24,6 40,15 40,33 24,42 8,33 8,15" fill="rgba(240,165,0,0.07)" stroke="rgba(240,165,0,0.4)" stroke-width=".8"/>
+          <path d="M27 8L16 26h9l-4 14L34 22h-9l2-14z" fill="#f0a500"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Trends Engineering</h1>
+        <p>Document Management Portal</p>
+      </div>
     </div>
-    <hr>
-    <label>Select your role to sign in</label>
+
+    <div class="lc-divider"><span>Sign In</span></div>
+
+    <label>Select your role</label>
     <select id="loginRole">
       <option value="">— Choose role —</option>
-      <option value="admin">Admin</option>
-      <option value="finance">Finance</option>
-            <option value="md">Manager</option>
+      <option value="admin">⚙️ Admin</option>
+      <option value="finance">💰 Finance</option>
+      <option value="md">👔 Manager</option>
     </select>
     <button class="lc-btn" onclick="doLogin()">Enter Portal →</button>
     <p class="lc-hint">No password required · Demo mode</p>
@@ -334,15 +519,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <div class="fg"><label>Date</label><input id="nw-date" type="date"></div>
       </div>
       <div class="fr2">
-        <div class="fg"><label>Connection Type *</label>
-          <select id="nw-type">
-            <option value="">— Select —</option>
-            <option value="U/G Conn">U/G Connection (Single Phase)</option>
-            <option value="U/G 3-Phase">U/G Connection (Three Phase)</option>
-            <option value="OHL 400V">Overhead Line 400V</option>
-            <option value="OHL 11kV">Overhead Line 11kV</option>
-            <option value="Transformer">Transformer</option>
-          </select>
+        <div class="fg"><label>Connection Type * (one item per line: Description | Unit | Qty | Rate)</label>
+          <textarea id="nw-type" rows="5" placeholder="Items auto-filled from PDF. Format: Description | Unit | Qty | Rate&#10;e.g. Service Conn; 230V; 60A; Single Phase; U/G | Ea | 1 | 12426.82"></textarea>
         </div>
         <div class="fg"><label>Project Type</label><input id="nw-projtype" placeholder="e.g. NESC" value="NESC"></div>
       </div>
@@ -419,7 +597,12 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
     <aside class="sb">
       <div class="sb-hd">
         <div class="sb-brand">
-          <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <div class="sb-logo">
+            <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="17,1 33,9.5 33,24.5 17,33 1,24.5 1,9.5" fill="rgba(240,165,0,0.1)" stroke="#f0a500" stroke-width="1.2"/>
+              <path d="M19.5 5L11 19.5h6.5L15 29l10.5-14H19l.5-10z" fill="#f0a500"/>
+            </svg>
+          </div>
           <div><h1>Trends Engineering</h1><p>Document Portal</p></div>
         </div>
       </div>
@@ -456,6 +639,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
         <div><div class="tb-t" id="tbt">Dashboard</div><div class="tb-m">Trends Engineering Services (PTY) Ltd</div></div>
         <div class="tb-r">
           <div class="tb-tag">Phase <span id="phaseTag">46</span> · TES-001</div>
+          <button class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+            <span class="tog-icon" id="themeIcon">🌙</span>
+            <span id="themeLabel">Dark</span>
+          </button>
           <div class="notif-wrap">
             <button class="nbell" onclick="toggleNotif()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
@@ -691,6 +878,31 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-hei
 
 <script>
 /* ═══════════════════════════════════════
+   THEME TOGGLE
+═══════════════════════════════════════ */
+function toggleTheme(){
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  document.documentElement.setAttribute('data-theme',isLight?'dark':'light');
+  document.getElementById('themeIcon').textContent=isLight?'🌙':'☀️';
+  document.getElementById('themeLabel').textContent=isLight?'Dark':'Light';
+  localStorage.setItem('tes_theme',isLight?'dark':'light');
+}
+// Apply saved theme on load
+(function(){
+  const saved=localStorage.getItem('tes_theme');
+  if(saved==='light'){
+    document.documentElement.setAttribute('data-theme','light');
+    // Icons updated after DOM loads
+    window.addEventListener('DOMContentLoaded',()=>{
+      const icon=document.getElementById('themeIcon');
+      const label=document.getElementById('themeLabel');
+      if(icon)icon.textContent='☀️';
+      if(label)label.textContent='Light';
+    });
+  }
+})();
+
+/* ═══════════════════════════════════════
    COMPANY INFO
 ═══════════════════════════════════════ */
 const CO = {
@@ -778,20 +990,36 @@ async function parseWorkOrderPDF(input){
     // City/Town
     const loc=get([/City\/Town\/Village\s*[:\s]+([A-Z]+)/i,/City\/Town[:\s]+([A-Z]+)/i],t);
 
-    // Customer name — appears before P.O.Box or mobile number block
-    // In this PDF it's the first capitalized full name block
-    const custMatch=t.match(/([A-Z]{2,}\s+[A-Z]{2,}(?:\s+[A-Z]{2,})?)\s*\n?\s*P\.O\.Box/i)
-                  ||t.match(/ELECTRICITY SUPPLY TO.*?\n.*?([A-Z]{3,}\s+[A-Z]{3,})/i);
-    const cust=custMatch?custMatch[1].trim():'';
+    // Customer name — strip leading NESC prefix if present
+    const custRaw=get([
+      /Customer Name[:\s]+([A-Z][A-Z\s]+?)(?:\n|Contract|Plot|P\.O)/i,
+      /([A-Z]{2,}\s+[A-Z]{2,}(?:\s+[A-Z]{2,})?)\s*(?:P\.O\.Box|\n)/i,
+      /ELECTRICITY SUPPLY TO.*?\n.*?([A-Z]{3,}\s+[A-Z]{3,})/i,
+    ],t);
+    const cust=custRaw.replace(/^NESC\s*/i,'').trim();
+
+    // Customer address — build from plot, ward, town fields in PDF
+    const addrRaw=get([/Address[:\s]+([^\n]+)/i,/Street[:\s]+([^\n]+)/i],t);
+    const address=addrRaw||(plotNo&&ward&&loc?`Plot ${plotNo}, ${ward}, ${loc}`:(plotNo&&loc?`Plot ${plotNo}, ${loc}`:loc||''));
 
     // Mobile number — take the first one found
-    const mobile=get([/Mobile Number\s*[:\s]+([\d]+)/i],t);
+    const mobile=get([/Mobile Number\s*[:\s]+([\d]+)/i,/Cell[:\s]+([\d]+)/i,/Tel[:\s]+([\d]+)/i],t);
 
-    // Connection type — derive from description
-    let connType='U/G Conn';
-    if(/three phase/i.test(t))connType='U/G 3-Phase';
-    else if(/overhead/i.test(t)||/OHL/i.test(t))connType='OHL 400V';
-    else if(/underground/i.test(t)||/U\/G/i.test(t))connType='U/G Conn';
+    // Connection type — parse EXACT description from PDF work order text
+    // Look for the actual work description line which contains what type of connection it is
+    const descLine=get([
+      /Description of Work[:\s]+([^\n]+)/i,
+      /Work Description[:\s]+([^\n]+)/i,
+      /Service Type[:\s]+([^\n]+)/i,
+      /Type of Connection[:\s]+([^\n]+)/i,
+      /ELECTRICITY SUPPLY[:\s]+([^\n]+)/i,
+    ],t)||'';
+    let connType='U/G Conn'; // default fallback
+    if(/three.?phase|3.?phase|3ph/i.test(descLine)||/three.?phase|3.?phase|3ph/i.test(t))connType='U/G 3-Phase';
+    else if(/overhead|OHL|aerial|ABC/i.test(descLine))connType='OHL 400V';
+    else if(/11\s*kV/i.test(descLine)||/11kV/i.test(descLine))connType='OHL 11kV';
+    else if(/transform/i.test(descLine))connType='Transformer';
+    else if(/underground|U\/G|UG|below ground/i.test(descLine))connType='U/G Conn';
 
     // Location factor
     const lfMatch=t.match(/location factor\s+([\d.]+)/i);
@@ -799,7 +1027,7 @@ async function parseWorkOrderPDF(input){
 
     // Populate form fields
 const set=(id,val)=>{const e=document.getElementById(id);if(e&&val)e.value=val;};
-set('nw-num',wo);
+set('nw-num',wo&&/^\d+$/.test(wo)?wo.padStart(10,'0'):wo);
 set('nw-date',date);
 set('nw-projtype',projType||'NESC');
 set('nw-bpcprojno',bpcProjNo);
@@ -812,9 +1040,40 @@ set('nw-ward',ward);
 set('nw-loc',loc);
 set('nw-mobile',mobile);
 set('nw-lf',lf);
-set('nw-meter',meterNo);
-set('nw-address',address);
-if(connType){const el=document.getElementById('nw-type');if(el)el.value=connType;}
+set('nw-meter',get([/Meter Number[:\s]+([\w\d]+)/i,/Meter No[:\s]+([\w\d]+)/i],t)||'');
+set('nw-address',address||(plotNo&&ward&&loc?`Plot ${plotNo}, ${ward}, ${loc}`:(plotNo&&loc?`Plot ${plotNo}, ${loc}`:'')));
+// Build VO1 line items from the PDF — look for service descriptions with rates
+    // Try to extract itemized lines: description + rate patterns
+    const phase47=true; // default Phase 47
+    const defaultItems=[];
+    // Try to match "Description ... Rate" patterns in the PDF text
+    // Common BPC WO patterns: look for lines containing "Service" or "Connection" with amounts
+    const rateLines=t.match(/([A-Za-z][^\n]{5,60}?)\s+[\-–]?\s*([\d,]+\.?\d*)\s*(?:BWP|P)?/g)||[];
+    rateLines.forEach(line=>{
+      const m=line.match(/^([A-Za-z][^\d]{4,55}?)\s+([\d,]+\.?\d*)$/);
+      if(m){
+        const desc=m[1].trim().replace(/\s+/g,' ');
+        const rate=parseFloat(m[2].replace(/,/g,''));
+        if(rate>100&&rate<500000&&desc.length>5&&desc.length<80){
+          defaultItems.push(`${desc} | Ea | 1 | ${rate.toFixed(2)}`);
+        }
+      }
+    });
+    // If nothing found from PDF, provide sensible defaults based on connType
+    if(!defaultItems.length){
+      if(connType==='U/G 3-Phase'){
+        defaultItems.push('Service Conn; 230V; 60A; Three Phase; U/G | Ea | 1 | 12426.82');
+      } else if(connType==='OHL 400V'){
+        defaultItems.push('Service Conn; 230V; 60A; Single Phase; O/H | Ea | 1 | 11411.97');
+      } else if(connType==='OHL 11kV'){
+        defaultItems.push('OHL; 11kV; 3Ph; 100m; Gopher | m | 1 | 109.67');
+      } else {
+        // Default U/G Single Phase
+        defaultItems.push('Service Conn; 230V; 60A; Single Phase; U/G | Ea | 1 | 12426.82');
+      }
+    }
+    const el=document.getElementById('nw-type');
+    if(el)el.value=defaultItems.join('\n');
 
     const filled=[wo,date,cust,loc,contract].filter(Boolean).length;
     if(filled===0)throw new Error('Could not extract fields — fill in manually');
@@ -844,248 +1103,289 @@ function clearWOForm(){
    RATES DATABASE
 ═══════════════════════════════════════ */
 const RATES_SEED = [
-  // ── PHASE 46 ──────────────────────────────────────────────────────────────
-  {id:'r46_001',d:'OHL;33kV;3Ph;100m:Gopher',u:'m',r:133.91,c:'OHL 33kV',phase:'46',on:true},
-  {id:'r46_002',d:'OHL;33kV;3Ph;100m:Rabbit',u:'m',r:170.32,c:'OHL 33kV',phase:'46',on:true},
-  {id:'r46_003',d:'OHL;33kV;3Ph;100m:Weasel',u:'m',r:195.44,c:'OHL 33kV',phase:'46',on:true},
-  {id:'r46_004',d:'OHL;33kV;3Ph;100m:Dog',u:'m',r:232.10,c:'OHL 33kV',phase:'46',on:true},
-  {id:'r46_005',d:'OHL;11kV;3Ph;100m;Gopher',u:'m',r:110.84,c:'OHL 11kV',phase:'46',on:true},
-  {id:'r46_006',d:'OHL;11kV;3Ph;100m;Rabbit',u:'m',r:141.60,c:'OHL 11kV',phase:'46',on:true},
-  {id:'r46_007',d:'OHL;11kV;3Ph;100m;Weasel',u:'m',r:162.55,c:'OHL 11kV',phase:'46',on:true},
-  {id:'r46_008',d:'OHL;11kV;3Ph;100m;Dog',u:'m',r:195.44,c:'OHL 11kV',phase:'46',on:true},
-  {id:'r46_009',d:'OHL;400V;3Ph;100m;Rabbit ABC',u:'m',r:98.32,c:'OHL 400V',phase:'46',on:true},
-  {id:'r46_010',d:'OHL;400V;3Ph;100m;Weasel ABC',u:'m',r:112.45,c:'OHL 400V',phase:'46',on:true},
-  {id:'r46_011',d:'OHL;400V;1Ph;100m;Rabbit ABC',u:'m',r:65.20,c:'OHL 400V',phase:'46',on:true},
-  {id:'r46_012',d:'OHL;400V;1Ph;100m;Weasel ABC',u:'m',r:74.88,c:'OHL 400V',phase:'46',on:true},
-  {id:'r46_013',d:'Service Conn;230V;60A;Single Phase;U/G',u:'Ea',r:11987.42,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_014',d:'Service Conn;230V;60A;Single Phase;OHL',u:'Ea',r:9845.30,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_015',d:'Service Conn;400V;80A;Three Phase;U/G',u:'Ea',r:18432.65,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_016',d:'Service Conn;400V;80A;Three Phase;OHL',u:'Ea',r:15320.40,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_017',d:'Service Conn;230V;100A;Single Phase;U/G',u:'Ea',r:13250.80,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_018',d:'GIS rate- Service Connections',u:'Ea',r:593.59,c:'GIS',phase:'46',on:true},
-  {id:'r46_019',d:'GIS rate- OHL Lines',u:'m',r:12.45,c:'GIS',phase:'46',on:true},
-  {id:'r46_020',d:'GIS rate- U/G Cables',u:'m',r:15.20,c:'GIS',phase:'46',on:true},
-  {id:'r46_021',d:'GIS rate- Transformers',u:'Ea',r:892.30,c:'GIS',phase:'46',on:true},
-  {id:'r46_022',d:'Single Phase Split Smart Meter (DIN-RAIL)',u:'Ea',r:1818.15,c:'Metering',phase:'46',on:true},
-  {id:'r46_023',d:'Three Phase Smart Meter (DIN-RAIL)',u:'Ea',r:2845.60,c:'Metering',phase:'46',on:true},
-  {id:'r46_024',d:'Single Phase Prepaid Meter',u:'Ea',r:1650.00,c:'Metering',phase:'46',on:true},
-  {id:'r46_025',d:'Three Phase Prepaid Meter',u:'Ea',r:2580.00,c:'Metering',phase:'46',on:true},
-  {id:'r46_026',d:'Meter Box (Surface Mount)',u:'Ea',r:485.20,c:'Metering',phase:'46',on:true},
-  {id:'r46_027',d:'Meter Box (Flush Mount)',u:'Ea',r:520.40,c:'Metering',phase:'46',on:true},
-  {id:'r46_028',d:'11kV/400V Transformer 25kVA',u:'Ea',r:45820.00,c:'Transformer',phase:'46',on:true},
-  {id:'r46_029',d:'11kV/400V Transformer 50kVA',u:'Ea',r:62450.00,c:'Transformer',phase:'46',on:true},
-  {id:'r46_030',d:'11kV/400V Transformer 100kVA',u:'Ea',r:89300.00,c:'Transformer',phase:'46',on:true},
-  {id:'r46_031',d:'11kV/400V Transformer 200kVA',u:'Ea',r:128500.00,c:'Transformer',phase:'46',on:true},
-  {id:'r46_032',d:'11kV/400V Transformer 315kVA',u:'Ea',r:165400.00,c:'Transformer',phase:'46',on:true},
-  {id:'r46_033',d:'11kV/400V Transformer 500kVA',u:'Ea',r:218600.00,c:'Transformer',phase:'46',on:true},
-  {id:'r46_034',d:'Pole; Concrete; 9m',u:'Ea',r:2845.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_035',d:'Pole; Concrete; 11m',u:'Ea',r:3620.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_036',d:'Pole; Concrete; 12m',u:'Ea',r:4150.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_037',d:'Pole; Steel; 9m',u:'Ea',r:3200.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_038',d:'Pole; Steel; 11m',u:'Ea',r:4100.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_039',d:'Pole; Steel; 12m',u:'Ea',r:4800.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_040',d:'Stay Wire Set (Complete)',u:'Ea',r:1240.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_041',d:'Crossarm; Timber; 1.8m',u:'Ea',r:685.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_042',d:'Crossarm; Steel; 1.8m',u:'Ea',r:890.00,c:'Poles',phase:'46',on:true},
-  {id:'r46_043',d:'ABC Cable; 3x95+54.6mm2',u:'m',r:185.40,c:'Cable',phase:'46',on:true},
-  {id:'r46_044',d:'ABC Cable; 3x50+35mm2',u:'m',r:142.60,c:'Cable',phase:'46',on:true},
-  {id:'r46_045',d:'ABC Cable; 3x16+25mm2',u:'m',r:98.20,c:'Cable',phase:'46',on:true},
-  {id:'r46_046',d:'U/G Cable; 3x95mm2 XLPE',u:'m',r:245.80,c:'Cable',phase:'46',on:true},
-  {id:'r46_047',d:'U/G Cable; 3x35mm2 XLPE',u:'m',r:168.40,c:'Cable',phase:'46',on:true},
-  {id:'r46_048',d:'U/G Cable; 1x95mm2 XLPE',u:'m',r:125.60,c:'Cable',phase:'46',on:true},
-  {id:'r46_049',d:'U/G Cable; 1x35mm2 XLPE',u:'m',r:85.40,c:'Cable',phase:'46',on:true},
-  {id:'r46_050',d:'U/G Cable; 1x16mm2 XLPE',u:'m',r:58.20,c:'Cable',phase:'46',on:true},
-  {id:'r46_051',d:'Cable Trench Excavation (Soft ground)',u:'m',r:125.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_052',d:'Cable Trench Excavation (Hard/Rocky)',u:'m',r:285.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_053',d:'Cable Trench Backfill and Compaction',u:'m',r:65.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_054',d:'Cable Warning Tape',u:'m',r:8.50,c:'Civil',phase:'46',on:true},
-  {id:'r46_055',d:'Cable Sand Bedding',u:'m',r:18.40,c:'Civil',phase:'46',on:true},
-  {id:'r46_056',d:'Pole Hole Excavation (Soft)',u:'Ea',r:385.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_057',d:'Pole Hole Excavation (Hard/Rocky)',u:'Ea',r:850.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_058',d:'Concrete for Pole Foundation',u:'Ea',r:420.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_059',d:'Road Crossing (Tar road; open cut)',u:'m',r:1850.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_060',d:'Road Crossing (Gravel road; open cut)',u:'m',r:680.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_061',d:'Road Crossing (Trenchless/Boring)',u:'m',r:2400.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_062',d:'Fence Crossing',u:'Ea',r:245.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_063',d:'River Crossing (OHL)',u:'Ea',r:4500.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_064',d:'Mini Sub 11kV/400V 200kVA (Complete)',u:'Ea',r:185400.00,c:'Sub Station',phase:'46',on:true},
-  {id:'r46_065',d:'Mini Sub 11kV/400V 315kVA (Complete)',u:'Ea',r:225800.00,c:'Sub Station',phase:'46',on:true},
-  {id:'r46_066',d:'Mini Sub 11kV/400V 500kVA (Complete)',u:'Ea',r:285600.00,c:'Sub Station',phase:'46',on:true},
-  {id:'r46_067',d:'Distribution Pillar Box (4-way)',u:'Ea',r:12450.00,c:'LV Network',phase:'46',on:true},
-  {id:'r46_068',d:'Distribution Pillar Box (6-way)',u:'Ea',r:16800.00,c:'LV Network',phase:'46',on:true},
-  {id:'r46_069',d:'Distribution Pillar Box (8-way)',u:'Ea',r:21200.00,c:'LV Network',phase:'46',on:true},
-  {id:'r46_070',d:'LV Overhead Line Termination (1Ph)',u:'Ea',r:485.00,c:'LV Network',phase:'46',on:true},
-  {id:'r46_071',d:'LV Overhead Line Termination (3Ph)',u:'Ea',r:845.00,c:'LV Network',phase:'46',on:true},
-  {id:'r46_072',d:'11kV Overhead Line Termination',u:'Ea',r:2450.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_073',d:'11kV Cable Sealing End',u:'Ea',r:3200.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_074',d:'11kV Dropout Fuse',u:'Ea',r:1850.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_075',d:'11kV Lightning Arrester',u:'Ea',r:1240.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_076',d:'400V Circuit Breaker 100A',u:'Ea',r:2850.00,c:'Protection',phase:'46',on:true},
-  {id:'r46_077',d:'400V Circuit Breaker 200A',u:'Ea',r:4200.00,c:'Protection',phase:'46',on:true},
-  {id:'r46_078',d:'400V Circuit Breaker 400A',u:'Ea',r:6800.00,c:'Protection',phase:'46',on:true},
-  {id:'r46_079',d:'Isolator Switch 11kV (Outdoor)',u:'Ea',r:8500.00,c:'Protection',phase:'46',on:true},
-  {id:'r46_080',d:'Isolator Switch 400V (Outdoor)',u:'Ea',r:2100.00,c:'Protection',phase:'46',on:true},
-  {id:'r46_081',d:'Street Light; LED; 30W on existing pole',u:'Ea',r:3850.00,c:'Street Lighting',phase:'46',on:true},
-  {id:'r46_082',d:'Street Light; LED; 60W on existing pole',u:'Ea',r:4650.00,c:'Street Lighting',phase:'46',on:true},
-  {id:'r46_083',d:'Street Light Pole; 6m with LED 30W',u:'Ea',r:6200.00,c:'Street Lighting',phase:'46',on:true},
-  {id:'r46_084',d:'Street Light Pole; 8m with LED 60W',u:'Ea',r:8400.00,c:'Street Lighting',phase:'46',on:true},
-  {id:'r46_085',d:'Street Light Cabling; U/G per meter',u:'m',r:42.00,c:'Street Lighting',phase:'46',on:true},
-  {id:'r46_086',d:'Earthing System (Ground rod + tape)',u:'Ea',r:1850.00,c:'Earthing',phase:'46',on:true},
-  {id:'r46_087',d:'Earthing Conductor (bare copper)',u:'m',r:45.00,c:'Earthing',phase:'46',on:true},
-  {id:'r46_088',d:'Earthing Test Point',u:'Ea',r:320.00,c:'Earthing',phase:'46',on:true},
-  {id:'r46_089',d:'Cable Joint (LV; 3-phase)',u:'Ea',r:2450.00,c:'Cable',phase:'46',on:true},
-  {id:'r46_090',d:'Cable Joint (LV; single phase)',u:'Ea',r:1650.00,c:'Cable',phase:'46',on:true},
-  {id:'r46_091',d:'Cable Joint (11kV)',u:'Ea',r:5800.00,c:'Cable',phase:'46',on:true},
-  {id:'r46_092',d:'Cable Duct (PVC; 100mm dia)',u:'m',r:185.00,c:'Cable',phase:'46',on:true},
-  {id:'r46_093',d:'Cable Duct (PVC; 150mm dia)',u:'m',r:265.00,c:'Cable',phase:'46',on:true},
-  {id:'r46_094',d:'Pillar Box Foundation (concrete)',u:'Ea',r:2800.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_095',d:'Transformer Platform/Plinth (concrete)',u:'Ea',r:4500.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_096',d:'Boundary Wall/Fencing for Substation',u:'m',r:850.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_097',d:'Gravel Access Road to Substation',u:'m',r:320.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_098',d:'Service Cable U/G 16mm2 (Single Phase)',u:'m',r:65.40,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_099',d:'Service Cable U/G 25mm2 (Single Phase)',u:'m',r:82.60,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_100',d:'Service Cable U/G 35mm2 (Three Phase)',u:'m',r:98.80,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_101',d:'Consumer Intake Unit (CIU) 60A',u:'Ea',r:1850.00,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_102',d:'Consumer Intake Unit (CIU) 100A',u:'Ea',r:2450.00,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_103',d:'Consumer Intake Unit (CIU) 200A',u:'Ea',r:3800.00,c:'Service Connection',phase:'46',on:true},
-  {id:'r46_104',d:'Fuse Cut Out 11kV (Dropout)',u:'Ea',r:2100.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_105',d:'Surge Arrester 11kV',u:'Ea',r:1450.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_106',d:'Surge Arrester 400V',u:'Ea',r:650.00,c:'LV Network',phase:'46',on:true},
-  {id:'r46_107',d:'Load Break Switch 11kV (Manual)',u:'Ea',r:18500.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_108',d:'Load Break Switch 11kV (Auto)',u:'Ea',r:42000.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_109',d:'Current Transformer 11kV',u:'Ea',r:4200.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_110',d:'Voltage Transformer 11kV',u:'Ea',r:5800.00,c:'MV Network',phase:'46',on:true},
-  {id:'r46_111',d:'Testing and Commissioning (per connection)',u:'Ea',r:850.00,c:'Testing',phase:'46',on:true},
-  {id:'r46_112',d:'Testing and Commissioning (per transformer)',u:'Ea',r:3500.00,c:'Testing',phase:'46',on:true},
-  {id:'r46_113',d:'Vegetation Clearing (per 100m OHL)',u:'100m',r:2450.00,c:'Vegetation',phase:'46',on:true},
-  {id:'r46_114',d:'Tree Felling (medium; dia 200-400mm)',u:'Ea',r:1850.00,c:'Vegetation',phase:'46',on:true},
-  {id:'r46_115',d:'Tree Felling (large; dia >400mm)',u:'Ea',r:3200.00,c:'Vegetation',phase:'46',on:true},
-  {id:'r46_116',d:'Stump Removal',u:'Ea',r:650.00,c:'Vegetation',phase:'46',on:true},
-  {id:'r46_117',d:'Reinstatement (Tar road)',u:'m2',r:485.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_118',d:'Reinstatement (Paved/brick)',u:'m2',r:320.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_119',d:'Reinstatement (Gravel)',u:'m2',r:85.00,c:'Civil',phase:'46',on:true},
-  {id:'r46_120',d:'Wayleave/Servitude Survey',u:'Ea',r:4500.00,c:'Survey',phase:'46',on:true},
-  // ── PHASE 47 ──────────────────────────────────────────────────────────────
-  {id:'r47_001',d:'OHL;33kV;3Ph;100m:Gopher',u:'m',r:138.66,c:'OHL 33kV',phase:'47',on:true},
-  {id:'r47_002',d:'OHL;33kV;3Ph;100m:Rabbit',u:'m',r:177.06,c:'OHL 33kV',phase:'47',on:true},
-  {id:'r47_003',d:'OHL;33kV;3Ph;100m:Weasel',u:'m',r:202.48,c:'OHL 33kV',phase:'47',on:true},
-  {id:'r47_004',d:'OHL;33kV;3Ph;100m:Dog',u:'m',r:240.42,c:'OHL 33kV',phase:'47',on:true},
-  {id:'r47_005',d:'OHL;11kV;3Ph;100m;Gopher',u:'m',r:115.03,c:'OHL 11kV',phase:'47',on:true},
-  {id:'r47_006',d:'OHL;11kV;3Ph;100m;Rabbit',u:'m',r:146.76,c:'OHL 11kV',phase:'47',on:true},
-  {id:'r47_007',d:'OHL;11kV;3Ph;100m;Weasel',u:'m',r:168.44,c:'OHL 11kV',phase:'47',on:true},
-  {id:'r47_008',d:'OHL;11kV;3Ph;100m;Dog',u:'m',r:202.48,c:'OHL 11kV',phase:'47',on:true},
-  {id:'r47_009',d:'OHL;400V;3Ph;100m;Rabbit ABC',u:'m',r:101.88,c:'OHL 400V',phase:'47',on:true},
-  {id:'r47_010',d:'OHL;400V;3Ph;100m;Weasel ABC',u:'m',r:116.52,c:'OHL 400V',phase:'47',on:true},
-  {id:'r47_011',d:'OHL;400V;1Ph;100m;Rabbit ABC',u:'m',r:67.56,c:'OHL 400V',phase:'47',on:true},
-  {id:'r47_012',d:'OHL;400V;1Ph;100m;Weasel ABC',u:'m',r:77.58,c:'OHL 400V',phase:'47',on:true},
-  {id:'r47_013',d:'Service Conn;230V;60A;Single Phase;U/G',u:'Ea',r:12426.82,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_014',d:'Service Conn;230V;60A;Single Phase;OHL',u:'Ea',r:10200.55,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_015',d:'Service Conn;400V;80A;Three Phase;U/G',u:'Ea',r:19102.90,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_016',d:'Service Conn;400V;80A;Three Phase;OHL',u:'Ea',r:15876.81,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_017',d:'Service Conn;230V;100A;Single Phase;U/G',u:'Ea',r:13732.58,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_018',d:'GIS rate- Service Connections',u:'Ea',r:615.42,c:'GIS',phase:'47',on:true},
-  {id:'r47_019',d:'GIS rate- OHL Lines',u:'m',r:12.90,c:'GIS',phase:'47',on:true},
-  {id:'r47_020',d:'GIS rate- U/G Cables',u:'m',r:15.76,c:'GIS',phase:'47',on:true},
-  {id:'r47_021',d:'GIS rate- Transformers',u:'Ea',r:924.84,c:'GIS',phase:'47',on:true},
-  {id:'r47_022',d:'Single Phase Split Smart Meter (DIN-RAIL)',u:'Ea',r:1884.69,c:'Metering',phase:'47',on:true},
-  {id:'r47_023',d:'Three Phase Smart Meter (DIN-RAIL)',u:'Ea',r:2948.30,c:'Metering',phase:'47',on:true},
-  {id:'r47_024',d:'Single Phase Prepaid Meter',u:'Ea',r:1709.25,c:'Metering',phase:'47',on:true},
-  {id:'r47_025',d:'Three Phase Prepaid Meter',u:'Ea',r:2675.43,c:'Metering',phase:'47',on:true},
-  {id:'r47_026',d:'Meter Box (Surface Mount)',u:'Ea',r:502.89,c:'Metering',phase:'47',on:true},
-  {id:'r47_027',d:'Meter Box (Flush Mount)',u:'Ea',r:539.21,c:'Metering',phase:'47',on:true},
-  {id:'r47_028',d:'11kV/400V Transformer 25kVA',u:'Ea',r:47500.35,c:'Transformer',phase:'47',on:true},
-  {id:'r47_029',d:'11kV/400V Transformer 50kVA',u:'Ea',r:64746.75,c:'Transformer',phase:'47',on:true},
-  {id:'r47_030',d:'11kV/400V Transformer 100kVA',u:'Ea',r:92535.90,c:'Transformer',phase:'47',on:true},
-  {id:'r47_031',d:'11kV/400V Transformer 200kVA',u:'Ea',r:133158.50,c:'Transformer',phase:'47',on:true},
-  {id:'r47_032',d:'11kV/400V Transformer 315kVA',u:'Ea',r:171439.60,c:'Transformer',phase:'47',on:true},
-  {id:'r47_033',d:'11kV/400V Transformer 500kVA',u:'Ea',r:226551.60,c:'Transformer',phase:'47',on:true},
-  {id:'r47_034',d:'Pole; Concrete; 9m',u:'Ea',r:2949.68,c:'Poles',phase:'47',on:true},
-  {id:'r47_035',d:'Pole; Concrete; 11m',u:'Ea',r:3752.70,c:'Poles',phase:'47',on:true},
-  {id:'r47_036',d:'Pole; Concrete; 12m',u:'Ea',r:4303.53,c:'Poles',phase:'47',on:true},
-  {id:'r47_037',d:'Pole; Steel; 9m',u:'Ea',r:3318.40,c:'Poles',phase:'47',on:true},
-  {id:'r47_038',d:'Pole; Steel; 11m',u:'Ea',r:4249.35,c:'Poles',phase:'47',on:true},
-  {id:'r47_039',d:'Pole; Steel; 12m',u:'Ea',r:4975.68,c:'Poles',phase:'47',on:true},
-  {id:'r47_040',d:'Stay Wire Set (Complete)',u:'Ea',r:1285.44,c:'Poles',phase:'47',on:true},
-  {id:'r47_041',d:'Crossarm; Timber; 1.8m',u:'Ea',r:710.03,c:'Poles',phase:'47',on:true},
-  {id:'r47_042',d:'Crossarm; Steel; 1.8m',u:'Ea',r:922.35,c:'Poles',phase:'47',on:true},
-  {id:'r47_043',d:'ABC Cable; 3x95+54.6mm2',u:'m',r:192.15,c:'Cable',phase:'47',on:true},
-  {id:'r47_044',d:'ABC Cable; 3x50+35mm2',u:'m',r:147.80,c:'Cable',phase:'47',on:true},
-  {id:'r47_045',d:'ABC Cable; 3x16+25mm2',u:'m',r:101.80,c:'Cable',phase:'47',on:true},
-  {id:'r47_046',d:'U/G Cable; 3x95mm2 XLPE',u:'m',r:254.81,c:'Cable',phase:'47',on:true},
-  {id:'r47_047',d:'U/G Cable; 3x35mm2 XLPE',u:'m',r:174.51,c:'Cable',phase:'47',on:true},
-  {id:'r47_048',d:'U/G Cable; 1x95mm2 XLPE',u:'m',r:130.25,c:'Cable',phase:'47',on:true},
-  {id:'r47_049',d:'U/G Cable; 1x35mm2 XLPE',u:'m',r:88.54,c:'Cable',phase:'47',on:true},
-  {id:'r47_050',d:'U/G Cable; 1x16mm2 XLPE',u:'m',r:60.35,c:'Cable',phase:'47',on:true},
-  {id:'r47_051',d:'Cable Trench Excavation (Soft ground)',u:'m',r:129.56,c:'Civil',phase:'47',on:true},
-  {id:'r47_052',d:'Cable Trench Excavation (Hard/Rocky)',u:'m',r:295.59,c:'Civil',phase:'47',on:true},
-  {id:'r47_053',d:'Cable Trench Backfill and Compaction',u:'m',r:67.38,c:'Civil',phase:'47',on:true},
-  {id:'r47_054',d:'Cable Warning Tape',u:'m',r:8.81,c:'Civil',phase:'47',on:true},
-  {id:'r47_055',d:'Cable Sand Bedding',u:'m',r:19.06,c:'Civil',phase:'47',on:true},
-  {id:'r47_056',d:'Pole Hole Excavation (Soft)',u:'Ea',r:399.08,c:'Civil',phase:'47',on:true},
-  {id:'r47_057',d:'Pole Hole Excavation (Hard/Rocky)',u:'Ea',r:881.14,c:'Civil',phase:'47',on:true},
-  {id:'r47_058',d:'Concrete for Pole Foundation',u:'Ea',r:435.42,c:'Civil',phase:'47',on:true},
-  {id:'r47_059',d:'Road Crossing (Tar road; open cut)',u:'m',r:1918.35,c:'Civil',phase:'47',on:true},
-  {id:'r47_060',d:'Road Crossing (Gravel road; open cut)',u:'m',r:704.94,c:'Civil',phase:'47',on:true},
-  {id:'r47_061',d:'Road Crossing (Trenchless/Boring)',u:'m',r:2488.56,c:'Civil',phase:'47',on:true},
-  {id:'r47_062',d:'Fence Crossing',u:'Ea',r:253.98,c:'Civil',phase:'47',on:true},
-  {id:'r47_063',d:'River Crossing (OHL)',u:'Ea',r:4665.45,c:'Civil',phase:'47',on:true},
-  {id:'r47_064',d:'Mini Sub 11kV/400V 200kVA (Complete)',u:'Ea',r:192189.90,c:'Sub Station',phase:'47',on:true},
-  {id:'r47_065',d:'Mini Sub 11kV/400V 315kVA (Complete)',u:'Ea',r:234054.30,c:'Sub Station',phase:'47',on:true},
-  {id:'r47_066',d:'Mini Sub 11kV/400V 500kVA (Complete)',u:'Ea',r:296007.60,c:'Sub Station',phase:'47',on:true},
-  {id:'r47_067',d:'Distribution Pillar Box (4-way)',u:'Ea',r:12904.43,c:'LV Network',phase:'47',on:true},
-  {id:'r47_068',d:'Distribution Pillar Box (6-way)',u:'Ea',r:17410.32,c:'LV Network',phase:'47',on:true},
-  {id:'r47_069',d:'Distribution Pillar Box (8-way)',u:'Ea',r:21983.04,c:'LV Network',phase:'47',on:true},
-  {id:'r47_070',d:'LV Overhead Line Termination (1Ph)',u:'Ea',r:502.73,c:'LV Network',phase:'47',on:true},
-  {id:'r47_071',d:'LV Overhead Line Termination (3Ph)',u:'Ea',r:875.93,c:'LV Network',phase:'47',on:true},
-  {id:'r47_072',d:'11kV Overhead Line Termination',u:'Ea',r:2539.73,c:'MV Network',phase:'47',on:true},
-  {id:'r47_073',d:'11kV Cable Sealing End',u:'Ea',r:3317.28,c:'MV Network',phase:'47',on:true},
-  {id:'r47_074',d:'11kV Dropout Fuse',u:'Ea',r:1917.83,c:'MV Network',phase:'47',on:true},
-  {id:'r47_075',d:'11kV Lightning Arrester',u:'Ea',r:1285.44,c:'MV Network',phase:'47',on:true},
-  {id:'r47_076',d:'400V Circuit Breaker 100A',u:'Ea',r:2954.48,c:'Protection',phase:'47',on:true},
-  {id:'r47_077',d:'400V Circuit Breaker 200A',u:'Ea',r:4352.34,c:'Protection',phase:'47',on:true},
-  {id:'r47_078',d:'400V Circuit Breaker 400A',u:'Ea',r:7048.32,c:'Protection',phase:'47',on:true},
-  {id:'r47_079',d:'Isolator Switch 11kV (Outdoor)',u:'Ea',r:8809.25,c:'Protection',phase:'47',on:true},
-  {id:'r47_080',d:'Isolator Switch 400V (Outdoor)',u:'Ea',r:2177.61,c:'Protection',phase:'47',on:true},
-  {id:'r47_081',d:'Street Light; LED; 30W on existing pole',u:'Ea',r:3991.48,c:'Street Lighting',phase:'47',on:true},
-  {id:'r47_082',d:'Street Light; LED; 60W on existing pole',u:'Ea',r:4820.48,c:'Street Lighting',phase:'47',on:true},
-  {id:'r47_083',d:'Street Light Pole; 6m with LED 30W',u:'Ea',r:6427.44,c:'Street Lighting',phase:'47',on:true},
-  {id:'r47_084',d:'Street Light Pole; 8m with LED 60W',u:'Ea',r:8710.44,c:'Street Lighting',phase:'47',on:true},
-  {id:'r47_085',d:'Street Light Cabling; U/G per meter',u:'m',r:43.53,c:'Street Lighting',phase:'47',on:true},
-  {id:'r47_086',d:'Earthing System (Ground rod + tape)',u:'Ea',r:1918.35,c:'Earthing',phase:'47',on:true},
-  {id:'r47_087',d:'Earthing Conductor (bare copper)',u:'m',r:46.67,c:'Earthing',phase:'47',on:true},
-  {id:'r47_088',d:'Earthing Test Point',u:'Ea',r:331.84,c:'Earthing',phase:'47',on:true},
-  {id:'r47_089',d:'Cable Joint (LV; 3-phase)',u:'Ea',r:2539.73,c:'Cable',phase:'47',on:true},
-  {id:'r47_090',d:'Cable Joint (LV; single phase)',u:'Ea',r:1710.08,c:'Cable',phase:'47',on:true},
-  {id:'r47_091',d:'Cable Joint (11kV)',u:'Ea',r:6011.94,c:'Cable',phase:'47',on:true},
-  {id:'r47_092',d:'Cable Duct (PVC; 100mm dia)',u:'m',r:191.85,c:'Cable',phase:'47',on:true},
-  {id:'r47_093',d:'Cable Duct (PVC; 150mm dia)',u:'m',r:274.71,c:'Cable',phase:'47',on:true},
-  {id:'r47_094',d:'Pillar Box Foundation (concrete)',u:'Ea',r:2902.68,c:'Civil',phase:'47',on:true},
-  {id:'r47_095',d:'Transformer Platform/Plinth (concrete)',u:'Ea',r:4665.45,c:'Civil',phase:'47',on:true},
-  {id:'r47_096',d:'Boundary Wall/Fencing for Substation',u:'m',r:881.14,c:'Civil',phase:'47',on:true},
-  {id:'r47_097',d:'Gravel Access Road to Substation',u:'m',r:331.84,c:'Civil',phase:'47',on:true},
-  {id:'r47_098',d:'Service Cable U/G 16mm2 (Single Phase)',u:'m',r:67.80,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_099',d:'Service Cable U/G 25mm2 (Single Phase)',u:'m',r:85.62,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_100',d:'Service Cable U/G 35mm2 (Three Phase)',u:'m',r:102.44,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_101',d:'Consumer Intake Unit (CIU) 60A',u:'Ea',r:1918.35,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_102',d:'Consumer Intake Unit (CIU) 100A',u:'Ea',r:2539.73,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_103',d:'Consumer Intake Unit (CIU) 200A',u:'Ea',r:3939.59,c:'Service Connection',phase:'47',on:true},
-  {id:'r47_104',d:'Fuse Cut Out 11kV (Dropout)',u:'Ea',r:2177.61,c:'MV Network',phase:'47',on:true},
-  {id:'r47_105',d:'Surge Arrester 11kV',u:'Ea',r:1503.23,c:'MV Network',phase:'47',on:true},
-  {id:'r47_106',d:'Surge Arrester 400V',u:'Ea',r:673.79,c:'LV Network',phase:'47',on:true},
-  {id:'r47_107',d:'Load Break Switch 11kV (Manual)',u:'Ea',r:19174.25,c:'MV Network',phase:'47',on:true},
-  {id:'r47_108',d:'Load Break Switch 11kV (Auto)',u:'Ea',r:43534.20,c:'MV Network',phase:'47',on:true},
-  {id:'r47_109',d:'Current Transformer 11kV',u:'Ea',r:4352.34,c:'MV Network',phase:'47',on:true},
-  {id:'r47_110',d:'Voltage Transformer 11kV',u:'Ea',r:6011.94,c:'MV Network',phase:'47',on:true},
-  {id:'r47_111',d:'Testing and Commissioning (per connection)',u:'Ea',r:881.14,c:'Testing',phase:'47',on:true},
-  {id:'r47_112',d:'Testing and Commissioning (per transformer)',u:'Ea',r:3628.25,c:'Testing',phase:'47',on:true},
-  {id:'r47_113',d:'Vegetation Clearing (per 100m OHL)',u:'100m',r:2539.73,c:'Vegetation',phase:'47',on:true},
-  {id:'r47_114',d:'Tree Felling (medium; dia 200-400mm)',u:'Ea',r:1918.35,c:'Vegetation',phase:'47',on:true},
-  {id:'r47_115',d:'Tree Felling (large; dia >400mm)',u:'Ea',r:3317.28,c:'Vegetation',phase:'47',on:true},
-  {id:'r47_116',d:'Stump Removal',u:'Ea',r:673.79,c:'Vegetation',phase:'47',on:true},
-  {id:'r47_117',d:'Reinstatement (Tar road)',u:'m2',r:502.73,c:'Civil',phase:'47',on:true},
-  {id:'r47_118',d:'Reinstatement (Paved/brick)',u:'m2',r:331.84,c:'Civil',phase:'47',on:true},
-  {id:'r47_119',d:'Reinstatement (Gravel)',u:'m2',r:88.14,c:'Civil',phase:'47',on:true},
-  {id:'r47_120',d:'Wayleave/Servitude Survey',u:'Ea',r:4665.45,c:'Survey',phase:'47',on:true},
+  // ── PHASE 46 ── Real DSW Phase 46 Rates ──────────────────────────────────
+  // OPEN WIRE OVERHEAD LINE
+  {id:'r46_001',d:'OHL;33kV;3Ph;100m:Gopher',u:'m',r:133.91,c:'OHL',phase:'46',on:true},
+  {id:'r46_002',d:'OHL;33kV;3Ph;100m:Rabbit',u:'m',r:170.32,c:'OHL',phase:'46',on:true},
+  {id:'r46_003',d:'OHL;33kV;3Ph;100m:Hare',u:'m',r:217.62,c:'OHL',phase:'46',on:true},
+  {id:'r46_004',d:'OHL;33kV;3Ph;100m:Wolf',u:'m',r:266.59,c:'OHL',phase:'46',on:true},
+  {id:'r46_005',d:'OHL;11kV;3Ph;100m;Gopher',u:'m',r:110.84,c:'OHL',phase:'46',on:true},
+  {id:'r46_006',d:'OHL;11kV;3Ph;100m;Rabbit',u:'m',r:142.74,c:'OHL',phase:'46',on:true},
+  {id:'r46_007',d:'OHL;11kV;3Ph;100m;Hare',u:'m',r:193.50,c:'OHL',phase:'46',on:true},
+  {id:'r46_008',d:'OHL;11kV;3Ph;100m;Wolf',u:'m',r:258.30,c:'OHL',phase:'46',on:true},
+  {id:'r46_009',d:'OHL;11kV;3Ph;50m;Gopher',u:'m',r:192.32,c:'OHL',phase:'46',on:true},
+  {id:'r46_010',d:'OHL;11kV;3Ph;50m;Rabbit',u:'m',r:224.76,c:'OHL',phase:'46',on:true},
+  {id:'r46_011',d:'OHL;11kV;3Ph;50m;Hare',u:'m',r:279.28,c:'OHL',phase:'46',on:true},
+  {id:'r46_012',d:'OHL;11kV;3Ph;50m;Wolf',u:'m',r:369.14,c:'OHL',phase:'46',on:true},
+  {id:'r46_013',d:'OHL;Dual;11kV;3Ph;50m;Gopher&95mm2;4C;ABC',u:'m',r:389.41,c:'OHL',phase:'46',on:true},
+  {id:'r46_014',d:'OHL;Dual;11kV;3Ph;50m;Rabbit&95mm2;4C;ABC',u:'m',r:423.79,c:'OHL',phase:'46',on:true},
+  {id:'r46_015',d:'OHL;Dual;11kV;3Ph;50m;Hare&95mm2;4C;ABC',u:'m',r:479.26,c:'OHL',phase:'46',on:true},
+  {id:'r46_016',d:'OHL;Dual;11kV;3Ph;50m;Wolf&95mm2;4C;ABC',u:'m',r:568.17,c:'OHL',phase:'46',on:true},
+  {id:'r46_017',d:'OHL;Dual;11kV;3Ph;50m;Gopher&50mm2;4C;ABC',u:'m',r:326.85,c:'OHL',phase:'46',on:true},
+  {id:'r46_018',d:'OHL;Dual;11kV;3Ph;50m;Rabbit&50mm2;4C;ABC',u:'m',r:358.34,c:'OHL',phase:'46',on:true},
+  {id:'r46_019',d:'OHL;Dual;11kV;3Ph;50m;Hare&50mm2;4C;ABC',u:'m',r:413.81,c:'OHL',phase:'46',on:true},
+  {id:'r46_020',d:'OHL;Dual;11kV;3Ph;50m;Wolf&50mm2;4C;ABC',u:'m',r:502.72,c:'OHL',phase:'46',on:true},
+  // AERIAL BUNDLED CONDUCTOR
+  {id:'r46_021',d:'OHL;400V;95mm2;4Core;ABC',u:'m',r:319.56,c:'ABC',phase:'46',on:true},
+  {id:'r46_022',d:'OHL;400V;50mm2;4Core;ABC',u:'m',r:254.11,c:'ABC',phase:'46',on:true},
+  {id:'r46_023',d:'OHL;400V;50mm2;4Core;ABC;on existing Poles',u:'m',r:137.16,c:'ABC',phase:'46',on:true},
+  {id:'r46_024',d:'OHL;400V;95mm2;4Core;ABC;on existing Poles',u:'m',r:202.82,c:'ABC',phase:'46',on:true},
+  // AIRDAC
+  {id:'r46_025',d:'Airdac;16mm2;3 Core;Overhead',u:'m',r:145.18,c:'Airdac',phase:'46',on:true},
+  // PMT NEW INSTALLATION
+  {id:'r46_026',d:'PMT;11kV/400V;50kVA;3Ph',u:'each',r:68835.66,c:'PMT',phase:'46',on:true},
+  {id:'r46_027',d:'PMT;11kV/400V;100kVA;3Ph',u:'each',r:104692.53,c:'PMT',phase:'46',on:true},
+  {id:'r46_028',d:'PMT;11kV/400V;200kVA;3Ph',u:'each',r:162714.46,c:'PMT',phase:'46',on:true},
+  {id:'r46_029',d:'PMT;11kV/400V;315kVA;3Ph',u:'each',r:187353.37,c:'PMT',phase:'46',on:true},
+  {id:'r46_030',d:'PMT;33kV/400V;50kVA;3Ph',u:'each',r:81937.01,c:'PMT',phase:'46',on:true},
+  {id:'r46_031',d:'PMT;33kV/400V;100kVA;3Ph',u:'each',r:128385.48,c:'PMT',phase:'46',on:true},
+  {id:'r46_032',d:'PMT;33kV/400V;200kVA;3Ph',u:'each',r:163399.46,c:'PMT',phase:'46',on:true},
+  {id:'r46_033',d:'PMT;33kV/400V;315kVA;3Ph',u:'each',r:138690.72,c:'PMT',phase:'46',on:true},
+  {id:'r46_034',d:'PMT;22kV/11kV;200kVA;3Ph (Install Only)',u:'each',r:9423.11,c:'PMT',phase:'46',on:true},
+  {id:'r46_035',d:'PMT;33kV/11kV;200kVA;3Ph',u:'each',r:160276.05,c:'PMT',phase:'46',on:true},
+  // PMT DISMANTLE & RE-ERECT
+  {id:'r46_036',d:'PMT;11kV/400V;50kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_037',d:'PMT;11kV/400V;100kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_038',d:'PMT;11kV/400V;200kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_039',d:'PMT;11kV/400V;315kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_040',d:'PMT;33kV/400V;50kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_041',d:'PMT;33kV/400V;100kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_042',d:'PMT;33kV/400V;200kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_043',d:'PMT;33kV/400V;315kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_044',d:'PMT;22kV/11kV;200kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_045',d:'PMT;33kV/11kV;200kVA;3Ph; Dismantle & Re-erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  {id:'r46_046',d:'PMT;11kV/19.1kV;400kVA;1Ph;SWER;Dismantle & Erect',u:'each',r:17191.29,c:'PMT',phase:'46',on:true},
+  // PMT DISMANTLE & RETURN
+  {id:'r46_047',d:'PMT;11kV/400V;50kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_048',d:'PMT;11kV/400V;100kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_049',d:'PMT;11kV/400V;200kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_050',d:'PMT;11kV/400V;315kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_051',d:'PMT;33kV/400V;50kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_052',d:'PMT;33kV/400V;100kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_053',d:'PMT;33kV/400V;200kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_054',d:'PMT;33kV/400V;315kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_055',d:'PMT;22kV/11kV;200kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  {id:'r46_056',d:'PMT;33kV/11kV;200kVA;3Ph; Dismantle & Return',u:'each',r:4464.33,c:'PMT',phase:'46',on:true},
+  // CABLE CONNECTION TO 11kV OHL
+  {id:'r46_057',d:'Cable Conn;35mm2;3C;PILC to 11kV OHL(Instal Only)',u:'each',r:3813.24,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_058',d:'Cable Conn;70mm2;3C;PILC to 11kV OHL',u:'each',r:9037.29,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_059',d:'Cable Conn;150mm2;3C;PILC to 11kV OHL',u:'each',r:11048.12,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_060',d:'Cable Conn;240mm2;3C;PILC to 11kV OHL(Instal Only)',u:'each',r:5390.62,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_061',d:'Cable Conn;35mm2;3C;XLPE to 11kV OHL',u:'each',r:19907.81,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_062',d:'Cable Conn;70mm2;3C;XLPE to 11kV OHL',u:'each',r:19937.87,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_063',d:'Cable Conn;150mm2;3C;XLPE to 11kV OHL',u:'each',r:21825.84,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_064',d:'Cable Conn;240mm2;3C;XLPE to 11kV OHL',u:'each',r:22028.82,c:'Cable Conn',phase:'46',on:true},
+  // CABLE CONNECTION TO 33kV OHL
+  {id:'r46_065',d:'Cable Conn;35mm2;3C;PILC to 33kV OHL (Install Only)',u:'each',r:3813.24,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_066',d:'Cable Conn;70mm2;3C;PILC to 33kV OHL (Install Only)',u:'each',r:3813.24,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_067',d:'Cable Conn;150mm2;3C;PILC to 33kV OHL (Install Only)',u:'each',r:5390.62,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_068',d:'Cable Conn;240mm2;3C;PILC to 33kV OHL (Install Only)',u:'each',r:5390.62,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_069',d:'Cable Conn;35mm2;3C;XLPE to 33kV OHL (Install Only)',u:'each',r:3813.24,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_070',d:'Cable Conn;70mm2;3C;XLPE to 33kV OHL (Install Only)',u:'each',r:3813.24,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_071',d:'Cable Conn;150mm2;3C;XLPE to 33kV OHL (Install Only)',u:'each',r:5390.62,c:'Cable Conn',phase:'46',on:true},
+  {id:'r46_072',d:'Cable Conn;240mm2;3C;XLPE to 33kV OHL (Install Only)',u:'each',r:5390.62,c:'Cable Conn',phase:'46',on:true},
+  // OVERHEAD LV SERVICE CONNECTION
+  {id:'r46_073',d:'Service Conn;230V;60A;Single Phase;O/H',u:'each',r:9894.87,c:'Service Conn',phase:'46',on:true},
+  // MISCELLANEOUS OVERHEAD EQUIPMENT
+  {id:'r46_074',d:'Gang Link Rocking Isolator;11kV;on Load',u:'each',r:45794.90,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_075',d:'Gang Link Rocking Isolator;33kV;on Load',u:'each',r:42806.92,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_076',d:'Knife Links;11kV;3Ph Set',u:'set',r:14286.39,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_077',d:'Knife Links;33kV;3Ph Set',u:'set',r:16071.80,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_078',d:'D Fuse Links;11kV;3Ph Set;Excl Fuses',u:'set',r:6439.89,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_079',d:'D Fuse Links;33kV;3Ph Set;Excl Fuses(Install Only)',u:'set',r:2976.67,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_080',d:'Surge Arrestors;11kV;3Ph Set',u:'set',r:6295.48,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_081',d:'Surge Arrestors;33kV;3Ph Set',u:'set',r:6889.36,c:'Misc OHL',phase:'46',on:true},
+  // MISC OHL DISMANTLE & RE-ERECT
+  {id:'r46_082',d:'Gang Link Rocking Isolator;11kV;on Load; Dismantle and Re-erect',u:'each',r:8646.25,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_083',d:'Gang Link Rocking Isolator;33kV;on Load; Dismantle and Re-erect',u:'each',r:8646.25,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_084',d:'Knife Links;11kV;3Ph Set; Dismantle and Re-erect',u:'set',r:5340.85,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_085',d:'Knife Links;33kV;3Ph Set; Dismantle and Re-erect',u:'set',r:5340.85,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_086',d:'D Fuse Links;11kV;3Ph Set;Excl Fuses; Dismantle and Re-erect',u:'set',r:5340.85,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_087',d:'D Fuse Links;33kV;3Ph Set;Excl Fuses; Dismantle and Re-erect',u:'set',r:5340.85,c:'Misc OHL',phase:'46',on:true},
+  // MISC OHL DISMANTLE & RETURN
+  {id:'r46_088',d:'Gang Link Rocking Isolator;11kV;on Load; Dismantle and Return',u:'each',r:4489.71,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_089',d:'Gang Link Rocking Isolator;33kV;on Load; Dismantle and Return',u:'each',r:4489.71,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_090',d:'Knife Links;11kV;3Ph Set; Dismantle and Return',u:'set',r:4489.71,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_091',d:'Knife Links;33kV;3Ph Set; Dismantle and Return',u:'set',r:4489.71,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_092',d:'D Fuse Links;11kV;3Ph Set;Excl Fuses; Dismantle and Return',u:'set',r:4489.71,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_093',d:'D Fuse Links;33kV;3Ph Set;Excl Fuses; Dismantle and Return',u:'set',r:4489.71,c:'Misc OHL',phase:'46',on:true},
+  // MISC OHL UPGRADING
+  {id:'r46_094',d:'Knife Links;11kV;3Ph Set; Upgrade to Gang Link Rocking Isolator;11kV',u:'each',r:46080.95,c:'Misc OHL',phase:'46',on:true},
+  {id:'r46_095',d:'Knife Links;33kV;3Ph Set;Upgrade to Gang Link Rocking',u:'each',r:43095.74,c:'Misc OHL',phase:'46',on:true},
+  // AUTORECLOSER
+  {id:'r46_096',d:'Auto Recloser;11kV compl; New Installation',u:'each',r:306857.61,c:'Autorecloser',phase:'46',on:true},
+  {id:'r46_097',d:'Auto Recloser;33kV compl; New Installation',u:'each',r:269478.58,c:'Autorecloser',phase:'46',on:true},
+  {id:'r46_098',d:'Auto Recloser;11kV compl; Dismantle & Re-erect',u:'each',r:23856.46,c:'Autorecloser',phase:'46',on:true},
+  {id:'r46_099',d:'Auto Recloser;33kV compl; Dismantle & Re-erect',u:'each',r:23856.46,c:'Autorecloser',phase:'46',on:true},
+  {id:'r46_100',d:'Auto Recloser;11kV compl; Dismantle & Return',u:'each',r:6374.64,c:'Autorecloser',phase:'46',on:true},
+  {id:'r46_101',d:'Auto Recloser;33kV compl; Dismantle & Return',u:'each',r:6374.64,c:'Autorecloser',phase:'46',on:true},
+  // OHL UPGRADING WORK
+  {id:'r46_102',d:'OHL;33kV;3Ph;Gopher upgrade to Rabbit; 100m',u:'m',r:63.75,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_103',d:'OHL;33kV;3Ph;Gopher upgrade to Hare; 100m',u:'m',r:114.16,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_104',d:'OHL;11kV;3Ph;Gopher upgrade to Rabbit; 50m',u:'m',r:63.75,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_105',d:'OHL;11kV;3Ph;Gopher upgrade to Hare; 50m',u:'m',r:114.16,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_106',d:'OHL;11kV;3Ph;Gopher upgrade to Wolf; 50m; Steel X-arms',u:'m',r:206.71,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_107',d:'OHL;11kV;3Ph;Rabbit upgrade to Hare; 50m',u:'m',r:114.16,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_108',d:'OHL;11kV;3Ph;Rabbit upgrade to Wolf; 50m;Steel X-arms',u:'m',r:206.71,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_109',d:'OHL;11kV;3Ph;Hare upgrade to Wolf; 50m',u:'m',r:206.71,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_110',d:'OHL;11kV;3Ph;Gopher upgrade to Rabbit; 50m + 50mm2 x 4C ABC',u:'m',r:195.20,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_111',d:'OHL;11kV;3Ph;Gopher upgrade to Rabbit; 50m + 95mm2 x 4C ABC',u:'m',r:260.65,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_112',d:'OHL;11kV;3Ph;Gopher upgrade to Hare; 50m + 50mm2 x 4C ABC',u:'m',r:245.61,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_113',d:'OHL;11kV;3Ph;Gopher upgrade to Hare; 50m + 95mm2 x 4C ABC',u:'m',r:311.06,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_114',d:'OHL;11kV;3Ph;Gopher upgrade to Wolf; 50m + 50mm2 x 4C ABC',u:'m',r:335.17,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_115',d:'OHL;11kV;3Ph;Gopher upgrade to Wolf; 50m + 95mm2 x 4C ABC',u:'m',r:400.62,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_116',d:'OHL;11kV;3Ph;Rabbit upgrade to Hare; 50m + 50mm2 x 4C ABC',u:'m',r:245.61,c:'OHL Upgrade',phase:'46',on:true},
+  {id:'r46_117',d:'OHL;11kV;3Ph;Rabbit upgrade to Hare; 50m + 95mm2 x 4C ABC',u:'m',r:311.06,c:'OHL Upgrade',phase:'46',on:true},
+  // METERING
+  {id:'r46_118',d:'Single Phase Meter;Smart meter',u:'each',r:608.01,c:'Metering',phase:'46',on:true},
+  {id:'r46_119',d:'Single Phase Meter;electronic post-paid',u:'each',r:169.05,c:'Metering',phase:'46',on:true},
+  {id:'r46_120',d:'Three Phase Meter;conventional post-paid',u:'each',r:880.48,c:'Metering',phase:'46',on:true},
+  {id:'r46_121',d:'KWh & MD Meter',u:'each',r:1811.52,c:'Metering',phase:'46',on:true},
+  {id:'r46_122',d:'Single Phase BEC Meter',u:'each',r:278.74,c:'Metering',phase:'46',on:true},
+  {id:'r46_123',d:'Single Phase Meter Box M1 Complete',u:'each',r:672.00,c:'Metering',phase:'46',on:true},
+  {id:'r46_124',d:'Three Phase Meter Box M3 Complete',u:'each',r:918.75,c:'Metering',phase:'46',on:true},
+
+  // ── PHASE 47 ── Real DSW Phase 47 Rates ──────────────────────────────────
+  // OPEN WIRE OVERHEAD LINE
+  {id:'r47_001',d:'OHL;33kV;3Ph;100m:Gopher',u:'m',r:138.66,c:'OHL',phase:'47',on:true},
+  {id:'r47_002',d:'OHL;33kV;3Ph;100m:Rabbit',u:'m',r:177.06,c:'OHL',phase:'47',on:true},
+  {id:'r47_003',d:'OHL;33kV;3Ph;100m:Hare',u:'m',r:228.91,c:'OHL',phase:'47',on:true},
+  {id:'r47_004',d:'OHL;33kV;3Ph;100m:Wolf',u:'m',r:279.65,c:'OHL',phase:'47',on:true},
+  {id:'r47_005',d:'OHL;11kV;3Ph;100m;Gopher',u:'m',r:109.67,c:'OHL',phase:'47',on:true},
+  {id:'r47_006',d:'OHL;11kV;3Ph;100m;Rabbit',u:'m',r:145.49,c:'OHL',phase:'47',on:true},
+  {id:'r47_007',d:'OHL;11kV;3Ph;100m;Hare',u:'m',r:200.89,c:'OHL',phase:'47',on:true},
+  {id:'r47_008',d:'OHL;11kV;3Ph;100m;Wolf',u:'m',r:268.44,c:'OHL',phase:'47',on:true},
+  {id:'r47_009',d:'OHL;11kV;3Ph;50m;Gopher',u:'m',r:188.87,c:'OHL',phase:'47',on:true},
+  {id:'r47_010',d:'OHL;11kV;3Ph;50m;Rabbit',u:'m',r:225.28,c:'OHL',phase:'47',on:true},
+  {id:'r47_011',d:'OHL;11kV;3Ph;50m;Hare',u:'m',r:283.62,c:'OHL',phase:'47',on:true},
+  {id:'r47_012',d:'OHL;11kV;3Ph;50m;Wolf',u:'m',r:374.03,c:'OHL',phase:'47',on:true},
+  {id:'r47_013',d:'OHL;Dual;11kV;3Ph;50m;Gopher&95mm2;4C;ABC',u:'m',r:403.44,c:'OHL',phase:'47',on:true},
+  {id:'r47_014',d:'OHL;Dual;11kV;3Ph;50m;Rabbit&95mm2;4C;ABC',u:'m',r:441.79,c:'OHL',phase:'47',on:true},
+  {id:'r47_015',d:'OHL;Dual;11kV;3Ph;50m;Hare&95mm2;4C;ABC',u:'m',r:500.93,c:'OHL',phase:'47',on:true},
+  {id:'r47_016',d:'OHL;Dual;11kV;3Ph;50m;Wolf&95mm2;4C;ABC',u:'m',r:590.54,c:'OHL',phase:'47',on:true},
+  {id:'r47_017',d:'OHL;Dual;11kV;3Ph;50m;Gopher&50mm2;4C;ABC',u:'m',r:332.65,c:'OHL',phase:'47',on:true},
+  {id:'r47_018',d:'OHL;Dual;11kV;3Ph;50m;Rabbit&50mm2;4C;ABC',u:'m',r:368.26,c:'OHL',phase:'47',on:true},
+  {id:'r47_019',d:'OHL;Dual;11kV;3Ph;50m;Hare&50mm2;4C;ABC',u:'m',r:427.39,c:'OHL',phase:'47',on:true},
+  {id:'r47_020',d:'OHL;Dual;11kV;3Ph;50m;Wolf&50mm2;4C;ABC',u:'m',r:517.01,c:'OHL',phase:'47',on:true},
+  // AERIAL BUNDLED CONDUCTOR
+  {id:'r47_021',d:'OHL;400V;95mm2;4Core;ABC',u:'m',r:362.82,c:'ABC',phase:'47',on:true},
+  {id:'r47_022',d:'OHL;400V;50mm2;4Core;ABC',u:'m',r:289.29,c:'ABC',phase:'47',on:true},
+  {id:'r47_023',d:'OHL;400V;50mm2;4Core;ABC;on existing Poles',u:'m',r:144.71,c:'ABC',phase:'47',on:true},
+  {id:'r47_024',d:'OHL;400V;95mm2;4Core;ABC;on existing Poles',u:'m',r:218.44,c:'ABC',phase:'47',on:true},
+  // AIRDAC
+  {id:'r47_025',d:'Airdac;16mm2;3 Core;Overhead',u:'m',r:165.87,c:'Airdac',phase:'47',on:true},
+  // PMT NEW INSTALLATION
+  {id:'r47_026',d:'PMT;11kV/400V;50kVA;3Ph',u:'each',r:71117.30,c:'PMT',phase:'47',on:true},
+  {id:'r47_027',d:'PMT;11kV/400V;100kVA;3Ph',u:'each',r:113435.37,c:'PMT',phase:'47',on:true},
+  {id:'r47_028',d:'PMT;11kV/400V;200kVA;3Ph',u:'each',r:175535.90,c:'PMT',phase:'47',on:true},
+  {id:'r47_029',d:'PMT;11kV/400V;315kVA;3Ph',u:'each',r:201906.78,c:'PMT',phase:'47',on:true},
+  {id:'r47_030',d:'PMT;33kV/400V;50kVA;3Ph',u:'each',r:77763.87,c:'PMT',phase:'47',on:true},
+  {id:'r47_031',d:'PMT;33kV/400V;100kVA;3Ph',u:'each',r:138479.73,c:'PMT',phase:'47',on:true},
+  {id:'r47_032',d:'PMT;33kV/400V;200kVA;3Ph',u:'each',r:176106.73,c:'PMT',phase:'47',on:true},
+  {id:'r47_033',d:'PMT;33kV/400V;315kVA;3Ph',u:'each',r:227822.00,c:'PMT',phase:'47',on:true},
+  {id:'r47_034',d:'PMT;22kV/11kV;200kVA;3Ph (Install Only)',u:'each',r:12194.26,c:'PMT',phase:'47',on:true},
+  {id:'r47_035',d:'PMT;33kV/11kV;200kVA;3Ph',u:'each',r:181422.32,c:'PMT',phase:'47',on:true},
+  // PMT DISMANTLE & RE-ERECT
+  {id:'r47_036',d:'PMT;11kV/400V;50kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_037',d:'PMT;11kV/400V;100kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_038',d:'PMT;11kV/400V;200kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_039',d:'PMT;11kV/400V;315kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_040',d:'PMT;33kV/400V;50kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_041',d:'PMT;33kV/400V;100kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_042',d:'PMT;33kV/400V;200kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_043',d:'PMT;33kV/400V;315kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_044',d:'PMT;22kV/11kV;200kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_045',d:'PMT;33kV/11kV;200kVA;3Ph; Dismantle & Re-erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  {id:'r47_046',d:'PMT;11kV/19.1kV;400kVA;1Ph;SWER;Dismantle & Erect',u:'each',r:21830.49,c:'PMT',phase:'47',on:true},
+  // PMT DISMANTLE & RETURN
+  {id:'r47_047',d:'PMT;11kV/400V;50kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_048',d:'PMT;11kV/400V;100kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_049',d:'PMT;11kV/400V;200kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_050',d:'PMT;11kV/400V;315kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_051',d:'PMT;33kV/400V;50kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_052',d:'PMT;33kV/400V;100kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_053',d:'PMT;33kV/400V;200kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_054',d:'PMT;33kV/400V;315kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_055',d:'PMT;22kV/11kV;200kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  {id:'r47_056',d:'PMT;33kV/11kV;200kVA;3Ph; Dismantle & Return',u:'each',r:6201.62,c:'PMT',phase:'47',on:true},
+  // CABLE CONNECTION TO 11kV OHL
+  {id:'r47_057',d:'Cable Conn;35mm2;3C;PILC to 11kV OHL(Instal Only)',u:'each',r:4529.98,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_058',d:'Cable Conn;70mm2;3C;PILC to 11kV OHL',u:'each',r:10759.66,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_059',d:'Cable Conn;150mm2;3C;PILC to 11kV OHL',u:'each',r:13173.00,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_060',d:'Cable Conn;240mm2;3C;PILC to 11kV OHL(Instal Only)',u:'each',r:6292.07,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_061',d:'Cable Conn;35mm2;3C;XLPE to 11kV OHL',u:'each',r:20601.86,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_062',d:'Cable Conn;70mm2;3C;XLPE to 11kV OHL',u:'each',r:20649.06,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_063',d:'Cable Conn;150mm2;3C;XLPE to 11kV OHL',u:'each',r:22622.66,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_064',d:'Cable Conn;240mm2;3C;XLPE to 11kV OHL',u:'each',r:23026.81,c:'Cable Conn',phase:'47',on:true},
+  // CABLE CONNECTION TO 33kV OHL
+  {id:'r47_065',d:'Cable Conn;35mm2;3C;PILC to 33kV OHL (Install Only)',u:'each',r:4529.98,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_066',d:'Cable Conn;70mm2;3C;PILC to 33kV OHL (Install Only)',u:'each',r:4529.98,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_067',d:'Cable Conn;150mm2;3C;PILC to 33kV OHL (Install Only)',u:'each',r:6292.07,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_068',d:'Cable Conn;240mm2;3C;PILC to 33kV OHL (Install Only)',u:'each',r:6292.07,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_069',d:'Cable Conn;35mm2;3C;XLPE to 33kV OHL (Install Only)',u:'each',r:4529.98,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_070',d:'Cable Conn;70mm2;3C;XLPE to 33kV OHL (Install Only)',u:'each',r:4529.98,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_071',d:'Cable Conn;150mm2;3C;XLPE to 33kV OHL (Install Only)',u:'each',r:6292.07,c:'Cable Conn',phase:'47',on:true},
+  {id:'r47_072',d:'Cable Conn;240mm2;3C;XLPE to 33kV OHL (Install Only)',u:'each',r:6292.07,c:'Cable Conn',phase:'47',on:true},
+  // OVERHEAD LV SERVICE CONNECTION
+  {id:'r47_073',d:'Service Conn;230V;60A;Single Phase;O/H',u:'each',r:11411.97,c:'Service Conn',phase:'47',on:true},
+  // MISCELLANEOUS OVERHEAD EQUIPMENT
+  {id:'r47_074',d:'Gang Link Rocking Isolator;11kV;on Load',u:'each',r:54287.26,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_075',d:'Gang Link Rocking Isolator;33kV;on Load',u:'each',r:50734.10,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_076',d:'Knife Links;11kV;3Ph Set',u:'set',r:14884.76,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_077',d:'Knife Links;33kV;3Ph Set',u:'set',r:18837.93,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_078',d:'D Fuse Links;11kV;3Ph Set;Excl Fuses',u:'set',r:7961.90,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_079',d:'D Fuse Links;33kV;3Ph Set;Excl Fuses(Install Only)',u:'set',r:4395.38,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_080',d:'Surge Arrestors;11kV;3Ph Set',u:'set',r:8042.91,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_081',d:'Surge Arrestors;33kV;3Ph Set',u:'set',r:8831.69,c:'Misc OHL',phase:'47',on:true},
+  // MISC OHL DISMANTLE & RE-ERECT
+  {id:'r47_082',d:'Gang Link Rocking Isolator;11kV;on Load; Dismantle and Re-erect',u:'each',r:11953.47,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_083',d:'Gang Link Rocking Isolator;33kV;on Load; Dismantle and Re-erect',u:'each',r:11953.47,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_084',d:'Knife Links;11kV;3Ph Set; Dismantle and Re-erect',u:'set',r:6865.93,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_085',d:'Knife Links;33kV;3Ph Set; Dismantle and Re-erect',u:'set',r:6865.93,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_086',d:'D Fuse Links;11kV;3Ph Set;Excl Fuses; Dismantle and Re-erect',u:'set',r:6865.93,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_087',d:'D Fuse Links;33kV;3Ph Set;Excl Fuses; Dismantle and Re-erect',u:'set',r:6865.93,c:'Misc OHL',phase:'47',on:true},
+  // MISC OHL DISMANTLE & RETURN
+  {id:'r47_088',d:'Gang Link Rocking Isolator;11kV;on Load; Dismantle and Return',u:'each',r:6236.87,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_089',d:'Gang Link Rocking Isolator;33kV;on Load; Dismantle and Return',u:'each',r:6236.87,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_090',d:'Knife Links;11kV;3Ph Set; Dismantle and Return',u:'set',r:6236.87,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_091',d:'Knife Links;33kV;3Ph Set; Dismantle and Return',u:'set',r:6236.87,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_092',d:'D Fuse Links;11kV;3Ph Set;Excl Fuses; Dismantle and Return',u:'set',r:6236.87,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_093',d:'D Fuse Links;33kV;3Ph Set;Excl Fuses; Dismantle and Return',u:'set',r:6236.87,c:'Misc OHL',phase:'47',on:true},
+  // MISC OHL UPGRADING
+  {id:'r47_094',d:'Knife Links;11kV;3Ph Set; Upgrade to Gang Link Rocking Isolator;11kV',u:'each',r:56131.85,c:'Misc OHL',phase:'47',on:true},
+  {id:'r47_095',d:'Knife Links;33kV;3Ph Set;Upgrade to Gang Link Rocking',u:'each',r:53020.74,c:'Misc OHL',phase:'47',on:true},
+  // AUTORECLOSER
+  {id:'r47_096',d:'Auto Recloser;11kV compl; New Installation',u:'each',r:344299.16,c:'Autorecloser',phase:'47',on:true},
+  {id:'r47_097',d:'Auto Recloser;33kV compl; New Installation',u:'each',r:306332.32,c:'Autorecloser',phase:'47',on:true},
+  {id:'r47_098',d:'Auto Recloser;11kV compl; Dismantle & Re-erect',u:'each',r:30031.37,c:'Autorecloser',phase:'47',on:true},
+  {id:'r47_099',d:'Auto Recloser;33kV compl; Dismantle & Re-erect',u:'each',r:30031.37,c:'Autorecloser',phase:'47',on:true},
+  {id:'r47_100',d:'Auto Recloser;11kV compl; Dismantle & Return',u:'each',r:8901.19,c:'Autorecloser',phase:'47',on:true},
+  {id:'r47_101',d:'Auto Recloser;33kV compl; Dismantle & Return',u:'each',r:8901.19,c:'Autorecloser',phase:'47',on:true},
+  // OHL UPGRADING WORK
+  {id:'r47_102',d:'OHL;33kV;3Ph;Gopher upgrade to Rabbit; 100m',u:'m',r:72.65,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_103',d:'OHL;33kV;3Ph;Gopher upgrade to Hare; 100m',u:'m',r:126.30,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_104',d:'OHL;11kV;3Ph;Gopher upgrade to Rabbit; 50m',u:'m',r:72.65,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_105',d:'OHL;11kV;3Ph;Gopher upgrade to Hare; 50m',u:'m',r:126.30,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_106',d:'OHL;11kV;3Ph;Gopher upgrade to Wolf; 50m; Steel X-arms',u:'m',r:223.96,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_107',d:'OHL;11kV;3Ph;Rabbit upgrade to Hare; 50m',u:'m',r:126.30,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_108',d:'OHL;11kV;3Ph;Rabbit upgrade to Wolf; 50m;Steel X-arms',u:'m',r:223.96,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_109',d:'OHL;11kV;3Ph;Hare upgrade to Wolf; 50m',u:'m',r:223.96,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_110',d:'OHL;11kV;3Ph;Gopher upgrade to Rabbit; 50m + 50mm2 x 4C ABC',u:'m',r:210.97,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_111',d:'OHL;11kV;3Ph;Gopher upgrade to Rabbit; 50m + 95mm2 x 4C ABC',u:'m',r:284.50,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_112',d:'OHL;11kV;3Ph;Gopher upgrade to Hare; 50m + 50mm2 x 4C ABC',u:'m',r:264.62,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_113',d:'OHL;11kV;3Ph;Gopher upgrade to Hare; 50m + 95mm2 x 4C ABC',u:'m',r:338.16,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_114',d:'OHL;11kV;3Ph;Gopher upgrade to Wolf; 50m + 50mm2 x 4C ABC',u:'m',r:358.96,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_115',d:'OHL;11kV;3Ph;Gopher upgrade to Wolf; 50m + 95mm2 x 4C ABC',u:'m',r:432.49,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_116',d:'OHL;11kV;3Ph;Rabbit upgrade to Hare; 50m + 50mm2 x 4C ABC',u:'m',r:264.62,c:'OHL Upgrade',phase:'47',on:true},
+  {id:'r47_117',d:'OHL;11kV;3Ph;Rabbit upgrade to Hare; 50m + 95mm2 x 4C ABC',u:'m',r:338.16,c:'OHL Upgrade',phase:'47',on:true},
+  // METERING
+  {id:'r47_118',d:'Single Phase Meter;Smart meter',u:'each',r:608.01,c:'Metering',phase:'47',on:true},
+  {id:'r47_119',d:'Single Phase Meter;electronic post-paid',u:'each',r:169.05,c:'Metering',phase:'47',on:true},
+  {id:'r47_120',d:'Three Phase Meter;conventional post-paid',u:'each',r:880.48,c:'Metering',phase:'47',on:true},
+  {id:'r47_121',d:'KWh & MD Meter',u:'each',r:1811.52,c:'Metering',phase:'47',on:true},
+  {id:'r47_122',d:'Single Phase BEC Meter',u:'each',r:278.74,c:'Metering',phase:'47',on:true},
+  {id:'r47_123',d:'Single Phase Meter Box M1 Complete',u:'each',r:672.00,c:'Metering',phase:'47',on:true},
+  {id:'r47_124',d:'Three Phase Meter Box M3 Complete',u:'each',r:918.75,c:'Metering',phase:'47',on:true},
 ];
 
 /* ═══════════════════════════════════════
@@ -1153,18 +1453,31 @@ initDB();
 function newJob(data){
   return {
     wo:data.wo, cust:data.cust||data.customer, loc:data.loc||data.location,
-    type:data.type, phase:data.phase||'47', lf:data.lf||29.25, mk:data.mk||12.5,
+    type:data.type, phase:data.phase||'47', lf:data.lf||29.25, mk:data.mk||0,
     date:data.date||'', projType:data.projType||'NESC',
     contract:data.contract||'', custNo:data.custNo||'', plotNo:data.plotNo||'',
     ward:data.ward||'', mobile:data.mobile||'',
     bpcProjNo:data.bpcProjNo||'', projNo:data.projNo||'',
     meterNo:data.meterNo||'', address:data.address||'',
     createdAt:new Date().toISOString(), stage:'wo_received',
-    vo1:{items:[
-  {d:'Service Conn; 230V; 60A; Single Phase; U/G', u:'Ea', q:1, r:data.phase==='46'?11987.42:12426.82},
-  {d:'GIS RATE-Service connections',               u:'Ea', q:1, r:data.phase==='46'?593.59:615.42},
-], lf:data.lf||29.25, mk:data.mk||12.5, phase:data.phase||'47'},
-vo2:{items:[], lf:data.lf||29.25, mk:10, startDate:'', compDate:'', phase:data.phase||'47'},
+    vo1:{items:(()=>{
+  // Parse textarea lines: "Description | Unit | Qty | Rate"
+  const lines=(data.type||'').split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  if(lines.length&&lines[0].includes('|')){
+    return lines.map(line=>{
+      const parts=line.split('|').map(p=>p.trim());
+      return{
+        d:parts[0]||'Service Conn; 230V; 60A; Single Phase; U/G',
+        u:parts[1]||'Ea',
+        q:parseFloat(parts[2])||1,
+        r:parseFloat(parts[3])||0,
+      };
+    }).filter(it=>it.d&&it.r>0);
+  }
+  // Fallback: single default item
+  return[{d:data.type||'Service Conn; 230V; 60A; Single Phase; U/G',u:'Ea',q:1,r:data.phase==='46'?11987.42:12426.82}];
+})(), lf:data.lf||29.25, mk:data.mk||0, phase:data.phase||'47'},
+vo2:{items:[], lf:data.lf||29.25, mk:0, startDate:'', compDate:'', phase:data.phase||'47'},
     worksValuation:{created:false},
     fieldData:{}, gisData:{},
     actions:{},
@@ -1561,7 +1874,8 @@ function renderJobs(){
    ADD WORK ORDER
 ═══════════════════════════════════════ */
 function saveNewWO(){
-  const num=document.getElementById('nw-num').value.trim();
+  const rawNum=document.getElementById('nw-num').value.trim();
+  const num=rawNum&&/^\d+$/.test(rawNum)?rawNum.padStart(10,'0'):rawNum;
   const cust=document.getElementById('nw-cust').value.trim();
   const loc=document.getElementById('nw-loc').value.trim();
   const type=document.getElementById('nw-type').value;
@@ -1722,7 +2036,74 @@ function renderJobDetail(wo){
 
   // Pipeline - FILTERED BY ROLE
   const currIdx=stageIdx(job.stage);
-  
+
+  // MD gets a special rich view — not the action pipeline
+  if(isMD){
+    // Build MD pipeline view: ticked steps + documents per step
+    const mdStepDocs={
+      vo1_created:{label:'Works Valuation (VO1) Created',docs:['vo1']},
+      linesman_notified:{label:'Linesman Notified (External)',docs:[]},
+      field_received:{label:'Linesman Findings Received',docs:['field_report']},
+      vo2_created:{label:'Variation Order (VO2) Created',docs:['vo2']},
+      works_valuation_created:{label:'Works Valuation Document Created',docs:['works_valuation']},
+      work_instruction_ready:{label:'Works Instruction Prepared',docs:[]},
+      teams_notified:{label:'Teams Notified to Start Work',docs:[]},
+      work_complete:{label:'Teams Reported Work Complete',docs:['works_instruction']},
+      gis_notified:{label:'GIS Consultant Notified',docs:[]},
+      gis_complete:{label:'GIS Report & Certificate Received',docs:['gis_report','gis_cert']},
+      claim_docs_ready:{label:'Claim Documents Generated',docs:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']},
+    };
+    const docLabelMap={vo1:'VO1',vo2:'VO2',field_report:'Field Report',works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'GIS Report',gis_cert:'GIS Certificate',annexure:'Annexure',payment_cert:'Payment Certificate',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Spreadsheet'};
+    document.getElementById('jdPipeline').innerHTML=STAGES.map(st=>{
+      const globalIdx=STAGE_IDS.indexOf(st.id);
+      const state=globalIdx<currIdx?'done':globalIdx===currIdx?'active':'pending';
+      const action=job.actions[st.id];
+      const stepInfo=mdStepDocs[st.id]||{docs:[]};
+      const docs=stepInfo.docs||[];
+      // Build doc buttons for this step
+      let docHtml='';
+      if(state==='done'&&docs.length){
+        docHtml='<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">';
+        docs.forEach(dt=>{
+          const hasSaved=job.savedDocs&&job.savedDocs[dt]&&job.savedDocs[dt].html;
+          const hasScan=job.scans&&job.scans[dt];
+          // For claim docs, also check batchDocs
+          let canView=hasSaved||hasScan;
+          if(!canView&&['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(dt)&&job.claimRef){
+            const bm=Object.values(DB.jobs).find(j=>j.claimRef===job.claimRef&&j.savedDocs&&j.savedDocs[dt]);
+            if(bm)canView=true;
+            if(!canView&&DB.batchDocs&&DB.batchDocs[job.claimRef]){
+              const bmap={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};
+              if(DB.batchDocs[job.claimRef][bmap[dt]])canView=true;
+            }
+          }
+          if(canView){
+            docHtml+=`<button class="btn btn-bl btn-sm" onclick="openDocForAction('${wo}','${dt}')">👁 ${docLabelMap[dt]||dt}</button>`;
+            if(hasScan)docHtml+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${dt}')">⬇ Signed</button>`;
+          } else {
+            docHtml+=`<span style="font-size:.68rem;color:var(--tx3);padding:2px 5px;border:1px solid var(--bd);border-radius:3px;opacity:.5">${docLabelMap[dt]||dt} — pending</span>`;
+          }
+        });
+        // Add claim batch button at claim_docs_ready step
+        if(st.id==='claim_docs_ready'){
+          docHtml+=`<button class="btn btn-am btn-sm" onclick="nav('claims')" style="margin-left:4px">💰 Open Claim Batch</button>`;
+        }
+        docHtml+='</div>';
+      }
+      return`<div class="pipe-step">
+        <div class="pipe-dot ${state}">${state==='done'?'✓':state==='active'?'●':''}</div>
+        <div class="pipe-info">
+          <div class="pipe-lbl ${state}">${st.lbl}</div>
+          ${action?`<div class="pipe-date">Recorded: ${action.date}${action.extra?' · '+action.extra:''}${action.notes?' · '+action.notes:''}</div>`:''}
+          ${docHtml}
+        </div>
+      </div>`;
+    }).join('');
+    // MD nav — make sure claims is visible
+    const claimsNav=document.getElementById('n-claims');
+    if(claimsNav)claimsNav.style.display='flex';
+  } else {
+
   // Define which stages each role can see
   let visibleStages = STAGES; // Default all
   if(CU === 'finance') {
@@ -1779,7 +2160,7 @@ function renderJobDetail(wo){
         if(st.id==='vo2_created'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button>`;
         if(st.id==='works_valuation_created'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">✓ Save Works Valuation — Proceed to Works Instruction</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">✓ Save Works Valuation — Proceed to Notify Teams</button>`;
         if(st.id==='works_valuation_created'&&state==='pending')
           actBtns+=`<button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">📄 Create Works Valuation Document</button>`;
         if(st.id==='works_valuation_created'&&state==='done')
@@ -1791,21 +2172,21 @@ function renderJobDetail(wo){
         if(st.id==='work_instruction_ready'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button>`;
         if(st.id==='teams_notified'&&(state==='active'||state==='pending'))
-          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000">📤 Send the Works Instruction to the team externally (WhatsApp/email). When teams report back that work is complete, click below.</div><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','teams_notified','Record: Works Instruction Sent to Teams','Record when you sent the Works Instruction to the teams externally.','Team(s) assigned (e.g. Shakawe Team A)')">📤 Record Teams Notified</button>`;
+          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">📤 Notify the field teams externally (WhatsApp/email) to commence work, then record below.</div><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','teams_notified','Record: Teams Notified to Start Work','Record when you notified the teams to start work.','Team(s) assigned (e.g. Shakawe Team A)')">📤 Record Teams Notified</button>`;
         if(st.id==='teams_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Teams notified on ${action?.date||'—'} · ${action?.extra||''}</span><div style="margin-top:5px"><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','work_complete','Record: Teams Reported Work Complete','Record the date the field team completed the work and reported back to you.')">✅ Teams Reported Work Complete</button></div>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Teams notified on ${action?.date||'—'} · ${action?.extra||''}</span><div style="margin-top:5px"><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','work_complete','Record: Teams Reported Work Complete','Record when the field team reported back to you that work is complete.')">✅ Record: Teams Reported Work Complete</button></div>`;
         if(st.id==='work_complete'&&(state==='active'||state==='pending'))
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Consultant Notified','Record when you sent the assignment to the GIS consultant externally.')">📍 Notify GIS Consultant (External) — Record</button>`;
+          actBtns+=`<div style="background:var(--bl-bg);border:1px solid var(--bl-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:var(--bl);margin-bottom:5px">✅ Teams have completed the work. Step 1: Fill in the Works Instruction (completion record). Step 2: Notify the GIS consultant.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">📄 Step 1: Fill in Works Instruction (Completion Record)</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Consultant Notified','Record when you sent the assignment to the GIS consultant externally.')">📍 Step 2: Notify GIS Consultant (External) — Record</button>`;
         if(st.id==='work_complete'&&state==='done')
           actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Work complete on ${action?.date||'—'}</span>`;
         if(st.id==='gis_notified'&&state==='active')
-          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">📤 Notify the GIS consultant externally (phone/WhatsApp/email). When he sends you his findings/document back, click the button below to upload it.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Record GIS Consultant Report</button>`;
+          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">📤 Notify the GIS consultant externally. When he returns, he will send you TWO documents: (1) GIS Report and (2) GIS Certificate. Upload both below.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Record & Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 Record & Upload GIS Certificate</button>`;
         if(st.id==='gis_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ GIS notified on ${action?.date||'—'}</span><div style="margin-top:5px"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Upload GIS Report Document</button></div>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ GIS notified on ${action?.date||'—'}</span><div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 Upload GIS Certificate</button></div>`;
         if(st.id==='gis_complete'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Upload GIS Report Document</button>`;
+          actBtns+=`<div style="font-size:.72rem;color:var(--am);margin-bottom:4px">Upload both GIS documents received from the consultant:</div><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 GIS Certificate</button></div>`;
         if(st.id==='gis_complete'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ GIS report uploaded</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ GIS documents uploaded</span><div style="margin-top:4px;display:flex;gap:5px"><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_cert')">View GIS Certificate</button></div>`;
         if(st.id==='claim_docs_ready'&&state==='active')
           actBtns+=`<div style="background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--gn);margin-bottom:6px">✅ Finance has generated the claim documents. Review them below, then record this job as complete.</div><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Recording this marks the job as complete and adds it to the List of Jobs Done.')">✅ Record Job as Complete</button>`;
         if(st.id==='claim_docs_ready'&&state==='done')
@@ -1840,9 +2221,10 @@ function renderJobDetail(wo){
       </div>
     </div>`;
   }).join('');
+  } // end non-MD pipeline
 
   // Documents panel - FILTERED BY ROLE
-  const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_valuation','works_instruction','gis_report','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_valuation','works_instruction','gis_report','gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   let visibleDocTypes = [...allDocTypes];
   if(CU === 'finance') {
     visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
@@ -1928,26 +2310,26 @@ function openDocForAction(wo,docType){
   let html='';
 
   if(claimDocTypes.includes(docType)){
-    // First check if this job has a saved version from Finance
+    // Check this job's savedDocs first
     if(job&&job.savedDocs&&job.savedDocs[docType]&&job.savedDocs[docType].html){
       html=job.savedDocs[docType].html;
     } else {
-      // Try to find from batch — look for any job with same claimRef that has it saved
+      // Search ALL jobs for any with same claimRef that has this doc saved
       const certNo=job?.claimRef;
+      let found=false;
       if(certNo){
-        const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.savedDocs&&j.savedDocs[docType]&&j.savedDocs[docType].html);
-        if(batchJobs.length){
-          html=batchJobs[0].savedDocs[docType].html;
-        }
+        const batchMatch=Object.values(DB.jobs).find(j=>j.claimRef===certNo&&j.savedDocs&&j.savedDocs[docType]&&j.savedDocs[docType].html);
+        if(batchMatch){html=batchMatch.savedDocs[docType].html;found=true;}
       }
-      // Fall back to regenerating if nothing saved yet
-      if(!html){
-        if(CU==='md'){
-          // MD sees a message if Finance hasn't saved yet
-          html=`<div class="ua ua-am" style="margin:1rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Finance has not yet saved this document. Once Finance generates and saves the claim documents, they will appear here automatically.</div>`;
-        } else {
-          html=buildDoc(docType,job);
-        }
+      // Also check DB.batchDocs
+      if(!found&&certNo&&DB.batchDocs&&DB.batchDocs[certNo]){
+        const bmap={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};
+        const bkey=bmap[docType];
+        if(bkey&&DB.batchDocs[certNo][bkey]){html=DB.batchDocs[certNo][bkey];found=true;}
+      }
+      // Last resort: regenerate live (works for all roles)
+      if(!found){
+        html=buildDoc(docType,job);
       }
     }
   } else {
@@ -2005,11 +2387,12 @@ function buildDocFoot(docType,job){
 function advanceStageWV(wo){
   const job=DB.jobs[wo];if(!job)return;
   job.stage='work_instruction_ready';
-  addLog(wo,'Works Valuation saved — advancing to Works Instruction');
-  notify(['md'],`Works Valuation completed for WO ${wo} — ${job.cust}. Next: Works Instruction.`,wo);
+  job.actions['work_instruction_ready']={date:new Date().toISOString().slice(0,10),notes:'Works Valuation saved',extra:''};
+  addLog(wo,'Works Valuation saved — ready to notify teams');
+  notify(['md'],`Works Valuation completed for WO ${wo} — ${job.cust}. Admin will now notify teams.`,wo);
   saveDB();closeModal('docModal');refreshDetail();refreshAll();
-  toast('Works Valuation saved — next: prepare Works Instruction');
-  setTimeout(()=>openDocForAction(wo,'works_instruction'),400);
+  toast('Works Valuation saved — now notify teams to start work');
+  setTimeout(()=>openRecord(wo,'teams_notified','Record: Notify Teams to Start Work','Send the job details to your field teams externally (WhatsApp/email), then record here when done.','Team(s) assigned (e.g. Shakawe Team A)'),400);
 }
 function advanceStageWI(wo){
   const job=DB.jobs[wo];if(!job)return;
@@ -2325,6 +2708,7 @@ function buildDoc(docType,job){
     case 'field_report': return docFieldReport(job);
     case 'works_instruction': return docWorksInstruction(job);
     case 'gis_report': return docGISReport(job);
+    case 'gis_cert': return docGISCert(job);
     case 'annexure': return docAnnexure(job);
     case 'payment_cert': return docPaymentCert(job);
     case 'invoice': return docInvoice(job);
@@ -2375,7 +2759,7 @@ function docVO1(job){
     <tr><td class="lbl">Wayleave Approval :</td><td>BPC</td><td class="lbl">Date Wayleave Available :</td><td><input class="ef ef-b" value="Not Required" style="width:98%"></td></tr>
   </table><hr>
   <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Details of BPC &nbsp; W/O No. : &nbsp; ${job.wo}</div>
-  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1 — Phase ${job.vo1.phase||job.phase||'47'}</div>
+  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1 — Phase <select id="vo1phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt" onchange="DB.jobs['${job.wo}'].vo1.phase=this.value;saveDB();toast('VO1 Phase updated to '+this.value)"><option value="46" ${(job.vo1.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo1.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option></select></div>
   <table class="boq">
     <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
     <tbody id="vo1rows${job.wo}">${rows}</tbody>
@@ -2385,7 +2769,7 @@ function docVO1(job){
     <tr><td style="width:65%;text-align:right;padding:2px 5px">Items Subtotal</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px" id="vo1rawsub${job.wo}">${t.sub.toFixed(2)}</td></tr>
     <tr><td style="text-align:right;padding:2px 5px">Location Factor @ <input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:36px;text-align:center" onchange="DB.jobs['${job.wo}'].vo1.lf=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px" id="vo1loc${job.wo}">${t.loc.toFixed(2)}</td></tr>
     <tr><td style="text-align:right;padding:2px 5px;background:#f8f8f8">Sub Total</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px;background:#f8f8f8;font-weight:bold" id="vo1sub${job.wo}">${(t.sub+t.loc).toFixed(2)}</td></tr>
-    <tr><td style="text-align:right;padding:2px 5px">Markup @ <input class="ef ef-b" value="${job.vo1.mk||12.5}" style="width:36px;text-align:center" onchange="DB.jobs['${job.wo}'].vo1.mk=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px" id="vo1mk${job.wo}">${t.markup.toFixed(2)}</td></tr>
+    <tr><td style="text-align:right;padding:2px 5px">Markup @ <input class="ef ef-b" value="${job.vo1.mk||''}" placeholder="0" style="width:36px;text-align:center" onchange="DB.jobs['${job.wo}'].vo1.mk=parseFloat(this.value)||0;recalcVO1('${job.wo}')">%</td><td style="text-align:right;border-bottom:1px solid #ccc;padding:2px 5px" id="vo1mk${job.wo}">${t.markup.toFixed(2)}</td></tr>
     <tr style="background:#d9d9d9"><td style="text-align:right;padding:3px 5px;font-weight:bold;font-size:9pt">TOTAL (BWP)</td><td style="text-align:right;border:2px solid #000;padding:3px 5px;font-weight:bold;font-size:9.5pt" id="vo1tot${job.wo}">${t.total.toFixed(2)}</td></tr>
   </table>
   <div style="font-size:8pt;color:#555;margin-top:8px;padding:5px 8px;border:1px solid #e0e0e0;background:#fafafa">  </div>`;
@@ -2395,7 +2779,7 @@ function docVO1(job){
 function docWorksValuation(job){
   const t1=jTotal(job,'vo1');
   const t2=jTotal(job,'vo2');
-  const custPayDate=job.date||job.actions.wo_received?.date||'';
+  const custPayDate=job.actions.wo_received?.date||job.date||'';
   const phase=job.vo1.phase||job.phase||'47';
 
   const vo1rows=job.vo1.items.map((it,i)=>`<tr>
@@ -2451,7 +2835,7 @@ function docWorksValuation(job){
   <table style="width:100%;margin-top:5px;font-size:8.5pt;border-collapse:collapse">
     <tr><td style="width:70%;text-align:right;padding:2px 5px">Items Subtotal</td><td style="text-align:right;padding:2px 5px">${t1.sub.toFixed(2)}</td></tr>
     <tr><td style="text-align:right;padding:2px 5px">Location Factor @ ${job.vo1.lf||29.25}%</td><td style="text-align:right;padding:2px 5px">${t1.loc.toFixed(2)}</td></tr>
-    <tr><td style="text-align:right;padding:2px 5px">Markup @ ${job.vo1.mk||12.5}%</td><td style="text-align:right;padding:2px 5px">${t1.markup.toFixed(2)}</td></tr>
+    ${job.vo1.mk?`<tr><td style="text-align:right;padding:2px 5px">Markup @ ${job.vo1.mk}%</td><td style="text-align:right;padding:2px 5px">${t1.markup.toFixed(2)}</td></tr>`:''}
     <tr style="background:#d9d9d9;font-weight:bold"><td style="text-align:right;padding:3px 5px;border-top:2px solid #000">VO1 TOTAL (BWP)</td><td style="text-align:right;padding:3px 5px;border-top:2px solid #000;border:2px solid #000">${t1.total.toFixed(2)}</td></tr>
   </table>
 
@@ -2463,7 +2847,7 @@ function docWorksValuation(job){
   <table style="width:100%;margin-top:5px;font-size:8.5pt;border-collapse:collapse">
   <tr><td style="width:70%;text-align:right;padding:2px 5px">Items Subtotal</td><td style="text-align:right;padding:2px 5px">${t2.sub.toFixed(2)}</td></tr>
   <tr><td style="text-align:right;padding:2px 5px">Location Factor @ ${job.vo2.lf||29.25}%</td><td style="text-align:right;padding:2px 5px">${t2.loc.toFixed(2)}</td></tr>
-  <tr><td style="text-align:right;padding:2px 5px">Markup @ ${job.vo2.mk||10}%</td><td style="text-align:right;padding:2px 5px">${t2.markup.toFixed(2)}</td></tr>
+  ${job.vo2.mk?`<tr><td style="text-align:right;padding:2px 5px">Markup @ ${job.vo2.mk}%</td><td style="text-align:right;padding:2px 5px">${t2.markup.toFixed(2)}</td></tr>`:''}
   <tr style="background:#d9d9d9;font-weight:bold"><td style="text-align:right;padding:3px 5px;border-top:2px solid #000">VO2 TOTAL (BWP)</td><td style="text-align:right;padding:3px 5px;border-top:2px solid #000;border:2px solid #000">${t2.total.toFixed(2)}</td></tr>
 </table>
 
@@ -2474,9 +2858,9 @@ function docWorksValuation(job){
     </tr>
   </table>
 
-  <div class="sig-area" style="margin-top:14px">
-    ${sigBlank('Prepared by (Admin · Trends Engineering)')}
-    ${sigBlank('Approved by (BPC Representative)')}
+  <div style="margin-top:18px;border-top:1px solid #000;padding-top:4px;width:60%">
+    <div style="font-size:8.5pt;font-weight:bold;margin-bottom:22px">Name : ……………………………………………………………………………….</div>
+    <div style="font-size:8pt;color:#555">(Inspector-BPC)</div>
   </div>
   </div>`;
 }
@@ -2502,9 +2886,9 @@ function docVO2(job){
     <tr><td class="lbl">LOCATION:</td><td>${job.loc}</td><td class="lbl">BPC W/O No.:</td><td>${job.wo}</td></tr>
     <tr><td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td><input class="ef ef-b" type="date" value="${custPayDate}" style="width:120px"></td>
       <td class="lbl">Location Factor:</td><td><input class="ef ef-b" value="${job.vo2.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.lf=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td></tr>
-    <tr><td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||10}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td><td></td><td></td></tr>
+    <tr><td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||''}" placeholder="0" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td><td></td><td></td></tr>
   </table><hr>
-  <span class="p-grey">VO2 — Actual Quantities After Field Inspection — Phase ${job.vo2.phase||job.phase||'47'}</span>
+  <span class="p-grey">VO2 — Actual Quantities After Field Inspection — Phase <select id="vo2phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt;background:#d9d9d9;border:none" onchange="DB.jobs['${job.wo}'].vo2.phase=this.value;saveDB();toast('VO2 Phase updated to '+this.value)"><option value="46" ${(job.vo2.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo2.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option></select></span>
   <table class="boq">
     <thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:46px">QTY</th><th class="r" style="width:78px">UNIT COST</th><th class="r" style="width:90px">TOTAL (BWP)</th></tr></thead>
     <tbody>${rows}</tbody>
@@ -2580,7 +2964,7 @@ function docWorksInstruction(job){
     <tr><td class="lbl">Project Title :</td><td>${ef('wi_title',job.cust,'98%')}</td>
       <td class="lbl" style="white-space:nowrap">Location Factor :</td><td>${ef('wi_lf',String(job.vo1.lf||29.25),'50px')}</td></tr>
     <tr><td class="lbl">Location :</td><td>${ef('wi_loc',job.loc,'98%')}</td>
-      <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td>${ef('wi_custdate',job.date||'','110px','date')}</td></tr>
+     <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td>${ef('wi_custdate',job.actions.wo_received?.date||job.date||'','110px','date')}</td></tr>
     <tr><td class="lbl">Drawings :</td><td>${ef('wi_drawings','Attached','80px')}</td>
       <td class="lbl" style="white-space:nowrap">Date Wayleave Available :</td><td>${ef('wi_wayleave','','110px')}</td></tr>
     <tr><td class="lbl">Wayleave Approval :</td><td>${ef('wi_wayleaveapproval','BPC','60px')}</td><td></td><td></td></tr>
@@ -2667,6 +3051,32 @@ function docGISReport(job){
   </div>`;
 }
 
+/* ── GIS CERTIFICATE ── */
+function docGISCert(job){
+  const canEdit=CU==='admin';
+  const ef=(id,val,ph)=>canEdit?`<input class="ef ef-b" id="${id}" value="${val||''}" placeholder="${ph}" style="width:98%">`:val||'—';
+  return`<div class="paper">
+  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">GIS CERTIFICATE</div>
+  <table class="hdt">
+    <tr><td class="lbl">BPC W/O No. :</td><td><strong>${job.wo}</strong></td><td class="lbl">Phase :</td><td>${job.phase}</td></tr>
+    <tr><td class="lbl">Customer :</td><td>${job.cust}</td><td class="lbl">Date :</td><td>${ef('gc_date','','YYYY-MM-DD')}</td></tr>
+    <tr><td class="lbl">Location :</td><td colspan="3">${job.loc}</td></tr>
+  </table><hr>
+  <span class="p-grey">CERTIFICATION</span>
+  <table class="boq"><tbody>
+    <tr><td style="width:180px;font-weight:bold">Certificate No.</td><td>${ef('gc_certno','','e.g. GIS-CERT-001')}</td></tr>
+    <tr><td style="font-weight:bold">Survey Reference</td><td>${ef('gc_ref','','Reference number')}</td></tr>
+    <tr><td style="font-weight:bold">Connection Confirmed</td><td>${ef('gc_conn','','Type of connection confirmed')}</td></tr>
+    <tr><td style="font-weight:bold">Date of Survey</td><td><input class="ef ef-b" id="gc_survdate" type="date" value="" style="width:98%"></td></tr>
+    <tr><td style="font-weight:bold">Remarks</td><td>${ef('gc_remarks','','Any certification remarks')}</td></tr>
+  </tbody></table>
+  <div class="sig-area" style="margin-top:14px">
+    ${sigBlank('GIS Consultant (Certified)')}
+    ${sigBlank('Admin (Received)')}
+  </div>
+  </div>`;
+}
+
 /* ── ANNEXURE TO PAYMENT CERTIFICATE ── */
 function docAnnexure(job){
   const certNo=job?.claimRef||'TES-001';
@@ -2687,10 +3097,10 @@ function docAnnexure(job){
       <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.wo,'70px')}</td>
       <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.cust,'99%')}</td>
       <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.meterNo||'','110px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px">${inR(amt,'100px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px">${inR('0.00','65px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px">${inR('0.00','80px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px">${inR(amt,'100px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px;text-align:right">${inR(amt,'100px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px;text-align:right">${inR('0.00','65px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px;text-align:right">${inR('0.00','80px')}</td>
+      <td style="border:1px solid #bbb;padding:3px 5px;text-align:right">${inR(amt,'100px')}</td>
     </tr>`;
   }).join('');
   return`<div class="paper">
@@ -2748,8 +3158,8 @@ function docAnnexure(job){
       <tr style="font-weight:bold;border-top:2px solid #aaa">
         <td style="border:1px solid #bbb;padding:4px 6px" colspan="3"><strong>TOTAL</strong></td>
         <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">${inR(BWP(totalFinal),'100px')}</td>
-        <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">P 0.00</td>
-        <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">P 0.00</td>
+        <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">0.00</td>
+        <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">0.00</td>
         <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">${inR(BWP(totalFinal),'100px')}</td>
       </tr>
     </tbody>
@@ -2839,16 +3249,6 @@ function docPaymentCert(job){
     </tr>
   </table>
   <div style="margin-top:10px;font-size:8.5pt">Transmission &amp; Distribution:<br>Botswana Power Corporation</div>
-  <div style="margin-top:12px;font-size:8pt;font-weight:bold;border-bottom:1px solid #000;padding-bottom:3px">PAYMENT CERTIFICATE TRACKING SHEET</div>
-  <table style="width:100%;border-collapse:collapse;font-size:7.5pt;margin-top:5px">
-    <tr>
-      <th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px;text-align:left;width:35%">Approval Stage</th>
-      <th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px;width:18%">Date Received</th>
-      <th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px;width:18%">Date Dispatched</th>
-      <th style="background:#d9d9d9;border:1px solid #999;padding:3px 5px">Name &amp; Signature</th>
-    </tr>
-    ${["Contractor's claim submitted to Consultant","Finalized claim sent to Contractor","Final Tax Invoice and Claim to Client","Project Engineer (North)","Senior Project Engineer (North)","Network Services and Supply Manager (North)","Financial Controller T &amp; D","Finance Manager Projects","General Manager Transmission &amp; Distribution","ACCOUNTS","PAYMENT MADE BY"].map(s=>`<tr><td style="border:1px solid #bbb;padding:4px 5px;font-weight:bold">${s}</td><td style="border:1px solid #bbb;padding:4px 5px"></td><td style="border:1px solid #bbb;padding:4px 5px"></td><td style="border:1px solid #bbb;padding:4px 5px"></td></tr>`).join('')}
-  </table>
   </div>`;
 }
 
@@ -3009,6 +3409,8 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
       <td style="border:1px solid #bbb;padding:2px">${ei(j.loc,'88px')}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(startDate)}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(compDate)}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'120px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('BPC Engineer','100px')}</td>
     </tr>`;
   }).join('');
 
@@ -3017,7 +3419,7 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
   return`<div class="paper" style="overflow-x:auto">
   <div style="font-size:10pt;font-weight:bold;margin-bottom:5px">BPC SPREADSHEET — CLAIM ${certNo} (${batchJobs.length} job${batchJobs.length!==1?'s':''})</div>
   <hr>
-  <table style="width:100%;border-collapse:collapse;font-size:7.5pt;margin-top:6px">
+  <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:6px">
     <thead>
       <tr style="background:#d9d9d9">
         <th style="border:1px solid #999;padding:3px;white-space:nowrap">No.</th>
@@ -3034,6 +3436,8 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
         <th style="border:1px solid #999;padding:3px;white-space:nowrap">Location</th>
         <th style="border:1px solid #999;padding:3px;white-space:nowrap">Start Date</th>
         <th style="border:1px solid #999;padding:3px;white-space:nowrap">Completion</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Internal Responsible</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">External Responsible</th>
       </tr>
     </thead>
     <tbody>
@@ -3041,7 +3445,7 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
       <tr style="background:#d9d9d9;font-weight:bold;border-top:2px solid #999">
         <td colspan="6" style="border:1px solid #999;padding:3px;text-align:right"><strong>TOTAL</strong></td>
         <td style="border:1px solid #999;padding:3px;text-align:right"><strong>${BWP(grandTotal)}</strong></td>
-        <td colspan="7" style="border:1px solid #999;padding:3px"></td>
+        <td colspan="9" style="border:1px solid #999;padding:3px"></td>
       </tr>
     </tbody>
   </table>
@@ -3094,7 +3498,7 @@ function docListOfJobs(job){
       <td style="border:1px solid #bbb;padding:1px 3px">${inL(j.phase,'98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inL(invNo,'98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inL(j.loc,'98%')}</td>
-      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.vo2_created?.date||'')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.teams_notified?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.work_complete?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inL('Kagiso Jeff Kewagamang','98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inL('Poloko Moiseraela','98%')}</td>
@@ -3114,7 +3518,7 @@ function docListOfJobs(job){
   </table>
   <hr>
   <div style="overflow-x:auto;width:100%">
-  <table style="width:100%;min-width:900px;border-collapse:collapse;font-size:6.5pt;table-layout:fixed">
+  <table style="width:100%;min-width:900px;border-collapse:collapse;font-size:9pt;table-layout:fixed">
     <colgroup>
       <col style="width:34px">
       <col style="width:58px">
@@ -3142,7 +3546,7 @@ function docListOfJobs(job){
         <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">INVOICE No.</th>
         <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">LOCATION</th>
         <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">START DATE</th>
-        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">COMPLETION</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:hidden"></th>
         <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">INTERNAL</th>
         <th style="border:1px solid #999;padding:2px 3px;overflow:hidden">EXTERNAL</th>
       </tr>
@@ -3152,7 +3556,7 @@ function docListOfJobs(job){
       <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #999">
         <td style="border:1px solid #bbb;padding:2px 3px" colspan="4"><strong>TOTAL CLAIM</strong></td>
         <td style="border:1px solid #bbb;padding:2px 3px;text-align:right"><strong>${BWP(total)}</strong></td>
-        <td style="border:1px solid #bbb;padding:2px 3px" colspan="8"></td>
+        <td style="border:1px solid #bbb;padding:2px 3px" colspan="7"></td>
       </tr>
     </tbody>
   </table>
@@ -3204,7 +3608,7 @@ function saveDocToStep(wo,docType){
 const docLabels={
   bpc_wo:'BPC Work Order',vo1:'Works Valuation (VO1)',field_report:'Linesman Field Report',
   vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',
-  works_instruction:'Works Instruction',gis_report:'GIS Report',
+  works_instruction:'Works Instruction',gis_report:'GIS Report',gis_cert:'GIS Certificate',
   annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',
   invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'
 };
@@ -3371,12 +3775,14 @@ function acInput(wo,dt,idx){
 function acS(wo,dt,idx,q){
   const did=`acd-${dt}-${wo}-${idx}`, dd=document.getElementById(did);if(!dd)return;
   const job=DB.jobs[wo];
-  const jobPhase=(dt==='vo1'?job.vo1.phase:job.vo2.phase)||job.phase||'47';
+  // Read the phase from the dropdown element if it exists, else fall back to job data
+  const phaseEl=document.getElementById(`${dt==='vo1'?'vo1':'vo2'}phase${wo}`);
+  const jobPhase=phaseEl?phaseEl.value:((dt==='vo1'?job.vo1&&job.vo1.phase:job.vo2&&job.vo2.phase)||job.phase||'47');
   const ql=q.trim().toLowerCase();
   const active=DB.rates.filter(r=>r.on&&r.phase===jobPhase);
-  const m=ql.length===0?active.slice(0,12):active.filter(r=>r.d.toLowerCase().includes(ql)||r.c.toLowerCase().includes(ql)).slice(0,12);
-  if(!m.length){dd.innerHTML='<div class="ac-empty">No match in Phase '+jobPhase+' — type freely to add custom item</div>';dd.style.display='block';return;}
-  dd.innerHTML=m.map(r=>`<div class="ac-it" onmousedown="acSel('${wo}','${dt}',${idx},'${r.d.replace(/'/g,"\\'")}','${r.u}',${r.r},'${did}')"><div class="ac-desc">${r.d}</div><div class="ac-meta"><span class="ac-rate">BWP ${r.r.toLocaleString('en-BW',{minimumFractionDigits:2})}</span><span>per ${r.u}</span><span class="ac-cat">Phase ${r.phase}</span></div></div>`).join('');
+  const m=ql.length===0?active.slice(0,15):active.filter(r=>r.d.toLowerCase().includes(ql)||r.c.toLowerCase().includes(ql)).slice(0,15);
+  if(!m.length){dd.innerHTML='<div class="ac-empty">No match in Phase '+jobPhase+' rates — type freely to add custom item</div>';dd.style.display='block';return;}
+  dd.innerHTML=m.map(r=>`<div class="ac-it" onmousedown="acSel('${wo}','${dt}',${idx},'${r.d.replace(/'/g,"\\'")}','${r.u}',${r.r},'${did}')"><div class="ac-desc">${r.d}</div><div class="ac-meta"><span class="ac-rate">BWP ${r.r.toLocaleString('en-BW',{minimumFractionDigits:2})}</span><span>per ${r.u}</span><span class="ac-cat">${r.c} · Ph${r.phase}</span></div></div>`).join('');
   dd.style.display='block';
 }
 function acSel(wo,dt,idx,desc,unit,rate,did){
@@ -3495,7 +3901,7 @@ function doLogin(){
 
   if(r==='admin'){show('n-inbox');show('n-rates');show('n-actlog');}
   if(r==='finance'){show('n-inbox');show('n-claims');}
-  if(r==='md'){show('n-actlog');show('n-jobs');}
+  if(r==='md'){show('n-actlog');show('n-jobs');show('n-claims');}
 
   addLog('','Signed in as '+RN[r]);
   // Always land on dashboard — never carry over a screen from another role
