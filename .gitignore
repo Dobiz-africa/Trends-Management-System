@@ -1,0 +1,15 @@
+# ClaimDesk — files that must NOT go to GitHub
+
+# Local Supabase config (contains your keys). Production uses /api/config.
+config.js
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Node (only if you ever add tooling)
+node_modules/
+.vercel
