@@ -601,9 +601,10 @@
 
 <!-- Rates database (defines global RATES_SEED) loads before app logic -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js" onerror="console.info('No local config.js')"></script>
-<!-- html2pdf.js: silent PDF download without print dialog -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="config.js" onerror="console.info('No local config.js — using /api/config')"></script>
+<!-- jsPDF + AutoTable for proper PDF generation (no blank page issues) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="rates.js"></script>
 <script src="app.js"></script>
 </body>
