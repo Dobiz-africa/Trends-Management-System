@@ -527,17 +527,17 @@
           </div>
           <div class="crd">
             <div class="crd-hd" style="justify-content:space-between">
-              <div class="crd-hd-l">BPC Rates Schedule &nbsp;<span id="ratesCount" style="color:var(--am);font-weight:700;font-size:.75rem"></span></div>
+              <div class="crd-hd-l">BPC Rates Schedule &nbsp;<span id="ratesCount" style="color:var(--am);font-weight:700;font-size:.75rem;font-family:'Inter',sans-serif"></span></div>
               <div style="display:flex;gap:8px;align-items:center">
-                <select id="ratePhase" onchange="renderRates(document.getElementById('rateSearch').value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none">
+                <select id="ratePhase" onchange="renderRates(document.getElementById('rateSearch').value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;cursor:pointer">
                   <option value="">All Phases</option>
-                  <option value="46">Phase 46</option>
-                  <option value="47">Phase 47</option>
+                  <option value="46">Phase 46 only</option>
+                  <option value="47">Phase 47 only</option>
                 </select>
-                <input id="rateSearch" placeholder="Search..." oninput="renderRates(this.value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;width:180px">
+                <input id="rateSearch" placeholder="Search rates..." oninput="renderRates(this.value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;width:180px">
               </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 60px 80px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
+            <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 62px 80px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Description</span>
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Unit</span>
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Rate (BWP)</span>
@@ -601,7 +601,8 @@
 
 <!-- Rates database (defines global RATES_SEED) loads before app logic -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+<script src="config.js" onerror="console.info('No local config.js')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="rates.js"></script>
 <script src="app.js"></script>
 </body>
