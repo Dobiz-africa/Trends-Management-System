@@ -147,12 +147,7 @@
         <div class="fg"><label>WO Number *</label><input id="nw-num" placeholder="e.g. 462524"></div>
         <div class="fg"><label>Date</label><input id="nw-date" type="date"></div>
       </div>
-      <div class="fr2">
-        <div class="fg"><label>Connection Type * (one item per line: Description | Unit | Qty | Rate)</label>
-          <textarea id="nw-type" rows="5" placeholder="Items auto-filled from PDF. Format: Description | Unit | Qty | Rate&#10;e.g. Service Conn; 230V; 60A; Single Phase; U/G | Ea | 1 | 12426.82"></textarea>
-        </div>
-        <div class="fg"><label>Project Type</label><input id="nw-projtype" placeholder="e.g. NESC" value="NESC"></div>
-      </div>
+      <div class="fg"><label>Project Type</label><input id="nw-projtype" placeholder="e.g. NESC" value="NESC"></div>
       <div class="fg"><label>Customer Name *</label><input id="nw-cust" placeholder="e.g. OMPHILE KAFIKWA"></div>
       <div class="fr3">
         <div class="fg"><label>Contract Account</label><input id="nw-contract" placeholder="e.g. 2001020589"></div>
@@ -532,14 +527,22 @@
           </div>
           <div class="crd">
             <div class="crd-hd" style="justify-content:space-between">
-              <div class="crd-hd-l">BPC Rates Schedule</div>
-              <input id="rateSearch" placeholder="Search..." oninput="renderRates(this.value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;width:180px">
+              <div class="crd-hd-l">BPC Rates Schedule &nbsp;<span id="ratesCount" style="color:var(--am);font-weight:700;font-size:.75rem"></span></div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select id="ratePhase" onchange="renderRates(document.getElementById('rateSearch').value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none">
+                  <option value="">All Phases</option>
+                  <option value="46">Phase 46</option>
+                  <option value="47">Phase 47</option>
+                </select>
+                <input id="rateSearch" placeholder="Search..." oninput="renderRates(this.value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;width:180px">
+              </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 80px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
+            <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 60px 80px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Description</span>
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Unit</span>
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Rate (BWP)</span>
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Category</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Phase</span>
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Active</span>
             </div>
             <div id="ratesList"></div>
@@ -598,9 +601,7 @@
 
 <!-- Rates database (defines global RATES_SEED) loads before app logic -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- config.js is the LOCAL fallback (gitignored). In production the app
-     fetches /api/config instead, so this 404ing on Vercel is harmless. -->
-<script src="config.js" onerror="console.info('No local config.js — using /api/config (expected on Vercel).')"></script>
+<script src="config.js"></script>
 <script src="rates.js"></script>
 <script src="app.js"></script>
 </body>
