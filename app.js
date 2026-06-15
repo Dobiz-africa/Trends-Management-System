@@ -2761,68 +2761,104 @@ async function generatePDF(innerHtml, filename, sourceEl){
     toast('PDF library not loaded — check your internet connection','rd');
     return;
   }
-  const surface=document.getElementById('pdfRenderSurface');
-  if(!surface){ toast('PDF render surface missing','rd'); return; }
-
   toast('Generating PDF…','am');
 
-  // 1. Inject shared CSS once
-  _ensurePDFStyle(surface);
-
-  // 2. Put the document content into the white off-screen surface
-  surface.innerHTML='';
-  _ensurePDFStyle(surface); // re-add style after clearing
-  const contentDiv=document.createElement('div');
-  contentDiv.innerHTML=innerHtml;
-
-  // 3. If we have the live element, bake the current values over the HTML
+  // Bake live input values if we have the live element
+  let html=innerHtml;
   if(sourceEl){
-    const baked=_bakeValues(sourceEl);
-    contentDiv.innerHTML=baked.innerHTML;
-  }else{
-    // Bake values from the static HTML (inputs show their value attribute)
-    contentDiv.querySelectorAll('input').forEach(el=>{
-      if(el.type!=='checkbox'&&el.type!=='radio') el.value=el.getAttribute('value')||'';
-    });
+    const clone=_bakeValues(sourceEl);
+    html=clone.innerHTML;
   }
 
-  // 4. Hide UI buttons
-  contentDiv.querySelectorAll('button,.btn,.scan-done,.scan-upload-label,.ua,.ac-dd').forEach(e=>e.style.display='none');
-
-  surface.appendChild(contentDiv);
-  // Make it briefly visible so html2canvas can measure it
-  surface.style.visibility='visible';
-  surface.style.left='-9999px';
-
-  // 5. Small paint delay then generate
-  await new Promise(r=>setTimeout(r,120));
-
-  const opt={
-    margin:[12,12,12,12],
-    filename:filename+'.pdf',
-    image:{type:'jpeg',quality:0.98},
-    html2canvas:{
-      scale:2,
-      useCORS:true,
-      logging:false,
-      backgroundColor:'#ffffff',  // ← forces white background, prevents blank page
-      windowWidth:794,
-    },
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-    pagebreak:{mode:['css','legacy']},
-  };
+  // Strategy: render inside a hidden iframe that has its own clean white document.
+  // html2canvas captures the iframe's body — no dark theme, no positioning tricks,
+  // no viewport clipping. This is the most reliable approach for clean PDF output.
+  const iframe=document.createElement('iframe');
+  iframe.style.cssText='position:fixed;top:0;left:0;width:794px;height:1px;border:none;opacity:0;pointer-events:none;z-index:-999';
+  document.body.appendChild(iframe);
 
   try{
-    await window.html2pdf().set(opt).from(contentDiv).save();
+    // Write a complete white HTML document into the iframe
+    const iDoc=iframe.contentDocument||iframe.contentWindow.document;
+    iDoc.open();
+    iDoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#fff!important;color:#000!important;font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;padding:0;margin:0}
+.paper{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;background:#fff;color:#000}
+.paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
+.lh-t{width:100%;border-collapse:collapse;margin-bottom:7px}
+.lh-t td{vertical-align:top;padding:1px 3px;font-size:9pt}
+.hdt{width:100%;border-collapse:collapse;margin-bottom:4px}
+.hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
+.hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
+.ef,.ef-b{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial;font-size:8.5pt;color:#000;padding:0 2px;min-width:60px}
+.ef-c{color:#555;border-bottom:1px dotted #bbb}
+.boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
+.boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}
+.boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
+.boq td.r,.boq th.r{text-align:right}.boq td.c,.boq th.c{text-align:center}
+.boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+.boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
+.p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
+.sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
+.sig-box{border-top:1px solid #000;padding-top:4px}
+.sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}
+.sig-line{border-bottom:1px solid #000;margin-bottom:3px;height:22px}
+.sig-sub{font-size:7.5pt;color:#666}
+.pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
+.pc-row .n{width:25px;flex-shrink:0}.pc-row .d{flex:1}
+.pc-row .c{width:20px;text-align:right;flex-shrink:0}
+.pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
+.pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
+.pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px}
+.pc-row.ded .v{color:#cc0000}
+.pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
+.jt{width:100%;border-collapse:collapse;font-size:7.5pt}
+.jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
+.jt td{border:1px solid #bbb;padding:3px 4px}
+.jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+input,textarea,select{border:none!important;border-bottom:1px solid #000!important;background:transparent!important;color:#000!important;font-family:Arial,sans-serif!important;font-size:8.5pt!important;padding:0 2px!important;width:auto!important;outline:none!important}
+button,.btn,.scan-done,.scan-upload-label,.ua,.pipe-step,.ac-dd{display:none!important}
+img{max-width:100%;height:auto}
+</style></head><body style="padding:18px;background:#fff">${html}</body></html>`);
+    iDoc.close();
+
+    // Let the iframe render fully
+    await new Promise(r=>setTimeout(r,250));
+
+    // Resize iframe to match content height so html2canvas captures everything
+    const h=iDoc.body.scrollHeight||842;
+    iframe.style.height=h+'px';
+
+    await new Promise(r=>setTimeout(r,80));
+
+    const opt={
+      margin:[10,10,10,10],
+      filename:filename+'.pdf',
+      image:{type:'jpeg',quality:0.98},
+      html2canvas:{
+        scale:2,
+        useCORS:true,
+        logging:false,
+        backgroundColor:'#ffffff',
+        scrollX:0,
+        scrollY:0,
+        windowWidth:794,
+        windowHeight:h,
+      },
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']},
+    };
+
+    await window.html2pdf().set(opt).from(iDoc.body).save();
     toast('✓ PDF downloaded: '+filename+'.pdf','gn');
+
   }catch(e){
-    console.error('PDF failed:',e);
-    toast('PDF failed: '+e.message,'rd');
+    console.error('PDF generation failed:',e);
+    toast('PDF failed — try Print instead','rd');
   }finally{
-    // Clean up
-    surface.style.visibility='hidden';
-    surface.innerHTML='';
-    _pdfStyleInjected=false;
+    // Always clean up the iframe
+    try{ document.body.removeChild(iframe); }catch(_){}
   }
 }
 
