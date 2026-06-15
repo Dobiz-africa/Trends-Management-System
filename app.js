@@ -2666,73 +2666,16 @@ const docLabels={
   invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'
 };
 /* ═══════════════════════════════════════
-   PDF GENERATION — silent download, no print dialog
+   PDF GENERATION — iframe approach
    ───────────────────────────────────────
-   Key fix for blank pages: we render into a hidden off-screen
-   <div id="pdfRenderSurface"> which has an explicit white
-   background and the same CSS as the print popup. html2pdf
-   screenshots THAT element, not the dark-themed modal, so the
-   output is always a clean white A4 document.
+   Renders into a temporary hidden iframe that has its OWN clean
+   white HTML document. html2canvas captures the iframe's body —
+   no dark-theme inheritance, no viewport clipping, no blank pages.
+   The iframe is at opacity:0 at position (0,0) so it's in the
+   viewport and measurable but invisible to the user.
 ═══════════════════════════════════════ */
 
-// The exact same CSS used in printModal — copy kept in sync here
-// so PDF and Print produce identical output
-const PDF_DOC_CSS=`
-  *{box-sizing:border-box;margin:0;padding:0}
-  body,div{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;color:#000;background:#fff}
-  .paper{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;color:#000;background:#fff}
-  .paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
-  .lh-t{width:100%;border-collapse:collapse;margin-bottom:7px}
-  .lh-t td{vertical-align:top;padding:1px 3px;font-size:9pt}
-  .hdt{width:100%;border-collapse:collapse;margin-bottom:4px}
-  .hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
-  .hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
-  .ef{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial;font-size:8.5pt;color:#000;padding:0 2px;min-width:60px}
-  .ef-b{border-bottom:1px solid #000;color:#000}
-  .ef-c{color:#555;border-bottom:1px dotted #bbb}
-  .boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
-  .boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}
-  .boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
-  .boq td.r,.boq th.r{text-align:right}.boq td.c,.boq th.c{text-align:center}
-  .boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
-  .boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
-  .p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
-  .sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
-  .sig-box{border-top:1px solid #000;padding-top:4px}
-  .sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}
-  .sig-line{border-bottom:1px solid #000;margin-bottom:3px;height:22px}
-  .sig-sub{font-size:7.5pt;color:#666}
-  .pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
-  .pc-row .n{width:25px;flex-shrink:0}.pc-row .d{flex:1}
-  .pc-row .c{width:20px;text-align:right;flex-shrink:0}
-  .pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
-  .pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
-  .pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px;font-size:9pt}
-  .pc-row.ded .v{color:#cc0000}
-  .pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
-  .jt{width:100%;border-collapse:collapse;font-size:7.5pt}
-  .jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
-  .jt td{border:1px solid #bbb;padding:3px 4px}
-  .jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
-  input,textarea,select{border:none!important;border-bottom:1px solid #000!important;
-    background:transparent!important;color:#000!important;
-    font-family:Arial,sans-serif!important;font-size:8.5pt!important;padding:0 2px!important;width:auto!important}
-  button,.btn,.scan-done,.scan-upload-label,.ua,.pipe-step,.ac-dd{display:none!important}
-  img{max-width:100%;height:auto}
-`;
-
-/* Inject a <style> tag into the render surface so the CSS applies
-   without needing it baked into every document's HTML */
-let _pdfStyleInjected=false;
-function _ensurePDFStyle(surface){
-  if(_pdfStyleInjected) return;
-  const s=document.createElement('style');
-  s.textContent=PDF_DOC_CSS;
-  surface.appendChild(s);
-  _pdfStyleInjected=true;
-}
-
-/* Bake live input/select/textarea values into a clone's HTML */
+/* Bake live input/select/textarea values into a clone */
 function _bakeValues(sourceEl){
   const clone=sourceEl.cloneNode(true);
   sourceEl.querySelectorAll('input').forEach((el,i)=>{
@@ -2745,49 +2688,45 @@ function _bakeValues(sourceEl){
   });
   sourceEl.querySelectorAll('select').forEach((el,i)=>{
     const c=clone.querySelectorAll('select')[i]; if(!c) return;
-    Array.from(el.options).forEach((o,j)=>{if(c.options[j]) c.options[j].selected=o.selected;});
+    Array.from(el.options).forEach((o,j)=>{ if(c.options[j]) c.options[j].selected=o.selected; });
   });
-  // Hide UI buttons inside the document
-  clone.querySelectorAll('button,.btn,.scan-done,.scan-upload-label,.ua,.ac-dd').forEach(e=>e.remove());
+  clone.querySelectorAll('button,.btn,.scan-done,.scan-upload-label,.ua,.ac-dd,.pipe-step').forEach(e=>e.remove());
   return clone;
 }
 
-/* Core PDF generation.
-   innerHtml: the document's HTML string
-   filename:  without extension
-   sourceEl:  optional live DOM element to bake values from */
 async function generatePDF(innerHtml, filename, sourceEl){
   if(!window.html2pdf){
-    toast('PDF library not loaded — check your internet connection','rd');
+    toast('PDF library not loaded — check internet connection','rd');
     return;
   }
   toast('Generating PDF…','am');
 
-  // Bake live input values if we have the live element
+  // Bake live values if we have the live source element
   let html=innerHtml;
   if(sourceEl){
     const clone=_bakeValues(sourceEl);
     html=clone.innerHTML;
   }
 
-  // Strategy: render inside a hidden iframe that has its own clean white document.
-  // html2canvas captures the iframe's body — no dark theme, no positioning tricks,
-  // no viewport clipping. This is the most reliable approach for clean PDF output.
+  // Create hidden iframe — position (0,0) opacity:0 so it's in viewport
+  // and measurable by html2canvas, but invisible to user
   const iframe=document.createElement('iframe');
-  iframe.style.cssText='position:fixed;top:0;left:0;width:794px;height:1px;border:none;opacity:0;pointer-events:none;z-index:-999';
+  iframe.style.cssText='position:fixed;top:0;left:0;width:850px;height:1px;border:none;opacity:0;pointer-events:none;z-index:-9999';
   document.body.appendChild(iframe);
 
   try{
-    // Write a complete white HTML document into the iframe
     const iDoc=iframe.contentDocument||iframe.contentWindow.document;
     iDoc.open();
     iDoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:#fff!important;color:#000!important;font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;padding:0;margin:0}
+html,body{background:#fff!important;color:#000!important;font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;padding:18px}
 .paper{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;background:#fff;color:#000}
 .paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
 .lh-t{width:100%;border-collapse:collapse;margin-bottom:7px}
 .lh-t td{vertical-align:top;padding:1px 3px;font-size:9pt}
+.lh-bpc{font-size:11pt;font-weight:bold}
+.lh-addr{font-size:8.5pt;color:#222}
+.lh-title{font-size:11pt;font-weight:bold;text-align:right}
 .hdt{width:100%;border-collapse:collapse;margin-bottom:4px}
 .hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
 .hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
@@ -2817,20 +2756,21 @@ html,body{background:#fff!important;color:#000!important;font-family:Arial,Helve
 .jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
 .jt td{border:1px solid #bbb;padding:3px 4px}
 .jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
-input,textarea,select{border:none!important;border-bottom:1px solid #000!important;background:transparent!important;color:#000!important;font-family:Arial,sans-serif!important;font-size:8.5pt!important;padding:0 2px!important;width:auto!important;outline:none!important}
+input,textarea,select{border:none!important;border-bottom:1px solid #000!important;background:transparent!important;color:#000!important;font-family:Arial,sans-serif!important;font-size:8.5pt!important;padding:0 2px!important;width:auto!important}
 button,.btn,.scan-done,.scan-upload-label,.ua,.pipe-step,.ac-dd{display:none!important}
 img{max-width:100%;height:auto}
-</style></head><body style="padding:18px;background:#fff">${html}</body></html>`);
+</style></head><body>${html}</body></html>`);
     iDoc.close();
 
-    // Let the iframe render fully
-    await new Promise(r=>setTimeout(r,250));
+    // Wait for iframe to render fully (images, layout)
+    await new Promise(r=>setTimeout(r,300));
 
-    // Resize iframe to match content height so html2canvas captures everything
-    const h=iDoc.body.scrollHeight||842;
-    iframe.style.height=h+'px';
+    // Resize iframe height to full content so nothing is clipped
+    const fullH=Math.max(iDoc.body.scrollHeight, iDoc.documentElement.scrollHeight, 200);
+    iframe.style.height=fullH+'px';
 
-    await new Promise(r=>setTimeout(r,80));
+    // Another small paint delay after resize
+    await new Promise(r=>setTimeout(r,100));
 
     const opt={
       margin:[10,10,10,10],
@@ -2843,8 +2783,8 @@ img{max-width:100%;height:auto}
         backgroundColor:'#ffffff',
         scrollX:0,
         scrollY:0,
-        windowWidth:794,
-        windowHeight:h,
+        windowWidth:850,
+        windowHeight:fullH,
       },
       jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
       pagebreak:{mode:['css','legacy']},
@@ -2855,9 +2795,8 @@ img{max-width:100%;height:auto}
 
   }catch(e){
     console.error('PDF generation failed:',e);
-    toast('PDF failed — try Print instead','rd');
+    toast('PDF failed — use Print button instead','rd');
   }finally{
-    // Always clean up the iframe
     try{ document.body.removeChild(iframe); }catch(_){}
   }
 }
@@ -2868,16 +2807,16 @@ function downloadSavedDoc(wo,docType){
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
   if(!saved){toast('Not saved yet — click 💾 Save & Attach first','am');return;}
   const filename=docType.replace(/_/g,'-')+'_WO'+wo;
-  generatePDF(saved.html, filename, null);
+  generatePDF(saved.html,filename,null);
 }
 
-/* Download the currently-open document modal as PDF (captures live edits) */
+/* Download the currently-open modal document as PDF (captures live edits) */
 function downloadDocAsPDF(wo,docType){
   const body=document.getElementById('docModalBody');
   if(!body){toast('No document open','am');return;}
   serializeFormValues(body);
   const filename=(docType||'document').replace(/_/g,'-')+(wo?'_WO'+wo:'');
-  generatePDF(body.innerHTML, filename, body);
+  generatePDF(body.innerHTML,filename,body);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
