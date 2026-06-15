@@ -480,8 +480,7 @@ function newJob(data){
     meterNo:data.meterNo||'', address:data.address||'',
     createdAt:new Date().toISOString(), stage:'wo_received',
     vo1:{items:(()=>{
-  // If type is provided (e.g. from PDF auto-fill), parse it into items.
-  // If type is empty (manual entry), start with one blank row — Admin fills it in VO1.
+  // If PDF auto-fill provided pipe-separated items, parse them
   const lines=(data.type||'').split('\n').map(l=>l.trim()).filter(l=>l.length>0);
   if(lines.length&&lines[0].includes('|')){
     const parsed=lines.map(line=>{
@@ -490,7 +489,7 @@ function newJob(data){
     }).filter(it=>it.d&&it.r>0);
     if(parsed.length) return parsed;
   }
-  // Empty type → blank row ready for manual entry in VO1
+  // No type provided (manual entry) — start with one blank row; Admin uses autocomplete in VO1
   return[{d:'',u:'Ea',q:1,r:0}];
 })(), lf:data.lf||29.25, mk:data.mk||0, phase:data.phase||'47'},
 vo2:{items:[], lf:data.lf||29.25, mk:0, startDate:'', compDate:'', phase:data.phase||'47'},
@@ -931,6 +930,7 @@ function saveNewWO(){
   const num=rawNum&&/^\d+$/.test(rawNum)?rawNum.padStart(10,'0'):rawNum;
   const cust=document.getElementById('nw-cust').value.trim();
   const loc=document.getElementById('nw-loc').value.trim();
+  const type=document.getElementById('nw-type')?.value||'';
   if(!num||!cust||!loc){toast('Fill in WO Number, Customer Name and Location','am');return;}
   if(DB.jobs[num]){toast('WO number already exists','rd');return;}
   const phase=document.getElementById('nw-phase').value||'47';
@@ -946,8 +946,7 @@ function saveNewWO(){
   const projNo=document.getElementById('nw-projno').value.trim()||'';
   const meterNo=document.getElementById('nw-meter').value.trim()||'';
   const address=document.getElementById('nw-address').value.trim()||'';
-  // type is intentionally empty — Admin fills in VO1 descriptions manually
-  const job=newJob({wo:num,cust,loc,type:'',phase,lf,date,projType,contract,custNo,plotNo,ward,mobile,bpcProjNo,projNo,meterNo,address});
+  const job=newJob({wo:num,cust,loc,type,phase,lf,date,projType,contract,custNo,plotNo,ward,mobile,bpcProjNo,projNo,meterNo,address});
   const scanInput=document.getElementById('nw-scan');
   if(scanInput&&scanInput.files[0]){
     const f=scanInput.files[0];
@@ -1402,19 +1401,15 @@ function buildDocFoot(docType,job){
   const wo=job?job.wo:'';
   const isMDView=CU==='md';
   let btns=`<button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>`;
+  // Always show Download PDF — captures whatever is currently open (including live edits)
+  btns+=`<button class="btn btn-bl btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')">&#11015; Download PDF</button>`;
 
   if(wo){
-    // MD can download saved/signed copies
-    if(job&&job.savedDocs&&job.savedDocs[docType]){
-      btns+=`<button class="btn btn-bl btn-sm" onclick="downloadSavedDoc('${wo}','${docType}')">&#11015; Download</button>`;
-    }
     if(job&&job.scans&&job.scans[docType]){
       btns+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${docType}')">&#11015; Signed Copy</button>`;
     }
     if(!isMDView){
-      // Save button auto-attaches doc
       btns+=`<button class="btn btn-gn btn-sm" onclick="saveDocToStep('${wo}','${docType}')">&#128190; Save &amp; Attach</button>`;
-      // Upload to replace
       btns+=`<label class="scan-upload-label">📎 Upload / Replace<input type="file" id="scan-input-modal-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this);closeModal('docModal')" style="display:none"></label>`;
     }
   }
@@ -1725,13 +1720,13 @@ function renderRates(q=''){
   if(phase) filtered=filtered.filter(r=>r.phase===phase);
   if(ql) filtered=filtered.filter(r=>r.d.toLowerCase().includes(ql)||r.c.toLowerCase().includes(ql));
   const countEl=document.getElementById('ratesCount');
-  if(countEl) countEl.textContent=filtered.length+' rate'+(filtered.length!==1?'s':'');
+  if(countEl) countEl.textContent='('+filtered.length+' rate'+(filtered.length!==1?'s':'')+')';
   if(!filtered.length){
-    document.getElementById('ratesList').innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No rates match "${q}"</div>`;
+    document.getElementById('ratesList').innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No rates match "${q||phase}"</div>`;
     return;
   }
   document.getElementById('ratesList').innerHTML=filtered.map(r=>`
-    <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 60px 80px;gap:10px;padding:.55rem 1rem;border-bottom:1px solid var(--bd);font-size:.78rem;align-items:center;transition:.1s" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
+    <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 62px 80px;gap:10px;padding:.55rem 1rem;border-bottom:1px solid var(--bd);font-size:.78rem;align-items:center;transition:.1s" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
       <span style="color:var(--tx)">${r.d}</span>
       <span class="tag">${r.u}</span>
       <span class="mono">${P(r.r)}</span>
@@ -2675,17 +2670,68 @@ const docLabels={
   annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',
   invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'
 };
+/* ─── PDF GENERATION ─── */
+// Shared print CSS used by both the print popup and PDF generation
+const PRINT_CSS=`*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:9pt;background:#fff;color:#000;padding:18px}.paper{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:9pt;line-height:1.45}.paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}.hdt{width:100%;border-collapse:collapse;margin-bottom:4px}.hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}.hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}.ef,.ef-b{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;min-width:60px}.boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}.boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}.boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}.boq td.r,.boq th.r{text-align:right}.boq td.c,.boq th.c{text-align:center}.boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}.boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}.p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}.sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}.sig-box{border-top:1px solid #000;padding-top:4px}.sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}.sig-line{border-bottom:1px solid #000;margin-bottom:3px;height:22px}.sig-sub{font-size:7.5pt;color:#666}.pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}.pc-row .n{width:25px;flex-shrink:0}.pc-row .d{flex:1}.pc-row .c{width:20px;text-align:right;flex-shrink:0}.pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}.pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}.pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px;font-size:9pt}.pc-row.ded .v{color:#cc0000}.pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}.jt{width:100%;border-collapse:collapse;font-size:7.5pt}.jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}.jt td{border:1px solid #bbb;padding:3px 4px}.jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}input,textarea,select{border:none!important;border-bottom:1px solid #000!important;background:transparent!important;font-family:Arial,sans-serif!important;font-size:8.5pt!important;padding:0 2px;width:auto}button,.btn,.scan-done,.ua,.pipe-step,.ac-dd,.scan-upload-label,.lh-t img{max-width:100%;height:auto}`;
+
+/* Prepare a DOM clone of innerHtml with live values baked in and UI hidden */
+function _prepareForPDF(innerHtml){
+  const tmp=document.createElement('div');
+  tmp.innerHTML=innerHtml;
+  tmp.querySelectorAll('input').forEach(el=>el.setAttribute('value',el.value));
+  tmp.querySelectorAll('textarea').forEach(el=>{el.textContent=el.value;});
+  tmp.querySelectorAll('select').forEach(el=>{Array.from(el.options).forEach(o=>o.toggleAttribute('selected',o.selected));});
+  tmp.querySelectorAll('button,.btn,.scan-done,.ua,.pipe-step,.ac-dd,.scan-upload-label').forEach(el=>{el.style.display='none';});
+  return tmp;
+}
+
+/* Generate and save a real PDF using html2pdf.js; falls back to HTML if offline */
+async function generatePDF(innerHtml,filename,title){
+  const tmp=_prepareForPDF(innerHtml);
+  if(window.html2pdf){
+    toast('Generating PDF…','am');
+    const opt={margin:[10,10,10,10],filename:filename+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,logging:false},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['avoid-all','css','legacy']}};
+    try{
+      await window.html2pdf().set(opt).from(tmp).save();
+      toast('✓ PDF downloaded: '+filename+'.pdf','gn');
+    }catch(e){
+      console.error('PDF generation failed:',e);
+      _fallbackHTML(tmp.innerHTML,filename,title);
+    }
+  }else{
+    console.warn('html2pdf.js not loaded — falling back to HTML (open and use Print → Save as PDF)');
+    toast('Offline: saved as HTML — open it then Print → Save as PDF','am');
+    _fallbackHTML(tmp.innerHTML,filename,title);
+  }
+}
+function _fallbackHTML(innerHtml,filename,title){
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title><style>${PRINT_CSS}</style></head><body>${innerHtml}</body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename+'.html';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},800);
+}
+
+/* Download a saved soft-copy document as PDF */
 function downloadSavedDoc(wo,docType){
   const job=DB.jobs[wo];
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
   if(!saved){toast('Not saved yet — click 💾 Save first','am');return;}
-  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;padding:20px;background:#fff;color:#000;font-size:9pt}.paper{font-family:Arial}.boq{width:100%;border-collapse:collapse}.boq th,.boq td{border:1px solid #bbb;padding:3px 5px}.hdt{width:100%;border-collapse:collapse}.hdt td{padding:2px 5px;font-size:8.5pt}.lbl{font-weight:bold;white-space:nowrap}.ef,.ef-b{border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial;font-size:8.5pt}.p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;display:block;margin:5px 0}hr{border:none;border-top:1.5px solid #000;margin:6px 0}button,.btn,.scan-upload-label,.pipe-step,.ua,.notif-bar{display:none!important}</style></head><body>'+saved.html+'</body></html>';
-  const blob=new Blob([html],{type:'text/html'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=docType.replace(/_/g,'-')+'_WO'+wo+'.html';
-  document.body.appendChild(a);a.click();
-  setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},800);
+  const filename=docType.replace(/_/g,'-')+'_WO'+wo;
+  const title=(docType.replace(/_/g,' ').toUpperCase())+' · WO '+wo;
+  generatePDF(saved.html,filename,title);
+}
+
+/* Download the currently-open document modal as PDF (captures live edits) */
+function downloadDocAsPDF(wo,docType){
+  const body=document.getElementById('docModalBody');
+  if(!body){toast('No document open','am');return;}
+  serializeFormValues(body);
+  const filename=(docType||'document').replace(/_/g,'-')+(wo?'_WO'+wo:'');
+  const title=document.getElementById('docModalTitle')?.textContent||filename;
+  generatePDF(body.innerHTML,filename,title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
