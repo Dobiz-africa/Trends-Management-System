@@ -232,7 +232,7 @@ set('nw-address',address||(plotNo&&ward&&loc?`Plot ${plotNo}, ${ward}, ${loc}`:(
 }
 
 function clearWOForm(){
-  ['nw-num','nw-date','nw-type','nw-projtype','nw-cust','nw-contract','nw-custno','nw-plotno','nw-loc','nw-ward','nw-mobile','nw-bpcprojno','nw-projno','nw-meter','nw-address'].forEach(id=>{
+  ['nw-num','nw-date','nw-projtype','nw-cust','nw-contract','nw-custno','nw-plotno','nw-loc','nw-ward','nw-mobile','nw-bpcprojno','nw-projno','nw-meter','nw-address'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.value='';
   });
@@ -300,38 +300,14 @@ const STAGE_DOCS = {
 ═══════════════════════════════════════ */
 const SB = { client:null, enabled:false, bucket:'claimdesk-scans', ready:false };
 
-/* Load Supabase config. In production (Vercel) this comes from the
-   /api/config serverless function, which reads Vercel env vars — so the
-   keys never live in the repo. For local use (double-click index.html or
-   Live Server) it falls back to window.CLAIMDESK_CONFIG from config.js. */
-async function loadClaimdeskConfig(){
-  // 1) Try the serverless endpoint (exists only on Vercel)
+(function initSupabase(){
   try{
-    const res = await fetch('/api/config', {cache:'no-store'});
-    if(res.ok){
-      const cfg = await res.json();
-      if(cfg && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) return cfg;
-    }
-  }catch(_){ /* not on Vercel, or endpoint missing — fall through */ }
-  // 2) Fall back to a local config.js (window.CLAIMDESK_CONFIG)
-  if(window.CLAIMDESK_CONFIG && window.CLAIMDESK_CONFIG.SUPABASE_URL) return window.CLAIMDESK_CONFIG;
-  return {};
-}
-
-async function initSupabase(){
-  try{
-    const cfg = await loadClaimdeskConfig();
-    // Sanitize the URL: keep only scheme://host (strip any /rest/v1 or trailing slash)
-    let url = (cfg.SUPABASE_URL||'').trim();
-    if(url){
-      try{ const u = new URL(url); url = u.origin; }
-      catch(_){ url = url.replace(/\/+$/,'').replace(/\/rest\/v1.*$/i,''); }
-    }
-    if(url && cfg.SUPABASE_ANON_KEY && window.supabase){
-      SB.client  = window.supabase.createClient(url, String(cfg.SUPABASE_ANON_KEY).trim());
+    const cfg = (window.CLAIMDESK_CONFIG)||{};
+    if(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && window.supabase){
+      SB.client  = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
       SB.bucket  = cfg.SCANS_BUCKET || 'claimdesk-scans';
       SB.enabled = true;
-      console.log('ClaimDesk: Supabase connected.', url);
+      console.log('ClaimDesk: Supabase connected.');
     }else{
       console.warn('ClaimDesk: Supabase not configured — running in offline localStorage mode.');
     }
@@ -339,9 +315,7 @@ async function initSupabase(){
     console.error('ClaimDesk: Supabase init failed, using offline mode.', e);
     SB.enabled = false;
   }
-}
-// Kick off config load immediately; record the promise so login can await it.
-const SB_READY = initSupabase();
+})();
 
 /* Pull all shared data from Supabase into the in-memory DB (called on login). */
 async function syncFromSupabase(){
@@ -506,21 +480,18 @@ function newJob(data){
     meterNo:data.meterNo||'', address:data.address||'',
     createdAt:new Date().toISOString(), stage:'wo_received',
     vo1:{items:(()=>{
-  // Parse textarea lines: "Description | Unit | Qty | Rate"
+  // If type is provided (e.g. from PDF auto-fill), parse it into items.
+  // If type is empty (manual entry), start with one blank row — Admin fills it in VO1.
   const lines=(data.type||'').split('\n').map(l=>l.trim()).filter(l=>l.length>0);
   if(lines.length&&lines[0].includes('|')){
-    return lines.map(line=>{
+    const parsed=lines.map(line=>{
       const parts=line.split('|').map(p=>p.trim());
-      return{
-        d:parts[0]||'Service Conn; 230V; 60A; Single Phase; U/G',
-        u:parts[1]||'Ea',
-        q:parseFloat(parts[2])||1,
-        r:parseFloat(parts[3])||0,
-      };
+      return{d:parts[0]||'',u:parts[1]||'Ea',q:parseFloat(parts[2])||1,r:parseFloat(parts[3])||0};
     }).filter(it=>it.d&&it.r>0);
+    if(parsed.length) return parsed;
   }
-  // Fallback: single default item
-  return[{d:data.type||'Service Conn; 230V; 60A; Single Phase; U/G',u:'Ea',q:1,r:data.phase==='46'?11987.42:12426.82}];
+  // Empty type → blank row ready for manual entry in VO1
+  return[{d:'',u:'Ea',q:1,r:0}];
 })(), lf:data.lf||29.25, mk:data.mk||0, phase:data.phase||'47'},
 vo2:{items:[], lf:data.lf||29.25, mk:0, startDate:'', compDate:'', phase:data.phase||'47'},
     worksValuation:{created:false},
@@ -960,8 +931,7 @@ function saveNewWO(){
   const num=rawNum&&/^\d+$/.test(rawNum)?rawNum.padStart(10,'0'):rawNum;
   const cust=document.getElementById('nw-cust').value.trim();
   const loc=document.getElementById('nw-loc').value.trim();
-  const type=document.getElementById('nw-type').value;
-  if(!num||!cust||!loc||!type){toast('Fill in all required fields','am');return;}
+  if(!num||!cust||!loc){toast('Fill in WO Number, Customer Name and Location','am');return;}
   if(DB.jobs[num]){toast('WO number already exists','rd');return;}
   const phase=document.getElementById('nw-phase').value||'47';
   const lf=parseFloat(document.getElementById('nw-lf').value)||29.25;
@@ -976,7 +946,8 @@ function saveNewWO(){
   const projNo=document.getElementById('nw-projno').value.trim()||'';
   const meterNo=document.getElementById('nw-meter').value.trim()||'';
   const address=document.getElementById('nw-address').value.trim()||'';
-  const job=newJob({wo:num,cust,loc,type,phase,lf,date,projType,contract,custNo,plotNo,ward,mobile,bpcProjNo,projNo,meterNo,address});
+  // type is intentionally empty — Admin fills in VO1 descriptions manually
+  const job=newJob({wo:num,cust,loc,type:'',phase,lf,date,projType,contract,custNo,plotNo,ward,mobile,bpcProjNo,projNo,meterNo,address});
   const scanInput=document.getElementById('nw-scan');
   if(scanInput&&scanInput.files[0]){
     const f=scanInput.files[0];
@@ -1749,17 +1720,23 @@ function renderActLog(filter=''){
 ═══════════════════════════════════════ */
 function renderRates(q=''){
   const ql=q.toLowerCase();
-  const filtered=DB.rates.filter(r=>!ql||r.d.toLowerCase().includes(ql)||r.c.toLowerCase().includes(ql));
+  const phase=(document.getElementById('ratePhase')?.value)||'';
+  let filtered=DB.rates;
+  if(phase) filtered=filtered.filter(r=>r.phase===phase);
+  if(ql) filtered=filtered.filter(r=>r.d.toLowerCase().includes(ql)||r.c.toLowerCase().includes(ql));
+  const countEl=document.getElementById('ratesCount');
+  if(countEl) countEl.textContent=filtered.length+' rate'+(filtered.length!==1?'s':'');
   if(!filtered.length){
     document.getElementById('ratesList').innerHTML=`<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No rates match "${q}"</div>`;
     return;
   }
   document.getElementById('ratesList').innerHTML=filtered.map(r=>`
-    <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 80px;gap:10px;padding:.55rem 1rem;border-bottom:1px solid var(--bd);font-size:.78rem;align-items:center;transition:.1s" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
+    <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 60px 80px;gap:10px;padding:.55rem 1rem;border-bottom:1px solid var(--bd);font-size:.78rem;align-items:center;transition:.1s" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
       <span style="color:var(--tx)">${r.d}</span>
       <span class="tag">${r.u}</span>
       <span class="mono">${P(r.r)}</span>
       <span class="tag">${r.c}</span>
+      <span class="badge ${r.phase==='46'?'b-bl':'b-am'}">Ph ${r.phase}</span>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" ${r.on?'checked':''} style="accent-color:var(--am);cursor:pointer;width:14px;height:14px" onchange="toggleRate('${r.id}',this.checked)">
         <span class="badge ${r.on?'b-gn':'b-gy'}">${r.on?'Active':'Off'}</span>
@@ -2991,8 +2968,6 @@ async function doLogin(){
   const r=document.getElementById('loginRole').value;
   if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
   CU=r;
-  // Make sure the (async) Supabase config load has finished before we check it
-  try{ await SB_READY; }catch(_){}
   // Reset all screens — clear any stale job detail from a previous role session
   detailWO=null;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
