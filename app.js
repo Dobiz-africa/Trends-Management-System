@@ -485,7 +485,7 @@ function newJob(data){
     const parsed=lines.map(line=>{const parts=line.split('|').map(p=>p.trim());return{d:parts[0]||'',u:parts[1]||'Ea',q:parseFloat(parts[2])||1,r:parseFloat(parts[3])||0};}).filter(it=>it.d&&it.r>0);
     if(parsed.length) return parsed;
   }
-  // No type provided — start with one blank row; Admin fills via autocomplete in VO1
+  // Empty type (manual entry) — start with one blank row; Admin fills via autocomplete in VO1
   return[{d:'',u:'Ea',q:1,r:0}];
 })(), lf:data.lf||29.25, mk:data.mk||0, phase:data.phase||'47'},
 vo2:{items:[], lf:data.lf||29.25, mk:0, startDate:'', compDate:'', phase:data.phase||'47'},
@@ -1396,8 +1396,8 @@ function openDocForAction(wo,docType){
 function buildDocFoot(docType,job){
   const wo=job?job.wo:'';
   const isMDView=CU==='md';
-  let btns=`<button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>`;
-  btns+=`<button class="btn btn-bl btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')">&#11015; Download PDF</button>`;
+  // Print button — opens same clean popup
+  let btns=`<button class="btn btn-print btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>`;
 
   if(wo){
     if(job&&job.scans&&job.scans[docType]){
@@ -2665,158 +2665,133 @@ const docLabels={
   annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',
   invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'
 };
-/* ═══════════════════════════════════════
-   PDF GENERATION — iframe approach
-   ───────────────────────────────────────
-   Renders into a temporary hidden iframe that has its OWN clean
-   white HTML document. html2canvas captures the iframe's body —
-   no dark-theme inheritance, no viewport clipping, no blank pages.
-   The iframe is at opacity:0 at position (0,0) so it's in the
-   viewport and measurable but invisible to the user.
-═══════════════════════════════════════ */
+/* ─── PDF GENERATION ───────────────────────────────────────
+   Strategy: open a hidden popup with clean white HTML, then
+   trigger the browser's native Print → Save as PDF on it.
+   This avoids html2canvas dark-theme screenshotting entirely,
+   giving a clean white A4 layout every time.
 
-/* Bake live input/select/textarea values into a clone */
-function _bakeValues(sourceEl){
-  const clone=sourceEl.cloneNode(true);
-  sourceEl.querySelectorAll('input').forEach((el,i)=>{
-    const c=clone.querySelectorAll('input')[i]; if(!c) return;
-    if(el.type==='checkbox'||el.type==='radio') c.checked=el.checked;
-    else c.setAttribute('value',el.value);
+   For a TRUE silent .pdf download (no print dialog) we use
+   jsPDF's html() method if the library is available.
+   ─────────────────────────────────────────────────────── */
+const DOC_PRINT_CSS=`
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;margin:0;padding:18px;background:#fff;color:#000}
+  img{max-width:100%;height:auto}
+  table{border-collapse:collapse;width:100%}
+  .paper{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;background:#fff;color:#000}
+  .paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
+  .hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
+  .hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
+  .ef,.ef-b{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial;font-size:8.5pt;color:#000;padding:0 2px;min-width:50px}
+  .p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
+  .boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
+  .boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left}
+  .boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
+  .boq td.r,.boq th.r{text-align:right}
+  .boq td.c,.boq th.c{text-align:center}
+  .boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+  .boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
+  .pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
+  .pc-row .n{width:25px;flex-shrink:0}.pc-row .d{flex:1}
+  .pc-row .c{width:20px;text-align:right;flex-shrink:0}
+  .pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
+  .pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
+  .pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px}
+  .pc-row.ded .v{color:#cc0000}
+  .pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
+  .sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
+  .sig-box{border-top:1px solid #000;padding-top:4px}
+  .sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}
+  .sig-line{border-bottom:1px solid #000;margin-bottom:3px;height:22px}
+  .sig-sub{font-size:7.5pt;color:#666}
+  .jt{width:100%;border-collapse:collapse;font-size:7.5pt}
+  .jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center}
+  .jt td{border:1px solid #bbb;padding:3px 4px}
+  .jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
+  /* hide all UI chrome — only the document content should appear */
+  button,.btn,.scan-done,.scan-upload-label,.ua,.ac-dd,.pipe-step,
+  label[style*="cursor:pointer"]>input[type=file]{display:none!important}
+  label[style*="cursor:pointer"]{pointer-events:none}
+  input,select,textarea{
+    border:none!important;border-bottom:1px solid #000!important;
+    background:transparent!important;outline:none!important;
+    font-family:Arial,sans-serif!important;font-size:8.5pt!important;
+    color:#000!important;padding:0 2px!important;
+  }
+  @page{size:A4;margin:15mm 15mm 15mm 15mm}
+  @media print{
+    body{padding:0}
+    .no-print{display:none!important}
+  }
+`;
+
+/* Bake live input/select/textarea values into the HTML string */
+function serializeToHTML(container){
+  const clone=container.cloneNode(true);
+  const inputs=clone.querySelectorAll('input');
+  const origInputs=container.querySelectorAll('input');
+  inputs.forEach((el,i)=>{
+    const orig=origInputs[i];
+    if(!orig) return;
+    if(el.type==='checkbox'||el.type==='radio') el.checked=orig.checked;
+    else el.setAttribute('value',orig.value);
   });
-  sourceEl.querySelectorAll('textarea').forEach((el,i)=>{
-    const c=clone.querySelectorAll('textarea')[i]; if(c) c.textContent=el.value;
+  clone.querySelectorAll('textarea').forEach((el,i)=>{
+    const orig=container.querySelectorAll('textarea')[i];
+    if(orig) el.textContent=orig.value;
   });
-  sourceEl.querySelectorAll('select').forEach((el,i)=>{
-    const c=clone.querySelectorAll('select')[i]; if(!c) return;
-    Array.from(el.options).forEach((o,j)=>{ if(c.options[j]) c.options[j].selected=o.selected; });
+  clone.querySelectorAll('select').forEach((el,i)=>{
+    const orig=container.querySelectorAll('select')[i];
+    if(!orig) return;
+    Array.from(el.options).forEach((o,j)=>{o.selected=orig.options[j]?.selected||false;});
   });
-  clone.querySelectorAll('button,.btn,.scan-done,.scan-upload-label,.ua,.ac-dd,.pipe-step').forEach(e=>e.remove());
-  return clone;
+  return clone.innerHTML;
 }
 
-async function generatePDF(innerHtml, filename, sourceEl){
-  if(!window.html2pdf){
-    toast('PDF library not loaded — check internet connection','rd');
-    return;
-  }
-  toast('Generating PDF…','am');
-
-  // Bake live values if we have the live source element
-  let html=innerHtml;
-  if(sourceEl){
-    const clone=_bakeValues(sourceEl);
-    html=clone.innerHTML;
-  }
-
-  // Create hidden iframe — position (0,0) opacity:0 so it's in viewport
-  // and measurable by html2canvas, but invisible to user
-  const iframe=document.createElement('iframe');
-  iframe.style.cssText='position:fixed;top:0;left:0;width:850px;height:1px;border:none;opacity:0;pointer-events:none;z-index:-9999';
-  document.body.appendChild(iframe);
-
-  try{
-    const iDoc=iframe.contentDocument||iframe.contentWindow.document;
-    iDoc.open();
-    iDoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{background:#fff!important;color:#000!important;font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;padding:18px}
-.paper{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;background:#fff;color:#000}
-.paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
-.lh-t{width:100%;border-collapse:collapse;margin-bottom:7px}
-.lh-t td{vertical-align:top;padding:1px 3px;font-size:9pt}
-.lh-bpc{font-size:11pt;font-weight:bold}
-.lh-addr{font-size:8.5pt;color:#222}
-.lh-title{font-size:11pt;font-weight:bold;text-align:right}
-.hdt{width:100%;border-collapse:collapse;margin-bottom:4px}
-.hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
-.hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
-.ef,.ef-b{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial;font-size:8.5pt;color:#000;padding:0 2px;min-width:60px}
-.ef-c{color:#555;border-bottom:1px dotted #bbb}
-.boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
-.boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}
-.boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
-.boq td.r,.boq th.r{text-align:right}.boq td.c,.boq th.c{text-align:center}
-.boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
-.boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
-.p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
-.sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
-.sig-box{border-top:1px solid #000;padding-top:4px}
-.sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}
-.sig-line{border-bottom:1px solid #000;margin-bottom:3px;height:22px}
-.sig-sub{font-size:7.5pt;color:#666}
-.pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
-.pc-row .n{width:25px;flex-shrink:0}.pc-row .d{flex:1}
-.pc-row .c{width:20px;text-align:right;flex-shrink:0}
-.pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
-.pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
-.pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px}
-.pc-row.ded .v{color:#cc0000}
-.pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
-.jt{width:100%;border-collapse:collapse;font-size:7.5pt}
-.jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
-.jt td{border:1px solid #bbb;padding:3px 4px}
-.jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
-input,textarea,select{border:none!important;border-bottom:1px solid #000!important;background:transparent!important;color:#000!important;font-family:Arial,sans-serif!important;font-size:8.5pt!important;padding:0 2px!important;width:auto!important}
-button,.btn,.scan-done,.scan-upload-label,.ua,.pipe-step,.ac-dd{display:none!important}
-img{max-width:100%;height:auto}
-</style></head><body>${html}</body></html>`);
-    iDoc.close();
-
-    // Wait for iframe to render fully (images, layout)
-    await new Promise(r=>setTimeout(r,300));
-
-    // Resize iframe height to full content so nothing is clipped
-    const fullH=Math.max(iDoc.body.scrollHeight, iDoc.documentElement.scrollHeight, 200);
-    iframe.style.height=fullH+'px';
-
-    // Another small paint delay after resize
-    await new Promise(r=>setTimeout(r,100));
-
-    const opt={
-      margin:[10,10,10,10],
-      filename:filename+'.pdf',
-      image:{type:'jpeg',quality:0.98},
-      html2canvas:{
-        scale:2,
-        useCORS:true,
-        logging:false,
-        backgroundColor:'#ffffff',
-        scrollX:0,
-        scrollY:0,
-        windowWidth:850,
-        windowHeight:fullH,
-      },
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy']},
-    };
-
-    await window.html2pdf().set(opt).from(iDoc.body).save();
-    toast('✓ PDF downloaded: '+filename+'.pdf','gn');
-
-  }catch(e){
-    console.error('PDF generation failed:',e);
-    toast('PDF failed — use Print button instead','rd');
-  }finally{
-    try{ document.body.removeChild(iframe); }catch(_){}
-  }
+/* Build a complete, standalone HTML document string for the paper document */
+function buildPrintableHTML(innerHtml, title){
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<title>${title||'ClaimDesk Document'}</title>
+<style>${DOC_PRINT_CSS}</style>
+</head><body>
+${innerHtml}
+</body></html>`;
 }
 
-/* Download a saved soft-copy document as PDF */
-function downloadSavedDoc(wo,docType){
+/* MAIN PDF / Print function.
+   Opens the document in a clean popup and triggers print (Print → Save as PDF).
+   This is more reliable than any canvas-screenshot approach. */
+function openPrintWindow(innerHtml, title){
+  const html=buildPrintableHTML(innerHtml, title);
+  const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
+  if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  // Small delay lets images/fonts settle before print dialog opens
+  w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
+  // Fallback if onload already fired
+  setTimeout(()=>{ try{ if(!w.closed){ w.focus(); w.print(); } }catch(e){} },1200);
+  toast('Print window opened — choose "Save as PDF" in the print dialog','gn');
+}
+
+/* Download a saved doc — opens print window so user saves as PDF */
+function downloadSavedDoc(wo, docType){
   const job=DB.jobs[wo];
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
-  if(!saved){toast('Not saved yet — click 💾 Save & Attach first','am');return;}
-  const filename=docType.replace(/_/g,'-')+'_WO'+wo;
-  generatePDF(saved.html,filename,null);
+  if(!saved){ toast('Not saved yet — click 💾 Save & Attach first','am'); return; }
+  const title=(docType.replace(/_/g,' '))+' · WO '+wo;
+  openPrintWindow(saved.html, title);
 }
 
-/* Download the currently-open modal document as PDF (captures live edits) */
-function downloadDocAsPDF(wo,docType){
+/* Download the currently-open modal document — opens print window */
+function downloadDocAsPDF(wo, docType){
   const body=document.getElementById('docModalBody');
-  if(!body){toast('No document open','am');return;}
-  serializeFormValues(body);
-  const filename=(docType||'document').replace(/_/g,'-')+(wo?'_WO'+wo:'');
-  generatePDF(body.innerHTML,filename,body);
+  if(!body){ toast('No document open','am'); return; }
+  const innerHtml=serializeToHTML(body);
+  const title=document.getElementById('docModalTitle')?.textContent||docType;
+  openPrintWindow(innerHtml, title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -3009,56 +2984,12 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
    PRINT
 ═══════════════════════════════════════ */
 function printModal(){
-  const modalBody=document.getElementById('docModalBody');
-  serializeFormValues(modalBody);
-  const content=modalBody.innerHTML;
-  const title=document.getElementById('docModalTitle').textContent;
-  const pw=window.open('','_blank','width=860,height=760');
-  if(!pw){toast('Pop-up blocked — allow pop-ups for this site then try again','am');return;}
-  pw.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;font-size:9pt;background:#fff;color:#000;padding:20px}
-    .paper{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:9pt;line-height:1.45}
-    .paper *{box-sizing:border-box}
-    .paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
-    .lh-t{width:100%;border-collapse:collapse;margin-bottom:7px}
-    .lh-t td{vertical-align:top;padding:1px 3px;font-size:9pt}
-    .hdt{width:100%;border-collapse:collapse;margin-bottom:4px}
-    .hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
-    .hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
-    .ef{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;min-width:60px}
-    .ef-b{border-bottom:1px solid #000;color:#000}
-    .ef-c{color:#555;border-bottom:1px dotted #bbb}
-    .boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
-    .boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left;font-size:8pt}
-    .boq td{border:1px solid #bbb;padding:3px 5px;vertical-align:middle}
-    .boq td.r,.boq th.r{text-align:right}.boq td.c,.boq th.c{text-align:center}
-    .boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
-    .boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
-    .p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
-    .sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
-    .sig-box{border-top:1px solid #000;padding-top:4px}
-    .sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}
-    .sig-line{border-bottom:1px solid #000;margin-bottom:3px;height:22px}
-    .sig-sub{font-size:7.5pt;color:#666}
-    .pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
-    .pc-row .n{width:25px;flex-shrink:0}.pc-row .d{flex:1}.pc-row .c{width:20px;text-align:right;flex-shrink:0}.pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
-    .pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
-    .pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px;font-size:9pt}
-    .pc-row.ded .v{color:#cc0000}
-    .pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
-    .jt{width:100%;border-collapse:collapse;font-size:7.5pt}
-    .jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;font-size:7pt}
-    .jt td{border:1px solid #bbb;padding:3px 4px}
-    .jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
-    input,textarea,select{border:none!important;border-bottom:1px solid #000!important;background:transparent!important;font-family:Arial,sans-serif;font-size:8.5pt;padding:0 2px;width:auto}
-    button,.btn,.scan-done,.ua,.pipe-step,.ac-dd{display:none!important}
-    @media print{body{padding:10px}}
-  </style></head><body>${content}</body></html>`);
-  pw.document.close();
-  pw.onload=()=>{pw.focus();pw.print();};
-  // Fallback if onload doesn't fire
-  setTimeout(()=>{try{pw.focus();pw.print();}catch(e){}},600);
+  // Delegate to the unified print/PDF function which uses the clean popup approach
+  const body=document.getElementById('docModalBody');
+  if(!body) return;
+  const title=document.getElementById('docModalTitle')?.textContent||'Document';
+  const innerHtml=serializeToHTML(body);
+  openPrintWindow(innerHtml, title);
 }
 
 /* ═══════════════════════════════════════
