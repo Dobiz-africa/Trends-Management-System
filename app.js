@@ -1459,7 +1459,7 @@ function buildDocFoot(docType,job){
   const wo=job?job.wo:'';
   const isMDView=CU==='md';
   // Print button — opens same clean popup
-  let btns=`<button class="btn btn-print btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>`;
+  let btns=`<button class="btn btn-print btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download PDF</button>`;
 
   if(wo){
     if(job&&job.scans&&job.scans[docType]){
@@ -2728,13 +2728,10 @@ const docLabels={
   invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'
 };
 /* ─── PDF GENERATION ───────────────────────────────────────
-   Strategy: open a hidden popup with clean white HTML, then
-   trigger the browser's native Print → Save as PDF on it.
-   This avoids html2canvas dark-theme screenshotting entirely,
-   giving a clean white A4 layout every time.
-
-   For a TRUE silent .pdf download (no print dialog) we use
-   jsPDF's html() method if the library is available.
+   Strategy: use html2pdf.js (html2canvas + jsPDF) to render
+   the document HTML into a real A4 PDF and trigger a direct
+   browser download — no print dialog, no "Save as PDF" step,
+   no risk of headers/footers or wrong paper size.
    ─────────────────────────────────────────────────────── */
 const DOC_PRINT_CSS=`
   *{box-sizing:border-box}
@@ -2823,19 +2820,56 @@ ${innerHtml}
 </body></html>`;
 }
 
-/* MAIN PDF / Print function.
-   Opens the document in a clean popup and triggers print (Print → Save as PDF).
-   This is more reliable than any canvas-screenshot approach. */
+/* MAIN PDF generation — silently downloads a clean A4 PDF, no print dialog.
+   Uses html2pdf.js (html2canvas + jsPDF under the hood).
+   Falls back to print popup if library not loaded yet. */
 function openPrintWindow(innerHtml, title){
-  const html=buildPrintableHTML(innerHtml, title);
-  const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
-  if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
-  // Small delay lets images/fonts settle before print dialog opens
-  w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
-  // Fallback if onload already fired
-  setTimeout(()=>{ try{ if(!w.closed){ w.focus(); w.print(); } }catch(e){} },1200);
-  toast('Print window opened — choose "Save as PDF" in the print dialog','gn');
+  if(typeof html2pdf === 'undefined'){
+    // Fallback: old print-popup approach
+    const html=buildPrintableHTML(innerHtml, title);
+    const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
+    if(!w){ toast('Pop-up blocked — allow pop-ups for this site','rd'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+    w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
+    setTimeout(()=>{ try{ if(!w.closed){ w.focus(); w.print(); } }catch(e){} },1200);
+    toast('Print window opened','gn');
+    return;
+  }
+  // Build a hidden, fully-styled container for html2pdf to render
+  const safe=title.replace(/[^a-zA-Z0-9 _\-\.]/g,'').trim()||'document';
+  const filename=safe+'.pdf';
+  toast('Generating PDF…','gn');
+  // Create an off-screen div with the print CSS applied
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;font-size:9pt;padding:18px;box-sizing:border-box';
+  // Inject the document-specific styles inline so html2canvas picks them up
+  wrapper.innerHTML=`<style>${DOC_PRINT_CSS}</style>${innerHtml}`;
+  // Hide all UI buttons/controls before rendering
+  document.body.appendChild(wrapper);
+  // Remove any interactive chrome that leaked through
+  wrapper.querySelectorAll('button,.btn,.scan-upload-label,.ua,.ac-dd,.pipe-step').forEach(el=>el.remove());
+  wrapper.querySelectorAll('input,select,textarea').forEach(el=>{
+    const span=document.createElement('span');
+    span.textContent=el.value||el.textContent||'';
+    span.style.cssText='border-bottom:1px solid #000;display:inline-block;min-width:50px;font-size:8.5pt;font-family:Arial';
+    el.replaceWith(span);
+  });
+  const opt={
+    margin:[15,15,15,15], // mm: top, left, bottom, right
+    filename,
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+    pagebreak:{mode:['avoid-all','css','legacy']}
+  };
+  html2pdf().set(opt).from(wrapper).save().then(()=>{
+    document.body.removeChild(wrapper);
+    toast('PDF downloaded: '+filename,'gn');
+  }).catch(err=>{
+    document.body.removeChild(wrapper);
+    console.error('PDF error:',err);
+    toast('PDF failed — try again','rd');
+  });
 }
 
 /* Download a saved doc — opens print window so user saves as PDF */
