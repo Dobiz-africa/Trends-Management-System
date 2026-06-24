@@ -607,199 +607,208 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 }
 
 /* ============================================================
-   FONT + CARD + LIGHT-MODE POLISH
+   INTER FONT + CARD OVERHAUL + NUCLEAR LIGHT MODE FIX
    ============================================================ */
 
-/* --- Inter font sizing & weight refinements --- */
-body { font-size: 14px; letter-spacing: -.01em; }
+/* Base Inter settings */
+body,button,input,select,textarea{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.tb-t{font-size:1rem!important;font-weight:600!important;letter-spacing:-.02em}
+.sc-l{font-size:.68rem!important;font-weight:600!important;text-transform:uppercase;letter-spacing:.07em}
+.sc-v{font-size:2rem!important;font-weight:700!important;letter-spacing:-.03em;line-height:1}
 
-/* Headings use Inter semibold/bold — no more display/body split */
-.tb-t, .sc-l, .crd-hd, .sb-brand h1, .sb-rn,
-.sc-v, .hero-title, .login-form-head h1 {
-  font-family: 'Inter', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
+/* ── NUCLEAR LIGHT MODE: every text element gets near-black ── */
+[data-theme="light"]{color:#111827}
+[data-theme="light"] body{color:#111827}
+[data-theme="light"] *:not(.badge):not(.v0badge):not(.btn):not(.lf-btn):not(.hero-title):not(.hero-sub):not(.hero-eyebrow):not(.login-hero *){
+  color:#111827
 }
-
-/* Stat card values — bigger, bolder, Inter */
-.sc-v {
-  font-size: 2rem !important;
-  font-weight: 700 !important;
-  letter-spacing: -.03em;
-}
-.sc-l {
-  font-size: .68rem !important;
-  font-weight: 600 !important;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-}
-
-/* Topbar title */
-.tb-t { font-size: 1rem !important; font-weight: 600 !important; letter-spacing: -.02em; }
-
-/* --- V0-style job cards: polished interactive feel --- */
-.v0-job-card {
-  background: var(--sf) !important;
-  border: 1px solid var(--bd) !important;
-  border-radius: 12px !important;
-  padding: 18px 20px !important;
-  display: flex !important;
-  align-items: flex-start !important;
-  gap: 16px !important;
-  cursor: pointer !important;
-  transition: border-color .15s, box-shadow .15s, transform .1s !important;
-  margin-bottom: 10px !important;
-  border-left: 3px solid transparent !important;
-}
-.v0-job-card:hover {
-  border-color: var(--am) !important;
-  border-left-color: var(--am) !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,.15) !important;
-  transform: translateX(2px) !important;
-}
-.v0-job-id {
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  letter-spacing: .06em !important;
-  text-transform: uppercase !important;
-  color: var(--am) !important;
-}
-.v0-job-cust {
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  color: var(--tx) !important;
-  margin-top: 4px !important;
-  line-height: 1.3 !important;
-}
-.v0-job-loc {
-  font-size: 13px !important;
-  color: var(--tx3) !important;
-  margin-top: 5px !important;
-  font-weight: 400 !important;
-}
-.v0-job-stage {
-  font-size: 12px !important;
-  color: var(--tx2) !important;
-  margin-top: 5px !important;
-  font-weight: 500 !important;
-}
-.v0-job-val {
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  color: var(--tx) !important;
-  letter-spacing: -.01em !important;
-}
-.v0-view-btn {
-  height: 32px !important;
-  padding: 0 14px !important;
-  border-radius: 8px !important;
-  border: 1px solid var(--bd) !important;
-  background: var(--sf2) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  color: var(--tx2) !important;
-  cursor: pointer !important;
-  transition: all .15s !important;
-  white-space: nowrap !important;
-  font-family: 'Inter', system-ui, sans-serif !important;
-}
-.v0-view-btn:hover {
-  background: var(--am-bg) !important;
-  border-color: var(--am) !important;
-  color: var(--am) !important;
+/* More targeted — catch common elements */
+[data-theme="light"] .tb-t,
+[data-theme="light"] .tb-m,
+[data-theme="light"] .sc-v,
+[data-theme="light"] .sc-l,
+[data-theme="light"] .sc-s,
+[data-theme="light"] .crd-hd,
+[data-theme="light"] .crd-hd-l,
+[data-theme="light"] .crd-hd svg,
+[data-theme="light"] .ua,
+[data-theme="light"] span[style*="color:var(--tx"],
+[data-theme="light"] div[style*="color:var(--tx"],
+[data-theme="light"] .tbl-hd,
+[data-theme="light"] .tag,
+[data-theme="light"] .mono,
+[data-theme="light"] .lf-label,
+[data-theme="light"] .logFilter,
+[data-theme="light"] select,
+[data-theme="light"] input:not([type="checkbox"]),
+[data-theme="light"] textarea { color:#111827!important }
+[data-theme="light"] .tx2-el,
+[data-theme="light"] .sb-rl { color:#374151!important }
+[data-theme="light"] p,[data-theme="light"] span,[data-theme="light"] div,
+[data-theme="light"] td,[data-theme="light"] th,[data-theme="light"] label {
+  color: inherit
 }
 
-/* --- Status cards: polished with accent top border --- */
-.v0-status-card {
-  background: var(--sf) !important;
-  border: 1px solid var(--bd) !important;
-  border-top: 3px solid var(--bd2) !important;
-  border-radius: 12px !important;
-  padding: 20px 18px !important;
-  cursor: pointer !important;
-  transition: border-color .15s, box-shadow .15s, transform .12s !important;
-}
-.v0-status-card:hover {
-  box-shadow: 0 6px 24px rgba(0,0,0,.18) !important;
-  transform: translateY(-3px) !important;
-}
-.v0-sc-green { border-top-color: var(--gn) !important; }
-.v0-sc-amber { border-top-color: var(--am) !important; }
-.v0-sc-blue  { border-top-color: var(--bl) !important; }
-.v0-sc-grey  { border-top-color: var(--bd2) !important; }
+/* ── JOB CARDS — PowerBI-inspired, horizontal, interactive ── */
+.wo-card-grid{display:flex;flex-direction:column;gap:10px;padding:12px 16px}
 
-.v0-sc-n {
-  font-size: 36px !important;
-  font-weight: 700 !important;
-  letter-spacing: -.04em !important;
-  color: var(--tx) !important;
-  margin-top: 14px !important;
-  line-height: 1 !important;
-  font-family: 'Inter', system-ui, sans-serif !important;
+.wo-jcard{
+  background:var(--sf);
+  border:1px solid var(--bd);
+  border-radius:12px;
+  padding:16px 18px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  transition:transform .15s,box-shadow .15s,border-color .15s;
+  border-left:4px solid var(--accent,var(--am));
 }
-.v0-sc-pct {
-  font-size: 12px !important;
-  color: var(--tx3) !important;
-  margin-top: 4px !important;
-  font-weight: 400 !important;
-  line-height: 1.4 !important;
+.wo-jcard:hover{
+  transform:translateX(4px);
+  box-shadow:0 4px 24px rgba(0,0,0,.22);
+  border-color:var(--accent,var(--am));
 }
-.v0-sc-top .v0badge {
-  font-size: 12px !important;
-  font-weight: 600 !important;
+.wo-jcard::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,var(--accent-bg,var(--am-bg)) 0%,transparent 40%);
+  opacity:0;transition:opacity .2s;pointer-events:none
 }
+.wo-jcard:hover::before{opacity:1}
 
-/* --- V0 badges: sharper, more business-like --- */
-.v0badge {
-  font-family: 'Inter', system-ui, sans-serif !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  letter-spacing: .01em !important;
+.wo-jcard-ico{
+  width:44px;height:44px;border-radius:10px;flex-shrink:0;
+  background:var(--accent-bg,var(--am-bg));
+  border:1px solid var(--accent-b,var(--am-b));
+  display:flex;align-items:center;justify-content:center;
+  color:var(--accent,var(--am));font-size:18px;font-weight:700;
+  transition:transform .15s;
 }
-
-/* --- Expand panels --- */
-.v0-expand {
-  background: var(--sf) !important;
-  border: 1px solid var(--bd) !important;
-  border-radius: 12px !important;
-  margin-top: 14px !important;
-  overflow: hidden !important;
+.wo-jcard:hover .wo-jcard-ico{transform:scale(1.08)}
+.wo-jcard-body{flex:1;min-width:0}
+.wo-jcard-num{font-size:11px;font-weight:700;color:var(--accent,var(--am));letter-spacing:.06em;text-transform:uppercase}
+.wo-jcard-name{font-size:15px;font-weight:600;color:var(--tx);margin-top:3px;line-height:1.3}
+.wo-jcard-loc{font-size:12px;color:var(--tx3);margin-top:3px}
+.wo-jcard-stage{font-size:12px;color:var(--tx2);margin-top:2px;font-weight:500}
+.wo-jcard-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;min-width:120px}
+.wo-jcard-val{font-size:15px;font-weight:700;color:var(--tx);letter-spacing:-.01em}
+.wo-jcard-btn{
+  height:30px;padding:0 14px;border-radius:8px;
+  border:1px solid var(--bd);background:var(--sf2);
+  font-size:12px;font-weight:600;color:var(--tx2);
+  cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all .15s;white-space:nowrap;
 }
-.v0-expand-hd {
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  color: var(--tx) !important;
-  letter-spacing: -.01em !important;
+.wo-jcard-btn:hover{background:var(--accent-bg,var(--am-bg));border-color:var(--accent,var(--am));color:var(--accent,var(--am))}
+
+/* Color variants per card — cycle through 4 accent colors */
+.wo-jcard:nth-child(4n+1){--accent:var(--am);--accent-bg:var(--am-bg);--accent-b:var(--am-b)}
+.wo-jcard:nth-child(4n+2){--accent:var(--bl);--accent-bg:var(--bl-bg);--accent-b:var(--bl-b)}
+.wo-jcard:nth-child(4n+3){--accent:var(--gn);--accent-bg:var(--gn-bg);--accent-b:var(--gn-b)}
+.wo-jcard:nth-child(4n+4){--accent:var(--rd);--accent-bg:var(--rd-bg);--accent-b:var(--rd-b)}
+
+/* ── MANAGER STATUS CARDS — PowerBI 2×2 grid, bold & coloured ── */
+.md-sc-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:14px;
+  padding:14px 16px 4px;
 }
+.md-sc-card{
+  border-radius:14px;
+  padding:22px 20px;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  transition:transform .15s,box-shadow .15s;
+  display:flex;flex-direction:column;gap:6px;
+}
+.md-sc-card:hover{transform:translateY(-4px);box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.md-sc-card::after{
+  content:'→';
+  position:absolute;bottom:16px;right:18px;
+  font-size:18px;font-weight:700;opacity:.3;
+  transition:opacity .15s,transform .15s;
+}
+.md-sc-card:hover::after{opacity:.7;transform:translateX(3px)}
 
-/* --- LIGHT MODE: explicit dark text on all card elements --- */
-[data-theme="light"] .v0-job-cust  { color: #0f1f2e !important; }
-[data-theme="light"] .v0-job-id    { color: #996200 !important; }
-[data-theme="light"] .v0-job-loc   { color: #4a5a6a !important; }
-[data-theme="light"] .v0-job-stage { color: #2a3d52 !important; }
-[data-theme="light"] .v0-job-val   { color: #0f1f2e !important; }
-[data-theme="light"] .v0-sc-n      { color: #0f1f2e !important; }
-[data-theme="light"] .v0-sc-pct    { color: #4a5a6a !important; }
-[data-theme="light"] .v0-job-card  { background: #fff !important; border-color: #dde3ea !important; }
-[data-theme="light"] .v0-job-card:hover { border-color: #996200 !important; border-left-color: #996200 !important; }
-[data-theme="light"] .v0-status-card { background: #fff !important; border-color: #dde3ea !important; }
-[data-theme="light"] .v0-view-btn  { background: #f0f4f8 !important; color: #2a3d52 !important; border-color: #c8d0da !important; }
-[data-theme="light"] .v0-view-btn:hover { background: rgba(184,114,0,.08) !important; color: #996200 !important; border-color: #996200 !important; }
-[data-theme="light"] .v0-expand    { background: #fff !important; }
-[data-theme="light"] .v0-expand-hd { color: #0f1f2e !important; }
-[data-theme="light"] .v0-empty     { color: #7a8a9a !important; }
+/* Unique colour per card */
+.md-sc-card-gn{background:linear-gradient(135deg,#0d6e3a 0%,#1db87a 100%);color:#fff}
+.md-sc-card-am{background:linear-gradient(135deg,#92500a 0%,#f0a500 100%);color:#fff}
+.md-sc-card-bl{background:linear-gradient(135deg,#1535a0 0%,#3d8ef0 100%);color:#fff}
+.md-sc-card-gy{background:linear-gradient(135deg,#243044 0%,#4a5a78 100%);color:#fff}
+/* Light mode gradient adjustments */
+[data-theme="light"] .md-sc-card-gn{background:linear-gradient(135deg,#0a5c30 0%,#1db87a 100%)}
+[data-theme="light"] .md-sc-card-am{background:linear-gradient(135deg,#7a4208 0%,#c88000 100%)}
+[data-theme="light"] .md-sc-card-bl{background:linear-gradient(135deg,#0f2a8a 0%,#2b5fb0 100%)}
+[data-theme="light"] .md-sc-card-gy{background:linear-gradient(135deg,#1a2a3a 0%,#3d4f6e 100%)}
 
-/* --- Light mode: general stat + card text fixes --- */
-[data-theme="light"] .sc-v   { color: #0f1f2e !important; }
-[data-theme="light"] .sc-l   { color: #4a5a6a !important; }
-[data-theme="light"] .sc-s   { color: #6a7a8a !important; }
-[data-theme="light"] .crd-hd { color: #0f1f2e !important; }
-[data-theme="light"] .tb-t   { color: #0f1f2e !important; }
-[data-theme="light"] .tb-m   { color: #4a5a6a !important; }
+.md-sc-badge{
+  display:inline-flex;height:22px;padding:0 10px;border-radius:20px;
+  font-size:11px;font-weight:700;align-items:center;letter-spacing:.04em;
+  background:rgba(255,255,255,.2);color:#fff;width:fit-content;
+}
+.md-sc-num{
+  font-size:42px;font-weight:800;letter-spacing:-.04em;
+  line-height:1;margin-top:10px;color:#fff;
+}
+.md-sc-lbl{font-size:15px;font-weight:600;color:#fff;margin-top:4px}
+.md-sc-sub{font-size:12px;color:rgba(255,255,255,.7);line-height:1.4}
 
-/* --- Doc pills light mode --- */
-[data-theme="light"] .v0-doc-view { background: #eef2f5 !important; color: #2a3d52 !important; border-color: #c8d0da !important; }
-[data-theme="light"] .v0-doc-pending { color: #7a8a9a !important; border-color: #c8d0da !important; }
+/* Expand panels */
+.md-expand{
+  background:var(--sf);border:1px solid var(--bd);
+  border-radius:12px;margin:12px 16px 0;overflow:hidden;
+}
+.md-expand-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;border-bottom:1px solid var(--bd);
+  font-size:14px;font-weight:600;color:var(--tx);
+}
+.md-expand-hd button{
+  background:transparent;border:1px solid var(--bd);border-radius:6px;
+  padding:3px 10px;font-size:12px;color:var(--tx2);cursor:pointer;
+  font-family:'Inter',sans-serif;transition:.12s;
+}
+.md-expand-hd button:hover{border-color:var(--rd);color:var(--rd)}
 
-/* --- Sidebar nav light mode text --- */
-[data-theme="light"] .ni { color: #2a3d52 !important; }
-[data-theme="light"] .sb-rl { color: rgba(255,255,255,.6) !important; }
+/* Doc pills inside expand */
+.dp-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.dp{height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:600;
+  display:inline-flex;align-items:center;gap:4px;border:none;cursor:pointer;
+  font-family:'Inter',sans-serif}
+.dp-gn{background:var(--gn-bg);color:var(--gn)}
+.dp-bl{background:var(--bl-bg);color:var(--bl)}
+.dp-gy{background:var(--sf2);color:var(--tx2);border:1px solid var(--bd)}
+.dp-off{background:transparent;color:var(--tx3);border:1px solid var(--bd);opacity:.45;cursor:default}
+
+/* Batch card */
+.md-batch-card{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;flex-direction:column;gap:6px}
+.md-batch-card:last-child{border-bottom:none}
+.md-batch-hd{display:flex;align-items:center;gap:8px}
+.md-batch-cert{font-size:14px;font-weight:700;color:var(--tx)}
+.md-batch-count{font-size:13px;color:var(--tx2)}
+.md-batch-val{font-size:13px;font-weight:700;color:var(--am);margin-left:auto}
+.md-batch-wos{font-size:12px;color:var(--tx3)}
+
+/* Empty */
+.md-empty{padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem}
+
+/* Light mode: card text visibility (already white on gradient, so fine) */
+[data-theme="light"] .wo-jcard-name{color:#111827!important}
+[data-theme="light"] .wo-jcard-loc{color:#374151!important}
+[data-theme="light"] .wo-jcard-stage{color:#374151!important}
+[data-theme="light"] .wo-jcard-val{color:#111827!important}
+[data-theme="light"] .wo-jcard-btn{color:#111827!important;background:#f3f4f6!important;border-color:#d1d5db!important}
+[data-theme="light"] .md-expand-hd{color:#111827!important}
+[data-theme="light"] .md-batch-cert{color:#111827!important}
+[data-theme="light"] .md-batch-count{color:#374151!important}
+[data-theme="light"] .md-batch-wos{color:#374151!important}
+[data-theme="light"] .md-empty{color:#374151!important}
+
+@media(max-width:820px){
+  .md-sc-grid{grid-template-columns:1fr}
+  .md-sc-num{font-size:32px}
+}
