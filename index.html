@@ -577,27 +577,8 @@
             <div>
               <!-- PIPELINE + ACTIONS -->
               <div class="crd" style="margin-bottom:1rem">
-                <div class="crd-hd">
-                  <div class="crd-hd-l">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                    Job Progress
-                  </div>
-                  <span id="jdStageLabel" class="badge b-am"></span>
-                </div>
-                <!-- Progress bar -->
-                <div style="padding:.85rem 1.15rem .4rem;border-bottom:1px solid var(--bd)">
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-                    <span id="jdProgressText" style="font-size:.72rem;color:var(--tx3);font-weight:500"></span>
-                    <span id="jdProgressPct" style="font-size:.72rem;font-weight:600;color:var(--am)"></span>
-                  </div>
-                  <div class="prog-w" style="height:6px;border-radius:4px">
-                    <div class="prog-b" id="jdProgressBar" style="width:0%;height:6px;border-radius:4px"></div>
-                  </div>
-                  <div id="jdNextAction" style="margin-top:.65rem;font-size:.78rem;color:var(--tx2);line-height:1.4;padding:.5rem .65rem;background:var(--sf2);border-radius:var(--rs);border-left:3px solid var(--am)"></div>
-                </div>
-                <!-- Stage detail list -->
-                <div style="font-size:.72rem;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding:.65rem 1.15rem .2rem">All stages</div>
-                <div id="jdPipeline" style="padding:0 .95rem .75rem"></div>
+                <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>What happens next</div></div>
+                <div id="jdPipeline" style="padding:.75rem 1rem"></div>
               </div>
               <!-- DOCUMENTS FOR MD / DOWNLOAD PANEL -->
               <div class="crd" id="jdDocsPanel">
@@ -634,90 +615,52 @@
 <script src="rates.js"></script>
 <script src="app.js"></script>
 
-<!-- ClaimDesk Redesign: progress bar + status label updater -->
+
+
+
+<!-- ClaimDesk Redesign: "View all stages" toggle on pipeline -->
 <script>
 (function(){
-  // Human-readable labels for each of the 12 pipeline stages
-  var STAGE_LABELS = [
-    'Work Order Received',
-    'VO1 Prepared',
-    'VO1 Submitted to BPC',
-    'Works Instruction Received',
-    'Site Work Started',
-    'GIS Report Submitted',
-    'GIS Report Received',
-    'VO2 Prepared',
-    'Works Valuation Submitted',
-    'Payment Certificate Received',
-    'Invoice Generated',
-    'Claim Submitted'
-  ];
-  var NEXT_ACTION = [
-    'Prepare the Works Order Valuation (VO1) for this job.',
-    'Submit the VO1 to BPC for approval.',
-    'Waiting for BPC to issue the Works Instruction.',
-    'Works Instruction received — site work can begin.',
-    'Job is on site. Waiting for GIS team to submit their report.',
-    'GIS report submitted — waiting for BPC to confirm receipt.',
-    'GIS report confirmed. Prepare the Works Valuation (VO2).',
-    'Submit the Works Valuation (VO2) to BPC.',
-    'Waiting for BPC to issue the Payment Certificate.',
-    'Payment Certificate received. Generate the invoice.',
-    'Invoice ready — submit the claim batch to BPC.',
-    'Claim submitted. This job is complete.'
-  ];
-
-  function updateProgress() {
+  function addPipelineToggle(){
     var pipeline = document.getElementById('jdPipeline');
-    if (!pipeline) return;
-    var dots = pipeline.querySelectorAll('.pipe-dot');
-    if (!dots.length) return;
-    var total = dots.length;
-    var done = 0, activeIdx = -1;
-    dots.forEach(function(d, i){
-      if (d.classList.contains('done')) done = i + 1;
-      if (d.classList.contains('active')) activeIdx = i;
-    });
-    var current = activeIdx >= 0 ? activeIdx : done;
-    var pct = Math.round((done / total) * 100);
+    if(!pipeline || pipeline.dataset.toggled) return;
+    pipeline.dataset.toggled = '1';
 
-    var bar = document.getElementById('jdProgressBar');
-    var txt = document.getElementById('jdProgressText');
-    var pctEl = document.getElementById('jdProgressPct');
-    var lbl = document.getElementById('jdStageLabel');
-    var next = document.getElementById('jdNextAction');
+    // Count done vs total
+    var steps = pipeline.querySelectorAll('.pipe-step');
+    var done = pipeline.querySelectorAll('.pipe-dot.done').length;
+    var total = steps.length;
 
-    if (bar) bar.style.width = pct + '%';
-    if (txt) txt.textContent = 'Stage ' + (current + 1) + ' of ' + total;
-    if (pctEl) pctEl.textContent = pct + '%';
-    if (lbl) {
-      lbl.textContent = STAGE_LABELS[current] || ('Stage ' + (current+1));
-      lbl.className = done >= total ? 'badge b-gn' : 'badge b-am';
-    }
-    if (next) {
-      if (done >= total) {
-        next.textContent = 'This job is complete. All stages finished.';
-        next.style.borderLeftColor = 'var(--gn)';
-      } else {
-        next.textContent = NEXT_ACTION[current] || '';
-      }
-    }
+    // Add toggle button after the pipeline
+    var btn = document.createElement('button');
+    btn.className = 'pipeline-toggle';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>' +
+      'View all ' + total + ' stages (' + done + ' completed)';
+    btn.onclick = function(){
+      var expanded = pipeline.classList.toggle('expanded');
+      btn.innerHTML = expanded
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="18 15 12 9 6 15"/></svg> Show current step only'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg> View all ' + total + ' stages (' + done + ' completed)';
+    };
+    pipeline.parentNode.insertBefore(btn, pipeline.nextSibling);
   }
 
-  // Watch for changes to the pipeline container (JS re-renders it on nav)
-  var observer = new MutationObserver(updateProgress);
-  function attachObserver(){
-    var p = document.getElementById('jdPipeline');
-    if (p) { observer.observe(p, {childList:true, subtree:true, attributes:true}); updateProgress(); }
-  }
-  // Also hook into the screen transition
+  // Watch for pipeline renders
   document.addEventListener('DOMContentLoaded', function(){
-    attachObserver();
-    // Re-check when job detail screen is shown
     var jd = document.getElementById('sc-jobdetail');
-    if (jd) {
-      new MutationObserver(function(){ if(jd.classList.contains('act')) { setTimeout(updateProgress,50); } }).observe(jd,{attributes:true,attributeFilter:['class']});
-    }
+    if(!jd) return;
+    new MutationObserver(function(){
+      if(jd.classList.contains('act')){
+        setTimeout(function(){
+          // Remove old toggle if re-rendering
+          var old = jd.querySelector('.pipeline-toggle');
+          if(old) old.remove();
+          var p = document.getElementById('jdPipeline');
+          if(p) delete p.dataset.toggled;
+          addPipelineToggle();
+        }, 80);
+      }
+    }).observe(jd, {attributes:true, attributeFilter:['class']});
   });
 })();
 </script>
