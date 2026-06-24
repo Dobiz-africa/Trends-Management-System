@@ -3125,3 +3125,176 @@ function doLogout(){
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginRole').value='';
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PIPELINE CARD REDESIGN PATCH
+   Wraps renderJobDetail to convert dot/line pipeline into
+   beautiful business-friendly stage cards with a modal drawer.
+   Zero logic changes — purely UI layer.
+   ══════════════════════════════════════════════════════════════ */
+(function() {
+  const _orig = window.renderJobDetail || renderJobDetail;
+
+  // Store action HTML per stage so drawer can show it
+  window._pipeDrawerData = {};
+
+  // Override renderJobDetail
+  const patchedRender = function(wo) {
+    // Run original render (fills #jdPipeline with old markup)
+    _orig(wo);
+    // Now convert the old markup into card layout
+    _upgradePipelineToCards(wo);
+  };
+
+  // Try to replace after app.js has finished defining renderJobDetail
+  window.addEventListener('load', () => {
+    window.renderJobDetail = patchedRender;
+    // Also patch refreshDetail
+    window.refreshDetail = function() {
+      if (window.detailWO) window.renderJobDetail(window.detailWO);
+    };
+  });
+
+  window._upgradePipelineToCards = function(wo) {
+    if (typeof DB === 'undefined' || typeof STAGES === 'undefined') return;
+    const job = DB.jobs[wo]; if (!job) return;
+    const canEdit = CU === 'admin';
+    const isFinance = CU === 'finance';
+    const isMD = CU === 'md';
+    const currIdx = stageIdx(job.stage);
+
+    const container = document.getElementById('jdPipeline');
+    if (!container) return;
+
+    // Collect action HTML from the old rendered pipe-steps (before we wipe them)
+    const oldSteps = container.querySelectorAll('.pipe-step');
+    const actionMap = {};
+    const dateMap = {};
+    const scanMap = {};
+    oldSteps.forEach(stepEl => {
+      // Find which stage this belongs to by matching label text
+      const lblEl = stepEl.querySelector('.pipe-lbl');
+      const actEl = stepEl.querySelector('.pipe-actions');
+      const dateEl = stepEl.querySelector('.pipe-date');
+      if (!lblEl) return;
+      const lblText = lblEl.textContent.trim();
+      const st = STAGES.find(s => s.lbl === lblText || lblText.includes(s.lbl.substring(0, 15)));
+      if (!st) return;
+      if (actEl) actionMap[st.id] = actEl.innerHTML;
+      if (dateEl) {
+        const dt = dateEl.textContent;
+        if (!dt.includes('Signed scan')) dateMap[st.id] = dt.replace('Recorded: ', '');
+        if (dt.includes('Signed scan')) scanMap[st.id] = true;
+      }
+    });
+
+    // Determine visible stages per role
+    let visibleStages = STAGES;
+    if (isFinance) visibleStages = STAGES.filter(s => s.id === 'claim_docs_ready');
+
+    // Render card grid
+    container.innerHTML = visibleStages.map((st, i) => {
+      const globalIdx = STAGE_IDS.indexOf(st.id);
+      const state = globalIdx < currIdx ? 'done' : globalIdx === currIdx ? 'active' : 'pending';
+      const icon = (typeof PIPE_ICONS !== 'undefined' && PIPE_ICONS[st.id]) || '📌';
+      const stepNum = globalIdx + 1;
+      const recordedDate = dateMap[st.id] || '';
+      const hasScan = !!scanMap[st.id];
+
+      let statusPill = '';
+      if (state === 'done') statusPill = '<span class="pipe-status-pill psp-done">✓ Done</span>';
+      else if (state === 'active') statusPill = '<span class="pipe-status-pill psp-active">● In Progress</span>';
+      else statusPill = '<span class="pipe-status-pill psp-pending">Upcoming</span>';
+
+      let bottomLine = '';
+      if (recordedDate) {
+        bottomLine = `<div class="pipe-date">✓ ${recordedDate}</div>`;
+      } else if (hasScan) {
+        bottomLine = `<div class="pipe-date">✓ Signed scan</div>`;
+      }
+      if (state === 'active') {
+        bottomLine += '<div class="pipe-cta-hint"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>Tap to act</div>';
+      } else if (state === 'done') {
+        bottomLine += '<div class="pipe-cta-hint" style="color:var(--tx3)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>View details</div>';
+      }
+
+      // Short label
+      const shortLbls = {
+        wo_received:'Work Order\nReceived', vo1_created:'VO1\nCreated',
+        linesman_notified:'Linesman\nNotified', field_received:'Field Findings\nReceived',
+        vo2_created:'VO2\nCreated', works_valuation_created:'Works\nValuation',
+        work_instruction_ready:'Works\nInstruction', teams_notified:'Teams\nNotified',
+        work_complete:'Work\nComplete', gis_notified:'GIS\nNotified',
+        gis_complete:'GIS Report\nReceived', claim_docs_ready:'Claim Docs\nReady',
+        job_complete:'Job\nComplete',
+      };
+      const shortLbl = shortLbls[st.id] || st.lbl;
+
+      const actHtml = actionMap[st.id] || '';
+      // Store for drawer
+      window._pipeDrawerData[st.id] = { actHtml, recordedDate, state, globalIdx, icon, fullLabel: st.lbl };
+
+      const pct = stagePct(st.id);
+
+      return `<div class="pipe-step ps-${state}" onclick="window._openStageDrawer('${st.id}','${wo}')" title="${st.lbl}">
+        <div class="pipe-card-inner">
+          <div class="pipe-step-num">Step ${stepNum}</div>
+          <div class="pipe-icon pi-${state}">${icon}</div>
+          <div class="pipe-lbl ${state}" style="white-space:pre-line">${shortLbl}</div>
+          ${bottomLine}
+          ${statusPill}
+        </div>
+      </div>`;
+    }).join('');
+
+    // For MD: also collect doc buttons from old md pipe rendering and store
+    if (isMD) {
+      // Re-run original to get the full doc HTML, stash it, then re-render cards
+      // The original already rendered md pipeline above; we captured what we needed
+    }
+  };
+
+  window._openStageDrawer = function(stageId, wo) {
+    if (typeof openPipeDrawer === 'undefined') return;
+    const data = window._pipeDrawerData[stageId];
+    if (!data) return;
+
+    const job = DB.jobs[wo];
+    const pct = job ? stagePct(job.stage) : 0;
+
+    // For MD, build doc buttons inline
+    let actHtml = data.actHtml;
+    if (CU === 'md' && !actHtml) {
+      const mdDocMap = {
+        vo1_created:['vo1'], field_received:['field_report'], vo2_created:['vo2'],
+        works_valuation_created:['works_valuation'], work_complete:['works_instruction'],
+        gis_complete:['gis_report','gis_cert'],
+        claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'],
+      };
+      const docLabels = {vo1:'VO1',vo2:'VO2',field_report:'Field Report',works_valuation:'Works Valuation',
+        works_instruction:'Works Instruction',gis_report:'GIS Report',gis_cert:'GIS Certificate',
+        annexure:'Annexure',payment_cert:'Payment Certificate',invoice:'Tax Invoice',
+        list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
+      const docs = mdDocMap[stageId] || [];
+      if (docs.length && data.state === 'done') {
+        actHtml = docs.map(dt => {
+          const hasSaved = job && job.savedDocs && job.savedDocs[dt];
+          const hasScan = job && job.scans && job.scans[dt];
+          if (hasSaved || hasScan) {
+            return `<button class="btn btn-bl" style="width:100%" onclick="openDocForAction('${wo}','${dt}');closePipeDrawer()">👁 View ${docLabels[dt]||dt}</button>`;
+          }
+          return `<span style="font-size:.78rem;color:var(--tx3)">📄 ${docLabels[dt]||dt} — not yet available</span>`;
+        }).join('');
+        if (stageId === 'claim_docs_ready') {
+          actHtml += `<button class="btn btn-am" style="width:100%;margin-top:6px" onclick="nav('claims');closePipeDrawer()">💰 Open Claim Batch</button>`;
+        }
+      }
+    }
+
+    openPipeDrawer(
+      stageId, data.state, data.globalIdx,
+      data.fullLabel, data.icon, pct,
+      actHtml, data.recordedDate
+    );
+  };
+})();
