@@ -586,3 +586,184 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
   .ca{padding:1rem}
   .tb{padding:.65rem 1rem}
 }
+
+/* ============================================================
+   PIPELINE — "What happens next" view
+   
+   The JS renders all 12 .pipe-step rows. We use CSS to:
+   1. Hide completed and pending steps entirely
+   2. Show only the active step — large and prominent
+   3. Show done count as a summary line above
+   4. Keep the actions (buttons) prominent
+   ============================================================ */
+
+/* Hide ALL steps by default */
+#jdPipeline .pipe-step {
+  display: none;
+}
+
+/* Show ONLY the active step */
+#jdPipeline .pipe-step:has(.pipe-dot.active) {
+  display: block;
+  background: var(--am-bg);
+  border: 1.5px solid var(--am-b);
+  border-radius: var(--r);
+  padding: 1rem 1.15rem;
+  margin-bottom: .75rem;
+}
+
+/* Hide the dot on the active step — it's redundant now */
+#jdPipeline .pipe-step:has(.pipe-dot.active) .pipe-dot {
+  display: none;
+}
+
+/* The label of the active step — big and clear */
+#jdPipeline .pipe-step:has(.pipe-dot.active) .pipe-lbl {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--tx);
+  margin-bottom: .25rem;
+  text-decoration: none;
+}
+
+/* Date recorded */
+#jdPipeline .pipe-step:has(.pipe-dot.active) .pipe-date {
+  font-size: .75rem;
+  color: var(--tx3);
+  margin-bottom: .6rem;
+}
+
+/* Action buttons — give them room */
+#jdPipeline .pipe-step:has(.pipe-dot.active) .pipe-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: .65rem;
+}
+
+/* Also show the very next pending step as a "coming up" hint */
+#jdPipeline .pipe-step:has(.pipe-dot.pending):first-of-type {
+  /* Can't easily target "first pending after active" in CSS alone */
+  /* JS handles this via the progress bar in jdHeader */
+}
+
+/* If the job is fully complete (no active dot, all done) — 
+   show the last done step as a completion state */
+#jdPipeline:not(:has(.pipe-dot.active)) .pipe-step:has(.pipe-dot.done):last-of-type {
+  display: block;
+  background: var(--gn-bg);
+  border: 1.5px solid var(--gn-b);
+  border-radius: var(--r);
+  padding: 1rem 1.15rem;
+}
+#jdPipeline:not(:has(.pipe-dot.active)) .pipe-step:has(.pipe-dot.done):last-of-type .pipe-dot {
+  display: none;
+}
+#jdPipeline:not(:has(.pipe-dot.active)) .pipe-step:has(.pipe-dot.done):last-of-type .pipe-lbl {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--gn);
+}
+
+/* Remove connector lines — not needed in this view */
+#jdPipeline .pipe-step::after {
+  display: none !important;
+}
+
+/* "View all stages" toggle — appended by our script */
+.pipeline-toggle {
+  font-size: .72rem;
+  color: var(--tx3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: .4rem 0 .2rem;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  transition: color .15s;
+}
+.pipeline-toggle:hover { color: var(--am); }
+
+/* When expanded — show all steps in compact list */
+#jdPipeline.expanded .pipe-step {
+  display: flex !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: .35rem .2rem !important;
+  margin-bottom: 0 !important;
+  border-bottom: 1px solid var(--bd) !important;
+  align-items: flex-start;
+  gap: 10px;
+}
+#jdPipeline.expanded .pipe-step:last-child {
+  border-bottom: none !important;
+}
+#jdPipeline.expanded .pipe-step .pipe-dot {
+  display: flex !important;
+  width: 18px !important;
+  height: 18px !important;
+  font-size: .55rem !important;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+#jdPipeline.expanded .pipe-step:has(.pipe-dot.active) {
+  background: var(--am-bg) !important;
+  border: 1px solid var(--am-b) !important;
+  border-radius: var(--rs) !important;
+  padding: .5rem .6rem !important;
+}
+#jdPipeline.expanded .pipe-step:has(.pipe-dot.active) .pipe-dot {
+  display: flex !important;
+}
+#jdPipeline.expanded .pipe-step .pipe-lbl {
+  font-size: .78rem !important;
+  font-weight: 500 !important;
+}
+#jdPipeline.expanded .pipe-step .pipe-date {
+  font-size: .65rem;
+}
+#jdPipeline.expanded .pipe-step .pipe-actions {
+  margin-top: 4px;
+}
+
+/* ============================================================
+   JOB DETAIL HEADER — make it the hero of the page
+   JS writes inline styles here but our class styles take priority
+   for the container.
+   ============================================================ */
+.jd-hdr {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: var(--r);
+  padding: 1.4rem 1.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  border-left: 4px solid var(--am);
+}
+
+/* WO number — make it authoritative */
+.jd-wo {
+  font-family: 'Courier New', monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--am);
+  letter-spacing: .02em;
+}
+
+/* Layout: left col fills, right col fixed for value */
+.jd-lay {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media(max-width:820px){
+  .jd-lay { grid-template-columns: 1fr; }
+  .jd-hdr { flex-direction: column; gap: .75rem; }
+}
