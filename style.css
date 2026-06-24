@@ -606,482 +606,227 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
   .hero-sub{display:none}
 }
 
+
 /* ============================================================
-   PIPELINE REDESIGN — Business-first stage cards + modal drawer
-   Replaces the horizontal dot-line developer look.
-   No logic changes — purely presentational overrides.
+   PIPELINE — Professional ordered list (Linear/Jira style)
+   Each stage is a table row. Status chip on the right.
+   Active row expands to show actions inline. No emojis, no dots.
    ============================================================ */
 
-/* --- Stage Grid Container --- */
 #jdPipeline {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
-  gap: 10px !important;
-  padding: 1rem !important;
+  padding: 0 !important;
   overflow-x: unset !important;
   scrollbar-width: unset !important;
-  flex-direction: unset !important;
-  align-items: unset !important;
+  display: block !important;
 }
 
-/* --- Individual Stage Card --- */
+/* Remove old horizontal/flex overrides from earlier appended CSS */
 #jdPipeline .pipe-step {
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  text-align: left !important;
-  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 36px 1fr auto !important;
+  align-items: start !important;
   gap: 0 !important;
   padding: 0 !important;
   margin-bottom: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  border-bottom: 1px solid var(--bd) !important;
+  background: transparent !important;
   position: relative !important;
-  border-radius: 10px !important;
-  border: 1.5px solid var(--bd) !important;
-  background: var(--sf) !important;
-  cursor: pointer !important;
-  transition: border-color .18s, box-shadow .18s, transform .18s !important;
-  overflow: hidden !important;
+  cursor: default !important;
+  text-align: left !important;
+  min-width: 0 !important;
+  flex-direction: unset !important;
 }
-#jdPipeline .pipe-step:hover {
-  background: var(--sf2) !important;
-  border-color: var(--bd2) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,.25) !important;
-}
-
-/* Done state */
-#jdPipeline .pipe-step.ps-done {
-  border-color: rgba(29,184,122,.3) !important;
-}
-#jdPipeline .pipe-step.ps-done:hover {
-  border-color: var(--gn) !important;
-  box-shadow: 0 8px 24px rgba(29,184,122,.12) !important;
-}
-
-/* Active state */
-#jdPipeline .pipe-step.ps-active {
-  border-color: var(--am-b) !important;
-  box-shadow: 0 0 0 3px var(--am-bg), 0 8px 24px rgba(240,165,0,.12) !important;
-}
-#jdPipeline .pipe-step.ps-active:hover {
-  border-color: var(--am) !important;
-  box-shadow: 0 0 0 3px var(--am-bg), 0 12px 32px rgba(240,165,0,.18) !important;
-}
-
-/* Pending state */
-#jdPipeline .pipe-step.ps-pending {
-  opacity: .55 !important;
-}
-
-/* --- Top colour bar per state --- */
-#jdPipeline .pipe-step::before {
-  content: '' !important;
-  display: block !important;
-  height: 3px !important;
-  width: 100% !important;
-  background: var(--bd2) !important;
-  flex-shrink: 0 !important;
-}
-#jdPipeline .pipe-step.ps-done::before { background: var(--gn) !important; }
-#jdPipeline .pipe-step.ps-active::before { background: var(--am) !important; }
-
-/* Remove old ::after connector line */
+#jdPipeline .pipe-step:last-child { border-bottom: none !important; }
+#jdPipeline .pipe-step:hover { background: var(--sf2) !important; }
+#jdPipeline .pipe-step::before,
 #jdPipeline .pipe-step::after { display: none !important; }
 
-/* --- Card inner layout --- */
-#jdPipeline .pipe-card-inner {
-  display: flex;
-  flex-direction: column;
-  padding: .8rem .85rem .75rem;
-  gap: 6px;
-  width: 100%;
-  height: 100%;
-  min-height: 110px;
+/* Left accent bar for active step */
+#jdPipeline .pipe-step.ps-active {
+  background: var(--sf2) !important;
+}
+#jdPipeline .pipe-step.ps-active::before {
+  display: block !important;
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; top: 0 !important; bottom: 0 !important;
+  width: 3px !important;
+  background: var(--am) !important;
+  border-radius: 0 !important;
 }
 
-/* --- Stage icon badge --- */
-#jdPipeline .pipe-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.05rem;
-  flex-shrink: 0;
-  margin-bottom: 2px;
-}
-.pipe-icon.pi-done { background: var(--gn-bg); border: 1px solid var(--gn-b); }
-.pipe-icon.pi-active { background: var(--am-bg); border: 1px solid var(--am-b); animation: pipe-pulse 2s ease-in-out infinite; }
-.pipe-icon.pi-pending { background: var(--sf2); border: 1px solid var(--bd); }
-
-@keyframes pipe-pulse {
-  0%,100% { box-shadow: 0 0 0 0 var(--am-bg); }
-  50% { box-shadow: 0 0 0 6px transparent; }
-}
-
-/* --- Stage label --- */
-#jdPipeline .pipe-lbl {
-  font-size: .72rem !important;
-  font-weight: 600 !important;
-  line-height: 1.35 !important;
-  max-width: none !important;
-  margin: 0 !important;
-  color: var(--tx) !important;
-  flex: 1;
-}
-#jdPipeline .pipe-lbl.done { color: var(--tx2) !important; }
-#jdPipeline .pipe-lbl.pending { color: var(--tx3) !important; }
-
-/* --- Step number chip --- */
-#jdPipeline .pipe-step-num {
-  font-size: .58rem;
-  font-weight: 700;
-  color: var(--tx3);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  margin-bottom: 2px;
-}
-
-/* --- Status pill at bottom of card --- */
-#jdPipeline .pipe-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: .62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  padding: .2rem .55rem;
-  border-radius: 20px;
-  align-self: flex-start;
-  margin-top: auto;
-}
-.psp-done { background: var(--gn-bg); color: var(--gn); border: 1px solid var(--gn-b); }
-.psp-active { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-b); }
-.psp-pending { background: var(--sf3); color: var(--tx3); border: 1px solid var(--bd); }
-
-/* --- Date line under label --- */
-#jdPipeline .pipe-date {
-  font-size: .62rem !important;
-  color: var(--gn) !important;
-  margin-top: 0 !important;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-/* --- CTA hint at bottom (active card only) --- */
-#jdPipeline .pipe-cta-hint {
-  font-size: .62rem;
-  color: var(--am);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-  font-weight: 600;
-}
-
-/* --- Hide old pipe-dot and pipe-actions in new layout --- */
-#jdPipeline .pipe-dot { display: none !important; }
-#jdPipeline .pipe-actions { display: none !important; }
-#jdPipeline .pipe-info { display: none !important; }
-
-/* ---- Stage Drawer Modal ---- */
-#pipeDrawer {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .22s;
-}
-#pipeDrawer.open {
-  pointer-events: auto;
-  opacity: 1;
-}
-#pipeDrawerBackdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(6,10,18,.72);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  cursor: pointer;
-}
-#pipeDrawerPanel {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 580px;
-  background: var(--sf);
-  border: 1px solid var(--bd2);
-  border-bottom: none;
-  border-radius: 18px 18px 0 0;
-  padding: 0;
-  transform: translateY(40px);
-  transition: transform .28s cubic-bezier(.16,1,.3,1);
-  max-height: 85vh;
-  overflow-y: auto;
-}
-#pipeDrawer.open #pipeDrawerPanel {
-  transform: translateY(0);
-}
-
-.pd-handle {
-  width: 40px; height: 4px;
-  background: var(--bd2);
-  border-radius: 2px;
-  margin: 14px auto 0;
-}
-.pd-header {
+/* Step number column */
+.pipe-num {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 1.2rem 1.4rem 1rem;
-  border-bottom: 1px solid var(--bd);
-}
-.pd-icon {
-  width: 46px; height: 46px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.35rem;
+  justify-content: center;
+  padding: .75rem 0 .75rem .85rem;
+  font-size: .65rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: var(--tx3);
+  letter-spacing: .03em;
+  line-height: 1.6;
   flex-shrink: 0;
 }
-.pd-icon.pi-done { background: var(--gn-bg); border: 1px solid var(--gn-b); }
-.pd-icon.pi-active { background: var(--am-bg); border: 1px solid var(--am-b); }
-.pd-icon.pi-pending { background: var(--sf2); border: 1px solid var(--bd); }
+#jdPipeline .pipe-step.ps-active .pipe-num { color: var(--am); }
+#jdPipeline .pipe-step.ps-done .pipe-num { color: var(--gn); }
 
-.pd-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--tx);
-  line-height: 1.25;
-  margin-bottom: 4px;
+/* Centre content column */
+.pipe-body {
+  padding: .72rem .85rem .72rem .6rem;
+  min-width: 0;
 }
-.pd-meta {
-  font-size: .72rem;
-  color: var(--tx3);
+
+/* Stage label */
+#jdPipeline .pipe-lbl {
+  font-size: .82rem !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  color: var(--tx2) !important;
+  display: block !important;
+  white-space: normal !important;
+}
+#jdPipeline .pipe-lbl.done { color: var(--tx3) !important; text-decoration: line-through; text-decoration-color: var(--bd2); }
+#jdPipeline .pipe-lbl.active { color: var(--tx) !important; font-weight: 600 !important; }
+#jdPipeline .pipe-lbl.pending { color: var(--tx3) !important; }
+
+/* Recorded date */
+#jdPipeline .pipe-date {
+  font-size: .68rem !important;
+  color: var(--tx3) !important;
+  margin-top: 3px !important;
+  display: block !important;
+}
+#jdPipeline .pipe-step.ps-done .pipe-date { color: var(--gn) !important; }
+
+/* Actions area — inline, below label */
+#jdPipeline .pipe-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 10px !important;
+  padding-bottom: 4px !important;
+  justify-content: flex-start !important;
+}
+
+/* Status chip column */
+.pipe-status {
+  padding: .75rem .9rem .75rem 0;
   display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* Status chips — compact filled pills */
+.ps-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 5px;
+  font-size: .63rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: .22rem .65rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  line-height: 1;
 }
-.pd-status-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: .63rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .07em; padding: .2rem .6rem; border-radius: 20px;
-}
-.pdb-done { background: var(--gn-bg); color: var(--gn); border: 1px solid var(--gn-b); }
-.pdb-active { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-b); }
-.pdb-pending { background: var(--sf3); color: var(--tx3); border: 1px solid var(--bd); }
-
-.pd-body {
-  padding: 1.2rem 1.4rem 2rem;
-}
-
-/* --- Progress bar in drawer --- */
-.pd-progress-wrap {
-  margin-bottom: 1.2rem;
-}
-.pd-progress-label {
-  display: flex; justify-content: space-between;
-  font-size: .68rem; color: var(--tx3);
-  margin-bottom: 6px;
-}
-.pd-progress-track {
-  height: 6px; background: var(--sf3); border-radius: 3px; overflow: hidden;
-}
-.pd-progress-fill {
-  height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, var(--gn), #27e89a);
-  transition: width .5s cubic-bezier(.4,0,.2,1);
-}
-.pd-progress-fill.pf-active {
-  background: linear-gradient(90deg, var(--am), #ffc84a);
-}
-
-/* --- Action area in drawer --- */
-.pd-actions {
-  display: flex; flex-direction: column; gap: 8px;
-}
-.pd-actions .btn { font-size: .82rem; padding: .65rem 1rem; }
-
-/* Close button */
-.pd-close {
-  position: absolute;
-  top: 1rem; right: 1rem;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: .8rem;
-  transition: background .15s, color .15s;
-}
-.pd-close:hover { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-b); }
-
-/* --- Recorded info box --- */
-.pd-recorded {
-  background: var(--gn-bg);
-  border: 1px solid var(--gn-b);
-  border-radius: var(--rs);
-  padding: .65rem .9rem;
-  font-size: .75rem;
+.ps-chip-done {
+  background: rgba(29,184,122,.15);
   color: var(--gn);
-  margin-bottom: .9rem;
-  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--gn-b);
 }
-
-/* --- Context tip box --- */
-.pd-tip {
-  background: var(--am-bg);
+.ps-chip-active {
+  background: rgba(240,165,0,.15);
+  color: var(--am);
   border: 1px solid var(--am-b);
-  border-radius: var(--rs);
-  padding: .6rem .85rem;
-  font-size: .74rem;
-  color: var(--tx2);
-  line-height: 1.5;
-  margin-bottom: .9rem;
 }
-.pd-tip.pd-tip-bl {
-  background: var(--bl-bg);
-  border-color: var(--bl-b);
+.ps-chip-pending {
+  background: var(--sf3);
+  color: var(--tx3);
+  border: 1px solid var(--bd);
 }
 
-/* Mobile: full-width drawer */
-@media(max-width:600px) {
-  #pipeDrawerPanel { border-radius: 14px 14px 0 0; max-height: 90vh; }
-  .pd-header { padding: 1rem; }
-  .pd-body { padding: 1rem 1rem 2rem; }
+/* Status indicator dot (small, no animation noise) */
+.ps-chip-active::before {
+  content: '';
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--am);
+  flex-shrink: 0;
+}
+.ps-chip-done::before {
+  content: '✓';
+  font-size: .58rem;
 }
 
-/* Override old media query that made pipeline a column on small screens */
-@media(max-width:820px) {
-  #jdPipeline {
+/* Hide old dot elements */
+#jdPipeline .pipe-dot { display: none !important; }
+#jdPipeline .pipe-info { display: none !important; }
+
+/* Context tip boxes inside pipeline (already styled in app.js inline) */
+#jdPipeline [style*="background:var(--am-bg)"],
+#jdPipeline [style*="background:var(--bl-bg)"],
+#jdPipeline [style*="background:var(--gn-bg)"] {
+  font-size: .75rem !important;
+  border-radius: 5px !important;
+  margin-bottom: 8px !important;
+}
+
+/* Mobile: stays as rows, just tighter */
+@media(max-width: 820px) {
+  #jdPipeline .pipe-step {
+    grid-template-columns: 30px 1fr auto !important;
     flex-direction: unset !important;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    text-align: left !important;
   }
-  #jdPipeline .pipe-step { flex-direction: column !important; text-align: left !important; gap: 0 !important; }
   #jdPipeline .pipe-step:not(:last-child)::after { display: none !important; }
-  #jdPipeline .pipe-info { margin-top: 0 !important; }
-  #jdPipeline .pipe-lbl { max-width: none !important; margin: 0 !important; }
+  #jdPipeline .pipe-info { display: none !important; }
 }
 
 /* ============================================================
-   GENERAL UI POLISH — non-developer look improvements
+   GLOBAL POLISH — Professional tone, tighter than before
    ============================================================ */
 
-/* Warmer card headers */
-.crd-hd {
-  font-size: .72rem !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
-  letter-spacing: .09em !important;
-  color: var(--tx2) !important;
-}
+/* Progress bar — thinner, more refined */
+.prog-b { background: linear-gradient(90deg, var(--am), #e8c060); }
 
-/* Job detail header polish */
+/* Stat cards — cleaner hover */
+.sc { transition: border-color .18s, box-shadow .18s; }
+.sc:hover { border-color: var(--bd2); box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+
+/* WO number — more referential, less code-y */
 .jd-wo {
-  font-size: .85rem !important;
-  font-family: var(--font-body) !important;
-  letter-spacing: .04em !important;
-  background: var(--am-bg) !important;
-  border: 1px solid var(--am-b) !important;
-  border-radius: 20px !important;
-  padding: .25rem .75rem !important;
-  display: inline-block !important;
-}
-
-/* Make stat cards on dashboard feel warmer */
-.sc {
-  transition: border-color .18s, box-shadow .18s !important;
-}
-.sc:hover {
-  border-color: var(--am-b) !important;
-  box-shadow: 0 4px 16px rgba(240,165,0,.08) !important;
-}
-
-/* Badge improvements */
-.badge {
-  letter-spacing: .04em !important;
-  font-size: .62rem !important;
-}
-
-/* Task list items — softer hover */
-.task-item {
-  border-radius: var(--r) !important;
-  transition: background .15s, border-color .15s !important;
-}
-
-/* Document cards — better shadow on hover */
-.doc-card {
-  transition: border-color .15s, box-shadow .15s !important;
-}
-.doc-card:hover {
-  border-color: var(--bd2) !important;
-  box-shadow: 0 4px 14px rgba(0,0,0,.18) !important;
-}
-
-/* Finance / MD panel cards subtle gradient top */
-.crd {
-  position: relative !important;
-  overflow: hidden !important;
-}
-.crd::after {
-  content: '' !important;
-  position: absolute !important;
-  top: 0; left: 0; right: 0 !important;
-  height: 1px !important;
-  background: linear-gradient(90deg, transparent, var(--am-bg), transparent) !important;
-  pointer-events: none !important;
-}
-
-/* Buttons — slightly more rounded, friendlier */
-.btn {
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  letter-spacing: .02em !important;
-  transition: filter .15s, transform .1s, box-shadow .15s !important;
-}
-.btn:hover { filter: brightness(1.08) !important; }
-.btn-am:hover { box-shadow: 0 4px 14px rgba(240,165,0,.25) !important; }
-.btn-gn:hover { box-shadow: 0 4px 14px rgba(29,184,122,.22) !important; }
-.btn-bl:hover { box-shadow: 0 4px 14px rgba(61,142,240,.2) !important; }
-
-/* Light mode drawer */
-[data-theme="light"] #pipeDrawerPanel {
-  background: #fff;
-  border-color: #c4ccdc;
-}
-[data-theme="light"] .pd-header {
-  border-color: #c4ccdc;
-}
-[data-theme="light"] .pd-recorded {
-  color: #136b43;
-}
-[data-theme="light"] #jdPipeline .pipe-step {
-  background: #fff !important;
-}
-[data-theme="light"] #jdPipeline .pipe-step:hover {
-  background: #f0f3fa !important;
-}
-
-/* Step num always subtle */
-.pipe-step-num {
-  font-size: .57rem;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .06em;
   text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--tx3);
-  margin-bottom: 4px;
-  font-weight: 600;
+  color: var(--tx2);
+  background: var(--sf2);
+  border: 1px solid var(--bd2);
+  border-radius: 4px;
+  padding: .18rem .6rem;
+  font-family: var(--font-body);
 }
 
-/* Remove the crd::after from pipeline card (it inherits from .crd parent, not the cards themselves) */
-#jdPipeline .pipe-step::before {
-  /* already defined above — this ensures specificity */
-  border-radius: 0 !important;
-}
+/* Doc cards — tighter */
+.doc-card { transition: border-color .15s; }
+.doc-card:hover { border-color: var(--bd2); }
+
+/* Table rows — tighter density */
+.tbl-row { font-size: .79rem; }
+
+/* Buttons — slightly more professional */
+.btn { border-radius: 5px; font-size: .76rem; }
+.btn-sm { font-size: .71rem; border-radius: 4px; }
+
+/* Light mode pipeline overrides */
+[data-theme="light"] #jdPipeline .pipe-step:hover { background: #f0f3fa !important; }
+[data-theme="light"] #jdPipeline .pipe-step.ps-active { background: #f5f7fc !important; }
