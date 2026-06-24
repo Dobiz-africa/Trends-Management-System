@@ -607,86 +607,136 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 }
 
 /* ============================================================
-   WORK ORDER CARDS — Admin jobs list
+   V0-MATCHING STYLES — job cards, status cards, doc pills
+   Copied from v0 design system and adapted for dark/light toggle
    ============================================================ */
-.wo-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding:16px}
-.wo-card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:16px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .12s;display:flex;flex-direction:column;gap:8px}
-.wo-card:hover{border-color:var(--am-b);box-shadow:0 4px 18px rgba(0,0,0,.22);transform:translateY(-2px)}
-.wo-card-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.wo-card-num{font-size:.68rem;font-weight:700;color:var(--am);font-family:var(--font-display);letter-spacing:.04em}
-.wo-card-name{font-size:.88rem;font-weight:700;color:var(--tx);margin-top:2px;line-height:1.25}
-.wo-card-loc{font-size:.72rem;color:var(--tx3);display:flex;align-items:center;gap:4px}
-.wo-card-stage{font-size:.72rem;color:var(--tx2);line-height:1.3}
-.wo-card-ft{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}
-.wo-card-prog{display:flex;align-items:center;gap:6px;flex:1}
-.wo-card-bar{flex:1;height:4px;background:var(--bd);border-radius:2px;overflow:hidden}
-.wo-card-fill{height:100%;border-radius:2px;transition:width .3s}
-.wo-card-pct{font-size:.62rem;color:var(--tx3);white-space:nowrap}
-.wo-card-val{font-size:.78rem;font-weight:700;color:var(--am);font-family:var(--font-display);white-space:nowrap}
-.wo-card-btn{margin-top:4px;width:100%;height:32px;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);font-size:.75rem;font-weight:600;color:var(--tx2);cursor:pointer;transition:.12s;font-family:var(--font-body)}
-.wo-card-btn:hover{border-color:var(--am);color:var(--am);background:var(--am-bg)}
 
-/* ============================================================
-   MANAGER DASHBOARD — 4 Status Cards
-   ============================================================ */
-.md-status-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:16px 16px 0}
-.md-status-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px 16px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .12s;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
-.md-status-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.22);transform:translateY(-2px)}
-.md-card-gn{border-top:3px solid var(--gn)}.md-card-gn:hover{border-color:var(--gn)}
-.md-card-am{border-top:3px solid var(--am)}.md-card-am:hover{border-color:var(--am)}
-.md-card-bl{border-top:3px solid var(--bl)}.md-card-bl:hover{border-color:var(--bl)}
-.md-card-gy{border-top:3px solid var(--bd2)}.md-card-gy:hover{border-color:var(--bd2)}
-.md-sc-icon{width:36px;height:36px;border-radius:9px;background:var(--sf2);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;margin-bottom:4px}
-.md-sc-icon svg{width:18px;height:18px;color:var(--tx2)}
-.md-card-gn .md-sc-icon svg{color:var(--gn)}
-.md-card-am .md-sc-icon svg{color:var(--am)}
-.md-card-bl .md-sc-icon svg{color:var(--bl)}
-.md-sc-num{font-size:2rem;font-weight:800;color:var(--tx);font-family:var(--font-display);line-height:1}
-.md-sc-lbl{font-size:.82rem;font-weight:700;color:var(--tx)}
-.md-sc-sub{font-size:.68rem;color:var(--tx3);line-height:1.35}
-.md-sc-badge{display:inline-flex;height:22px;padding:0 9px;border-radius:20px;font-size:.68rem;font-weight:600;align-items:center;margin-top:4px;width:fit-content}
+/* Job cards — horizontal layout matching v0 exactly */
+.v0-job-card {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  transition: border-color .12s, box-shadow .12s;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.v0-job-card:hover { border-color: var(--bd2); box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+.v0-job-card:last-child { margin-bottom: 0; }
+.v0-job-grow { flex: 1; min-width: 0; }
+.v0-job-id { font-size: 12px; font-weight: 700; color: var(--am); letter-spacing: .04em; font-family: var(--font-display); }
+.v0-job-cust { font-size: 15px; font-weight: 600; color: var(--tx); margin-top: 3px; }
+.v0-job-loc {
+  font-size: 13px; color: var(--tx3); margin-top: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.v0-job-loc::before {
+  content: ""; width: 12px; height: 12px; flex-shrink: 0;
+  background: var(--tx3);
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z'/></svg>") center/contain no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z'/></svg>") center/contain no-repeat;
+}
+.v0-job-stage { font-size: 12px; color: var(--tx2); margin-top: 5px; }
+.v0-job-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.v0-job-val { font-size: 14px; font-weight: 700; color: var(--am); font-family: var(--font-display); }
+.v0-view-btn {
+  height: 30px; padding: 0 13px; border-radius: 8px;
+  border: 1px solid var(--bd2); background: var(--sf2);
+  font-size: 13px; font-weight: 500; color: var(--tx2);
+  cursor: pointer; font-family: var(--font-body); transition: .12s;
+  white-space: nowrap;
+}
+.v0-view-btn:hover { border-color: var(--am); color: var(--am); background: var(--am-bg); }
 
-/* Expandable section panel */
-.md-section{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;margin:12px 16px 0;overflow:hidden}
-.md-section-hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bd);font-size:.85rem;font-weight:700;color:var(--tx)}
-.md-section-close{background:transparent;border:1px solid var(--bd);border-radius:var(--rs);padding:3px 10px;font-size:.72rem;color:var(--tx2);cursor:pointer;font-family:var(--font-body)}
-.md-section-close:hover{border-color:var(--rd);color:var(--rd)}
-.md-empty{padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem}
+/* Jobs list wrapper — add some padding */
+#jobsList .v0-job-card:first-child { margin-top: 8px; }
+#jobsList { padding: 0 4px 8px; }
 
-/* Work order cards inside MD sections */
-.md-wo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;padding:14px}
-.md-wo-card{background:var(--sf);border:1px solid var(--bd);border-radius:9px;padding:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column;gap:6px}
-.md-wo-card:hover{border-color:var(--am-b);box-shadow:0 3px 12px rgba(0,0,0,.18)}
-.md-wo-card-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.md-wo-num{font-size:.65rem;font-weight:700;color:var(--am);letter-spacing:.04em}
-.md-wo-name{font-size:.82rem;font-weight:700;color:var(--tx);margin-top:2px}
-.md-wo-loc{font-size:.68rem;color:var(--tx3);display:flex;align-items:center;gap:4px}
-.md-wo-stage{font-size:.7rem;font-weight:600}
-.md-wo-prog{display:flex;align-items:center;gap:6px}
-.md-wo-bar{flex:1;height:4px;background:var(--bd);border-radius:2px;overflow:hidden}
-.md-wo-fill{height:100%;border-radius:2px;transition:width .3s}
-.md-wo-pct{font-size:.62rem;color:var(--tx3);white-space:nowrap}
-.md-wo-val{font-size:.72rem;font-weight:700;color:var(--am);margin-left:auto;white-space:nowrap}
+/* v0-style badges — clean pill shape matching v0 exactly */
+.v0badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.v0badge::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.v0badge-green { background: var(--gn-bg); color: var(--gn); }
+.v0badge-amber { background: var(--am-bg); color: var(--am); }
+.v0badge-red   { background: var(--rd-bg); color: var(--rd); }
+.v0badge-blue  { background: var(--bl-bg); color: var(--bl); }
+.v0badge-grey  { background: var(--sf3);   color: var(--tx2); }
+
+/* Status cards — matching v0's .status-card exactly */
+.v0-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  padding: 14px 0 8px;
+}
+.v0-status-card {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+  padding: 18px;
+  cursor: pointer;
+  transition: border-color .12s, transform .1s, box-shadow .12s;
+}
+.v0-status-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+.v0-sc-green:hover { border-color: var(--gn-b); }
+.v0-sc-amber:hover { border-color: var(--am-b); }
+.v0-sc-blue:hover  { border-color: var(--bl-b); }
+.v0-sc-grey:hover  { border-color: var(--bd2); }
+.v0-sc-top { display: flex; align-items: center; justify-content: space-between; }
+.v0-sc-n { font-size: 32px; font-weight: 700; letter-spacing: -.02em; margin-top: 12px; color: var(--tx); font-family: var(--font-display); }
+.v0-sc-pct { font-size: 12px; color: var(--tx3); margin-top: 3px; }
+.v0-sc-track { height: 6px; border-radius: 6px; background: var(--sf2); margin-top: 14px; overflow: hidden; position: relative; }
+.v0-sc-track i { display: block; height: 100%; border-radius: 6px; transition: width .4s; }
+
+/* Expandable panel */
+.v0-expand {
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  border-radius: 12px;
+  margin-top: 14px;
+  overflow: hidden;
+}
+.v0-expand-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 18px; border-bottom: 1px solid var(--bd);
+  font-size: 14px; font-weight: 600; color: var(--tx);
+}
+.v0-expand-hd button {
+  background: transparent; border: 1px solid var(--bd);
+  border-radius: 6px; padding: 3px 10px;
+  font-size: 12px; color: var(--tx2); cursor: pointer;
+  font-family: var(--font-body);
+}
+.v0-expand-hd button:hover { border-color: var(--rd); color: var(--rd); }
 
 /* Doc pills */
-.md-doc-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.md-doc-pill{height:22px;padding:0 7px;border-radius:5px;font-size:.65rem;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;border:none;font-family:var(--font-body)}
-.md-doc-pill.done{background:var(--gn-bg);color:var(--gn);cursor:pointer}
-.md-doc-pill.ready{background:var(--bl-bg);color:var(--bl);cursor:pointer}
-.md-doc-pill.view{background:var(--sf3);color:var(--tx2);cursor:pointer}
-.md-doc-pill.pending{background:transparent;border:1px solid var(--bd);color:var(--tx3);opacity:.5;cursor:default}
+.v0-doc-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.v0-doc-pill {
+  height: 22px; padding: 0 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 4px;
+  border: none; cursor: pointer; font-family: var(--font-body);
+  white-space: nowrap;
+}
+.v0-doc-done  { background: var(--gn-bg); color: var(--gn); cursor: pointer; }
+.v0-doc-ready { background: var(--bl-bg); color: var(--bl); cursor: pointer; }
+.v0-doc-view  { background: var(--sf2); color: var(--tx2); cursor: pointer; border: 1px solid var(--bd); }
+.v0-doc-pending { background: transparent; color: var(--tx3); border: 1px solid var(--bd); opacity: .5; cursor: default; }
 
-/* Batch cards */
-.md-batch-card{padding:14px 16px;border-bottom:1px solid var(--bd);display:flex;flex-direction:column;gap:6px}
-.md-batch-card:last-child{border-bottom:none}
-.md-batch-hd{display:flex;align-items:center;gap:8px}
-.md-batch-cert{font-size:.85rem;font-weight:700;color:var(--tx)}
-.md-batch-count{font-size:.75rem;color:var(--tx2)}
-.md-batch-val{font-size:.78rem;font-weight:700;color:var(--am);margin-left:auto}
-.md-batch-wos{font-size:.68rem;color:var(--tx3)}
+/* Empty state */
+.v0-empty { padding: 1.5rem; text-align: center; color: var(--tx3); font-size: .8rem; }
 
-@media(max-width:900px){
-  .md-status-cards{grid-template-columns:repeat(2,1fr)}
-  .wo-cards{grid-template-columns:1fr}
-  .md-wo-grid{grid-template-columns:1fr}
+/* Expand panels inside m-whoswhat */
+#m-whoswhat { padding: 0; }
+
+@media (max-width: 820px) {
+  .v0-status-grid { grid-template-columns: 1fr; }
+  .v0-job-card { flex-direction: column; }
+  .v0-job-meta { align-items: flex-start; }
 }
