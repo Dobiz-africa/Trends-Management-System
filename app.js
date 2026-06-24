@@ -716,32 +716,30 @@ function renderAdminDash(){
   document.getElementById('a-prog').textContent=waiting.length;
   document.getElementById('a-val').textContent=P(val);
 
-  const taskIcons={wo_received:'📋',vo1_created:'📤',field_received:'📝',vo2_created:'👷',work_instruction_ready:'📄',work_complete:'📍',gis_notified:'📋',claim_docs_ready:'✅'};
-  const taskLabels={wo_received:'Create VO1 — Review uploaded WO',vo1_created:'Notify Linesman (external) — Record in system',field_received:'Upload Linesman Findings, then Create VO2',vo2_created:'Prepare Works Instruction document',work_instruction_ready:'Send Works Instruction to Teams (external) — Record',work_complete:'Notify GIS Consultant (external)',claim_docs_ready:'Review Finance Docs — Record Job as Complete'};
+  const taskLabels={wo_received:'Create VO1 — Review uploaded work order',vo1_created:'Notify linesman externally — Record in system',field_received:'Upload linesman findings, then create VO2',vo2_created:'Prepare works instruction document',work_instruction_ready:'Send works instruction to teams (external) — Record',work_complete:'Notify GIS consultant (external)',claim_docs_ready:'Review finance docs — Record job as complete'};
   const taskBadges={wo_received:'b-rd',vo1_created:'b-am',field_received:'b-am',vo2_created:'b-am',work_instruction_ready:'b-am',work_complete:'b-am',gis_notified:'b-am',claim_docs_ready:'b-gn'};
   const tasksEl=document.getElementById('a-tasks');
-  if(!needsAction.length){tasksEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--gn);font-size:.82rem">✓ No pending actions right now</div>';}
+  if(!needsAction.length){tasksEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--gn);font-size:.82rem">No pending actions right now</div>';}
   else{tasksEl.innerHTML=needsAction.map(j=>`
-    <div class="tbl-row" style="grid-template-columns:30px 1fr 160px 100px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
-      <span style="font-size:1.1rem">${taskIcons[j.stage]||'📄'}</span>
+    <div class="tbl-row" style="grid-template-columns:8px 1fr 160px 100px;cursor:pointer;gap:14px" onclick="openJobDetail('${j.wo}')">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--am);display:inline-block;margin-top:5px;flex-shrink:0"></span>
       <div>
         <div style="font-size:.83rem;font-weight:600;color:var(--tx)">${taskLabels[j.stage]||stageLabel(j.stage)}</div>
-        <div style="font-size:.72rem;color:var(--tx2);margin-top:1px">WO ${j.wo} · ${j.cust} · ${j.loc.split(',')[0]}</div>
+        <div style="font-size:.72rem;color:var(--tx2);margin-top:1px">WO ${j.wo} &middot; ${j.cust} &middot; ${j.loc.split(',')[0]}</div>
       </div>
       <span style="font-size:.72rem;color:var(--tx2)">${stageLabel(j.stage)}</span>
       <span class="badge ${taskBadges[j.stage]||'b-am'}">Act Now</span>
     </div>`).join('');}
 
-  const waitIcons={linesman_notified:'👷',teams_notified:'🔨',gis_notified:'📍'};
   const waitLabels={linesman_notified:'Linesman conducting field survey',teams_notified:'Teams executing work on site',gis_notified:'GIS consultant on site'};
   const waitEl=document.getElementById('a-waiting');
   if(!waiting.length){waitEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--tx3);font-size:.8rem">Nothing waiting on external parties</div>';}
   else{waitEl.innerHTML=waiting.map(j=>`
-    <div class="tbl-row" style="grid-template-columns:30px 1fr 160px 80px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
-      <span style="font-size:1.1rem">${waitIcons[j.stage]||'⏳'}</span>
+    <div class="tbl-row" style="grid-template-columns:8px 1fr 160px 80px;cursor:pointer;gap:14px" onclick="openJobDetail('${j.wo}')">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--bl);display:inline-block;margin-top:5px;flex-shrink:0"></span>
       <div>
         <div style="font-size:.83rem;font-weight:500;color:var(--tx2)">${waitLabels[j.stage]||stageLabel(j.stage)}</div>
-        <div style="font-size:.72rem;color:var(--tx3);margin-top:1px">WO ${j.wo} · ${j.cust} · since ${j.actions[j.stage]?.date||'—'}</div>
+        <div style="font-size:.72rem;color:var(--tx3);margin-top:1px">WO ${j.wo} &middot; ${j.cust} &middot; since ${j.actions[j.stage]?.date||'—'}</div>
       </div>
       <span style="font-size:.72rem;color:var(--tx2)">${j.loc.split(',')[0]}</span>
       <span class="badge b-bl">Waiting</span>
@@ -767,14 +765,14 @@ function renderFinanceDash(){
   if(!ready.length){tasksEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No jobs ready yet — waiting for GIS reports to be uploaded</div>';}
   else{tasksEl.innerHTML=ready.map(j=>{
     const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
-    return`<div class="tbl-row" style="grid-template-columns:30px 1fr 110px 110px 120px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
-      <span style="font-size:1.1rem">💰</span>
+    return`<div class="tbl-row" style="grid-template-columns:8px 1fr 110px 110px 120px;cursor:pointer;gap:14px" onclick="openJobDetail('${j.wo}')">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--am);display:inline-block;margin-top:5px;flex-shrink:0"></span>
       <div>
         <div style="font-size:.83rem;font-weight:600;color:var(--tx)">${j.cust}</div>
-        <div style="font-size:.72rem;color:var(--tx2);margin-top:1px">WO ${j.wo} · ${j.loc.split(',')[0]}</div>
+        <div style="font-size:.72rem;color:var(--tx2);margin-top:1px">WO ${j.wo} &middot; ${j.loc.split(',')[0]}</div>
       </div>
       <span class="mono" style="font-size:.8rem">${P(t.total)}</span>
-      <span style="font-size:.72rem;color:var(--gn)">✓ GIS received</span>
+      <span style="font-size:.72rem;color:var(--gn)">GIS received</span>
       <span class="badge b-am">Generate Docs</span>
     </div>`;}).join('');}
 
@@ -782,12 +780,13 @@ function renderFinanceDash(){
   if(![...done,...completed].length){procEl.innerHTML='<div style="padding:1rem;text-align:center;color:var(--tx3);font-size:.8rem">None yet</div>';}
   else{procEl.innerHTML=[...done,...completed].map(j=>{
     const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
-    return`<div class="tbl-row" style="grid-template-columns:30px 1fr 110px 100px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
-      <span style="font-size:1.1rem">${j.stage==='job_complete'?'✅':'📋'}</span>
-      <div><div style="font-size:.83rem;font-weight:500;color:var(--tx2)">${j.cust} · WO ${j.wo}</div>
+    const isComplete=j.stage==='job_complete';
+    return`<div class="tbl-row" style="grid-template-columns:8px 1fr 110px 100px;cursor:pointer;gap:14px" onclick="openJobDetail('${j.wo}')">
+      <span style="width:8px;height:8px;border-radius:50%;background:${isComplete?'var(--gn)':'var(--bl)'};display:inline-block;margin-top:5px;flex-shrink:0"></span>
+      <div><div style="font-size:.83rem;font-weight:500;color:var(--tx2)">${j.cust} &middot; WO ${j.wo}</div>
         <div style="font-size:.7rem;color:var(--tx3)">${j.claimRef||'—'}</div></div>
       <span class="mono" style="font-size:.8rem">${P(t.total)}</span>
-      <span class="badge ${j.stage==='job_complete'?'b-gn':'b-bl'}">${j.stage==='job_complete'?'Complete':'Docs Ready'}</span>
+      <span class="badge ${isComplete?'b-gn':'b-bl'}">${isComplete?'Complete':'Docs Ready'}</span>
     </div>`;}).join('');}
 }
 
@@ -815,7 +814,7 @@ function renderMDDash(){
     {sid:'work_instruction_ready',  dt:'works_instruction',lbl:'WI'},
     {sid:'gis_complete',            dt:'gis_report',       lbl:'GIS'},
   ];
-  const ST_LBL={wo_received:'Admin — Create VO1',vo1_created:'Admin — Notify Linesman',linesman_notified:'Linesman — Field Survey',field_received:'Admin — Create VO2',vo2_created:'Admin — Works Valuation',works_valuation_created:'Admin — Works Instruction',work_instruction_ready:'Admin — Send to Teams',teams_notified:'Teams — On Site',work_complete:'Admin — Notify GIS',gis_notified:'GIS — On Site',gis_complete:'Finance — Generate Claim Docs',claim_docs_ready:'Admin — Record Complete',job_complete:'✅ Complete'};
+  const ST_LBL={wo_received:'Admin — Create VO1',vo1_created:'Admin — Notify Linesman',linesman_notified:'Linesman — Field Survey',field_received:'Admin — Create VO2',vo2_created:'Admin — Works Valuation',works_valuation_created:'Admin — Works Instruction',work_instruction_ready:'Admin — Send to Teams',teams_notified:'Teams — On Site',work_complete:'Admin — Notify GIS',gis_notified:'GIS — On Site',gis_complete:'Finance — Generate Claim Docs',claim_docs_ready:'Admin — Record Complete',job_complete:'Complete'};
   const ST_COL={wo_received:'var(--am)',vo1_created:'var(--am)',linesman_notified:'var(--bl)',field_received:'var(--am)',vo2_created:'var(--am)',works_valuation_created:'var(--am)',work_instruction_ready:'var(--am)',teams_notified:'var(--bl)',work_complete:'var(--am)',gis_notified:'var(--bl)',gis_complete:'var(--am)',claim_docs_ready:'var(--am)',job_complete:'var(--gn)'};
   const wwEl=document.getElementById('m-whoswhat');
   if(!jobs.length){wwEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No jobs yet</div>';}
@@ -872,7 +871,7 @@ function renderMDDash(){
       const totalClaimVal=jobsDone.reduce((s,j)=>{const t=(j.vo2&&j.vo2.items&&j.vo2.items.length)?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);
       doneEl.innerHTML=`
         <div style="margin:.75rem 1rem;padding:.75rem 1rem;background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);font-size:.78rem;color:var(--gn)">
-          <div style="font-weight:700;font-size:.82rem;margin-bottom:6px">📋 Ready to Claim — ${jobsDone.length} job${jobsDone.length>1?'s':''} · Total: <span style="color:var(--am)">${P(totalClaimVal)}</span></div>
+          <div style="font-weight:700;font-size:.82rem;margin-bottom:6px">Ready to Claim &mdash; ${jobsDone.length} job${jobsDone.length>1?'s':''} &middot; Total: <span style="color:var(--am)">${P(totalClaimVal)}</span></div>
           <div style="color:var(--tx);line-height:1.6;font-size:.76rem">
             <strong>To submit a claim to BPC, prepare the following documents in order:</strong><br>
             1. <strong>List of Jobs Done</strong> — available below in Claim Batches<br>
@@ -894,7 +893,7 @@ function renderMDDash(){
             <span class="tag">${j.loc.split(',')[0]}</span>
             <span class="mono">${P(t.total)}</span>
             <span style="font-size:.72rem;color:var(--tx3)">${j.actions.work_complete?.date||'—'}</span>
-            <span class="badge ${isFullyDone?'b-gn':'b-bl'}">${isFullyDone?'✓ Complete':'📋 Docs Ready'}</span>
+            <span class="badge ${isFullyDone?'b-gn':'b-bl'}">${isFullyDone?'Complete':'Docs Ready'}</span>
           </div>`;}).join('')}`;
     }
   }
@@ -1032,20 +1031,20 @@ function renderInbox(){
   const tasks=[];
   const jobs=Object.values(DB.jobs);
   if(CU==='admin'){
-    jobs.filter(j=>j.stage==='wo_received').forEach(j=>tasks.push({wo:j.wo,icon:'📋',name:'Create VO1 — Review BPC Work Order · WO '+j.wo,desc:j.cust+' · '+j.loc,badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='vo1_created').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Notify Linesman Externally — Record in System · WO '+j.wo,desc:j.cust,badge:'Next Step',bc:'b-gy'}));
-    jobs.filter(j=>j.stage==='linesman_notified').forEach(j=>tasks.push({wo:j.wo,icon:'📥',name:'Upload Linesman Findings — WO '+j.wo,desc:j.cust+' · awaiting linesman field report',badge:'Waiting',bc:'b-bl'}));
-    jobs.filter(j=>j.stage==='field_received').forEach(j=>tasks.push({wo:j.wo,icon:'📝',name:'Create VO2 from Field Findings — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='vo2_created').forEach(j=>tasks.push({wo:j.wo,icon:'📄',name:'Prepare Works Instruction — WO '+j.wo,desc:j.cust+' · ready to instruct teams',badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='work_instruction_ready').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Send WI to Teams (External) — Record in System · WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='teams_notified').forEach(j=>tasks.push({wo:j.wo,icon:'✅',name:'Waiting: Teams Executing Work — WO '+j.wo,desc:j.cust+' · click when teams report back',badge:'Waiting',bc:'b-bl'}));
-    jobs.filter(j=>j.stage==='work_complete').forEach(j=>tasks.push({wo:j.wo,icon:'📍',name:'Notify GIS Consultant Externally — Record in System · WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='gis_notified').forEach(j=>tasks.push({wo:j.wo,icon:'📍',name:'Waiting: GIS Consultant on Site — WO '+j.wo,desc:j.cust+' · Notified: '+(j.actions.gis_notified?.date||'—'),badge:'Waiting',bc:'b-bl'}));
+    jobs.filter(j=>j.stage==='wo_received').forEach(j=>tasks.push({wo:j.wo,name:'Create VO1 — Review BPC Work Order · WO '+j.wo,desc:j.cust+' · '+j.loc,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='vo1_created').forEach(j=>tasks.push({wo:j.wo,name:'Notify linesman externally — Record in system · WO '+j.wo,desc:j.cust,badge:'Next Step',bc:'b-gy'}));
+    jobs.filter(j=>j.stage==='linesman_notified').forEach(j=>tasks.push({wo:j.wo,name:'Upload linesman findings — WO '+j.wo,desc:j.cust+' · awaiting linesman field report',badge:'Waiting',bc:'b-bl'}));
+    jobs.filter(j=>j.stage==='field_received').forEach(j=>tasks.push({wo:j.wo,name:'Create VO2 from field findings — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='vo2_created').forEach(j=>tasks.push({wo:j.wo,name:'Prepare works instruction — WO '+j.wo,desc:j.cust+' · ready to instruct teams',badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='work_instruction_ready').forEach(j=>tasks.push({wo:j.wo,name:'Send works instruction to teams (external) — Record · WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='teams_notified').forEach(j=>tasks.push({wo:j.wo,name:'Waiting — Teams executing work · WO '+j.wo,desc:j.cust+' · record when teams report back',badge:'Waiting',bc:'b-bl'}));
+    jobs.filter(j=>j.stage==='work_complete').forEach(j=>tasks.push({wo:j.wo,name:'Notify GIS consultant externally — Record · WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='gis_notified').forEach(j=>tasks.push({wo:j.wo,name:'Waiting — GIS consultant on site · WO '+j.wo,desc:j.cust+' · Notified: '+(j.actions.gis_notified?.date||'—'),badge:'Waiting',bc:'b-bl'}));
     jobs.filter(j=>j.stage==='gis_notified').length===0&&jobs.filter(j=>j.stage==='work_complete').forEach(()=>{});
-    jobs.filter(j=>j.stage==='claim_docs_ready').forEach(j=>tasks.push({wo:j.wo,icon:'✅',name:'Finance Docs Ready — Record Job Complete · WO '+j.wo,desc:j.cust+' · all documents ready',badge:'Final Step',bc:'b-gn'}));
+    jobs.filter(j=>j.stage==='claim_docs_ready').forEach(j=>tasks.push({wo:j.wo,name:'Finance docs ready — Record job complete · WO '+j.wo,desc:j.cust+' · all documents ready',badge:'Final Step',bc:'b-gn'}));
   }
   if(CU==='finance'){
-    jobs.filter(j=>j.stage==='gis_complete').forEach(j=>tasks.push({wo:j.wo,icon:'💰',name:'Generate Claim Documents — WO '+j.wo,desc:j.cust+' · GIS report received',badge:'Ready',bc:'b-gn'}));
+    jobs.filter(j=>j.stage==='gis_complete').forEach(j=>tasks.push({wo:j.wo,name:'Generate claim documents — WO '+j.wo,desc:j.cust+' · GIS report received',badge:'Ready',bc:'b-gn'}));
   }
   const badge=document.getElementById('ibadge');
   badge.style.display=tasks.length?'inline-block':'none';
@@ -1053,10 +1052,10 @@ function renderInbox(){
   const list=document.getElementById('inboxList');
   if(!tasks.length){list.innerHTML='<div style="padding:2rem;text-align:center;color:var(--tx3);font-size:.8rem">Your inbox is empty — nothing needs action right now</div>';return;}
   list.innerHTML=tasks.map(t=>{
-    // GIS tasks open straight to their action form
     const clickFn = `openJobDetail('${t.wo}')`;
-    return`<div class="tbl-row" style="grid-template-columns:30px 1fr 100px;cursor:pointer" onclick="${clickFn}">
-      <span style="font-size:1.1rem">${t.icon}</span>
+    const dotColor = t.bc==='b-am'?'var(--am)':t.bc==='b-gn'?'var(--gn)':t.bc==='b-rd'?'var(--rd)':'var(--bl)';
+    return`<div class="tbl-row" style="grid-template-columns:8px 1fr 100px;cursor:pointer;gap:14px" onclick="${clickFn}">
+      <span style="width:8px;height:8px;border-radius:50%;background:${dotColor};display:inline-block;margin-top:4px;flex-shrink:0"></span>
       <div>
         <div style="font-size:.82rem;font-weight:600;color:var(--tx)">${t.name}</div>
         <div style="font-size:.72rem;color:var(--tx2);margin-top:2px">${t.desc}</div>
@@ -1196,17 +1195,21 @@ function renderJobDetail(wo){
         });
         // Add claim batch button at claim_docs_ready step
         if(st.id==='claim_docs_ready'){
-          docHtml+=`<button class="btn btn-am btn-sm" onclick="nav('claims')" style="margin-left:4px">💰 Open Claim Batch</button>`;
+          docHtml+=`<button class="btn btn-am btn-sm" onclick="nav('claims')" style="margin-left:4px">Open Claim Batch</button>`;
         }
         docHtml+='</div>';
       }
-      return`<div class="pipe-step">
-        <div class="pipe-dot ${state}">${state==='done'?'✓':state==='active'?'●':''}</div>
-        <div class="pipe-info">
+      const stepNumMD = String(globalIdx+1).padStart(2,'0');
+      const chipClassMD = state==='done'?'ps-chip ps-chip-done':state==='active'?'ps-chip ps-chip-active':'ps-chip ps-chip-pending';
+      const chipLblMD = state==='done'?'Done':state==='active'?'Active':'Pending';
+      return`<div class="pipe-step ps-${state}">
+        <div class="pipe-num">${stepNumMD}</div>
+        <div class="pipe-body">
           <div class="pipe-lbl ${state}">${st.lbl}</div>
-          ${action?`<div class="pipe-date">Recorded: ${action.date}${action.extra?' · '+action.extra:''}${action.notes?' · '+action.notes:''}</div>`:''}
-          ${docHtml}
+          ${action?`<div class="pipe-date">Recorded ${action.date}${action.extra?' &middot; '+action.extra:''}${action.notes?' &middot; '+action.notes:''}</div>`:''}
+          ${docHtml?`<div class="pipe-actions">${docHtml}</div>`:''}
         </div>
+        <div class="pipe-status"><span class="${chipClassMD}">${chipLblMD}</span></div>
       </div>`;
     }).join('');
     // MD nav — make sure claims is visible
@@ -1251,63 +1254,63 @@ function renderJobDetail(wo){
       // Show appropriate action buttons per role + stage
       if(canEdit){
         if(st.id==='wo_received'&&state==='active')
-          actBtns+=`<div style="background:var(--bl-bg);border:1px solid var(--bl-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--bl);margin-bottom:5px">📥 Upload the BPC Work Order document you received by email using the Documents panel below, then create VO1.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
+          actBtns+=`<div style="background:var(--bl-bg);border:1px solid var(--bl-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--bl);margin-bottom:5px">Upload the BPC Work Order document received by email via the Documents panel below, then create VO1.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
         if(st.id==='vo1_created'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo1')">View VO1</button>`;
         if(st.id==='vo1_created'&&state==='active')
           actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','linesman_notified','Record: Linesman Notified','Record when you notified the linesman. Reminder: contact the linesman externally (phone/email) and share the VO1 document.')">Record Linesman Notified</button>`;
         if(st.id==='linesman_notified'&&state==='active')
-          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000">⏳ Waiting for linesman. When he reports back externally, use the button below to record his findings.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">📝 Record Linesman Findings</button>`;
+          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000">Awaiting linesman report. When he responds externally, record his findings below.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">Record Linesman Findings</button>`;
         if(st.id==='linesman_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Linesman notified on ${action?.date||'—'}</span>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">Linesman notified on ${action?.date||'—'}</span>`;
         if(st.id==='field_received'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">📝 Create VO2 from Field Findings</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">Create VO2 from Field Findings</button>`;
         if(st.id==='field_received'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button>`;
         if(st.id==='vo2_created'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button><button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">📄 Create Works Valuation Document →</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button><button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">Create Works Valuation Document</button>`;
         // vo2_created pending: handled by field_received active state
         if(st.id==='vo2_created'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button>`;
         if(st.id==='works_valuation_created'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">✓ Save Works Valuation — Proceed to Notify Teams</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">Save Works Valuation &mdash; Notify Teams</button>`;
         if(st.id==='works_valuation_created'&&state==='pending')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">📄 Create Works Valuation Document</button>`;
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">Create Works Valuation Document</button>`;
         if(st.id==='works_valuation_created'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button>`;
         if(st.id==='work_instruction_ready'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="advanceStageWI('${wo}')">✓ Works Instruction Ready — Send to Teams</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="advanceStageWI('${wo}')">Works Instruction Ready &mdash; Send to Teams</button>`;
         if(st.id==='work_instruction_ready'&&state==='pending')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">📄 Prepare Works Instruction</button>`;
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">Prepare Works Instruction</button>`;
         if(st.id==='work_instruction_ready'&&state==='done')
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button>`;
         if(st.id==='teams_notified'&&(state==='active'||state==='pending'))
-          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">📤 Notify the field teams externally (WhatsApp/email) to commence work, then record below.</div><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','teams_notified','Record: Teams Notified to Start Work','Record when you notified the teams to start work.','Team(s) assigned (e.g. Shakawe Team A)')">📤 Record Teams Notified</button>`;
+          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">Notify the field teams externally (WhatsApp / email) to commence work, then record below.</div><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','teams_notified','Record: Teams Notified to Start Work','Record when you notified the teams to start work.','Team(s) assigned (e.g. Shakawe Team A)')">Record Teams Notified</button>`;
         if(st.id==='teams_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Teams notified on ${action?.date||'—'} · ${action?.extra||''}</span><div style="margin-top:5px"><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','work_complete','Record: Teams Reported Work Complete','Record when the field team reported back to you that work is complete.')">✅ Record: Teams Reported Work Complete</button></div>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">Teams notified on ${action?.date||'—'} &middot; ${action?.extra||''}</span><div style="margin-top:5px"><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','work_complete','Record: Teams Reported Work Complete','Record when the field team reported back to you that work is complete.')">Record Work Complete</button></div>`;
         if(st.id==='work_complete'&&(state==='active'||state==='pending'))
-          actBtns+=`<div style="background:var(--bl-bg);border:1px solid var(--bl-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:var(--bl);margin-bottom:5px">✅ Teams have completed the work. Step 1: Fill in the Works Instruction (completion record). Step 2: Notify the GIS consultant.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">📄 Step 1: Fill in Works Instruction (Completion Record)</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Consultant Notified','Record when you sent the assignment to the GIS consultant externally.')">📍 Step 2: Notify GIS Consultant (External) — Record</button>`;
+          actBtns+=`<div style="background:var(--bl-bg);border:1px solid var(--bl-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:var(--bl);margin-bottom:5px">Teams have completed work. Fill in the Works Instruction completion record, then notify the GIS consultant.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">Step 1 — Fill in Works Instruction</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Consultant Notified','Record when you sent the assignment to the GIS consultant externally.')">Step 2 — Record GIS Consultant Notified</button>`;
         if(st.id==='work_complete'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Work complete on ${action?.date||'—'}</span>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">Work complete on ${action?.date||'—'}</span>`;
         if(st.id==='gis_notified'&&state==='active')
-          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">📤 Notify the GIS consultant externally. When he returns, he will send you TWO documents: (1) GIS Report and (2) GIS Certificate. Upload both below.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Record & Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 Record & Upload GIS Certificate</button>`;
+          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">Notify the GIS consultant externally. He will return two documents: GIS Report and GIS Certificate. Upload both below.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">Upload GIS Certificate</button>`;
         if(st.id==='gis_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ GIS notified on ${action?.date||'—'}</span><div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 Upload GIS Certificate</button></div>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">GIS notified on ${action?.date||'—'}</span><div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">Upload GIS Certificate</button></div>`;
         if(st.id==='gis_complete'&&state==='active')
-          actBtns+=`<div style="font-size:.72rem;color:var(--am);margin-bottom:4px">Upload both GIS documents received from the consultant:</div><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 GIS Certificate</button></div>`;
+          actBtns+=`<div style="font-size:.72rem;color:var(--am);margin-bottom:4px">Upload both GIS documents received from the consultant:</div><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">GIS Certificate</button></div>`;
         if(st.id==='gis_complete'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ GIS documents uploaded</span><div style="margin-top:4px;display:flex;gap:5px"><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_cert')">View GIS Certificate</button></div>`;
+          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">GIS documents uploaded</span><div style="margin-top:4px;display:flex;gap:5px"><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_cert')">View GIS Certificate</button></div>`;
         if(st.id==='claim_docs_ready'&&state==='active')
-          actBtns+=`<div style="background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--gn);margin-bottom:6px">✅ Finance has generated the claim documents. Review them below, then record this job as complete.</div><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Recording this marks the job as complete and adds it to the List of Jobs Done.')">✅ Record Job as Complete</button>`;
+          actBtns+=`<div style="background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--gn);margin-bottom:6px">Finance has generated claim documents. Review them below, then record this job as complete.</div><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Recording this marks the job as complete and adds it to the List of Jobs Done.')">Record Job as Complete</button>`;
         if(st.id==='claim_docs_ready'&&state==='done')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All documents are ready. Record this job as complete. It will be added to the List of Jobs Done.')">✅ Record Job as Complete</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All documents are ready. Record this job as complete. It will be added to the List of Jobs Done.')">Record Job as Complete</button>`;
         if(st.id==='job_complete'&&state==='done')
-          actBtns+=`<span class="badge b-gn">✅ Job complete on ${action?.date||'—'} — Added to List of Jobs Done</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs Done</button>`;
+          actBtns+=`<span class="badge b-gn">Job complete on ${action?.date||'—'} &mdash; Added to List of Jobs Done</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs Done</button>`;
       }
 
       if(isFinance&&st.id==='claim_docs_ready'){
         if(job.stage==='gis_complete'){
-          actBtns+=`<button class="btn btn-am" onclick="nav('claims')">💰 Go to Claim Batch — Generate Documents</button>`;
+          actBtns+=`<button class="btn btn-am" onclick="nav('claims')">Go to Claim Batch &mdash; Generate Documents</button>`;
         } else if(state==='done') {
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','payment_cert')">View Payment Certificate</button>`;
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','invoice')">View Invoice</button>`;
@@ -1321,14 +1324,18 @@ function renderJobDetail(wo){
         });
       }
     }
-    return`<div class="pipe-step">
-      <div class="pipe-dot ${state}">${state==='done'?'✓':state==='active'?'●':''}</div>
-      <div class="pipe-info">
+    const stepNumAF = String(globalIdx+1).padStart(2,'0');
+    const chipClassAF = state==='done'?'ps-chip ps-chip-done':state==='active'?'ps-chip ps-chip-active':'ps-chip ps-chip-pending';
+    const chipLblAF = state==='done'?'Done':state==='active'?'Active':'Pending';
+    return`<div class="pipe-step ps-${state}">
+      <div class="pipe-num">${stepNumAF}</div>
+      <div class="pipe-body">
         <div class="pipe-lbl ${state}">${st.lbl}</div>
-        ${action?`<div class="pipe-date">Recorded: ${action.date}${action.extra?' · '+action.extra:''}${action.notes?' · '+action.notes:''}</div>`:''}
-        ${hasScan?`<div class="pipe-date" style="color:var(--gn)">✓ Signed scan available</div>`:''}
+        ${action?`<div class="pipe-date">Recorded ${action.date}${action.extra?' &middot; '+action.extra:''}${action.notes?' &middot; '+action.notes:''}</div>`:''}
+        ${hasScan?`<div class="pipe-date" style="color:var(--gn)">Signed scan attached</div>`:''}
         ${actBtns?`<div class="pipe-actions">${actBtns}</div>`:''}
       </div>
+      <div class="pipe-status"><span class="${chipClassAF}">${chipLblAF}</span></div>
     </div>`;
   }).join('');
   } // end non-MD pipeline
@@ -1360,7 +1367,7 @@ function renderJobDetail(wo){
     const canView=hasGenerated&&(!isMultiJob||job.claimRef);
     return`<div class="doc-card">
       <div class="doc-card-top">
-        <div class="doc-card-icon ${iconClass}">${scan?'✓':saved?'📄':'⏳'}</div>
+        <div class="doc-card-icon ${iconClass}">${scan?'&#10003;':saved?'&#11015;':'&ndash;'}</div>
         <div class="doc-card-name">${localDocLabels[d]}${isMultiJob?' (Batch)':''}</div>
         <span class="badge ${statusBadge}">${statusText}</span>
       </div>
@@ -3127,174 +3134,3 @@ function doLogout(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PIPELINE CARD REDESIGN PATCH
-   Wraps renderJobDetail to convert dot/line pipeline into
-   beautiful business-friendly stage cards with a modal drawer.
-   Zero logic changes — purely UI layer.
-   ══════════════════════════════════════════════════════════════ */
-(function() {
-  const _orig = window.renderJobDetail || renderJobDetail;
-
-  // Store action HTML per stage so drawer can show it
-  window._pipeDrawerData = {};
-
-  // Override renderJobDetail
-  const patchedRender = function(wo) {
-    // Run original render (fills #jdPipeline with old markup)
-    _orig(wo);
-    // Now convert the old markup into card layout
-    _upgradePipelineToCards(wo);
-  };
-
-  // Try to replace after app.js has finished defining renderJobDetail
-  window.addEventListener('load', () => {
-    window.renderJobDetail = patchedRender;
-    // Also patch refreshDetail
-    window.refreshDetail = function() {
-      if (window.detailWO) window.renderJobDetail(window.detailWO);
-    };
-  });
-
-  window._upgradePipelineToCards = function(wo) {
-    if (typeof DB === 'undefined' || typeof STAGES === 'undefined') return;
-    const job = DB.jobs[wo]; if (!job) return;
-    const canEdit = CU === 'admin';
-    const isFinance = CU === 'finance';
-    const isMD = CU === 'md';
-    const currIdx = stageIdx(job.stage);
-
-    const container = document.getElementById('jdPipeline');
-    if (!container) return;
-
-    // Collect action HTML from the old rendered pipe-steps (before we wipe them)
-    const oldSteps = container.querySelectorAll('.pipe-step');
-    const actionMap = {};
-    const dateMap = {};
-    const scanMap = {};
-    oldSteps.forEach(stepEl => {
-      // Find which stage this belongs to by matching label text
-      const lblEl = stepEl.querySelector('.pipe-lbl');
-      const actEl = stepEl.querySelector('.pipe-actions');
-      const dateEl = stepEl.querySelector('.pipe-date');
-      if (!lblEl) return;
-      const lblText = lblEl.textContent.trim();
-      const st = STAGES.find(s => s.lbl === lblText || lblText.includes(s.lbl.substring(0, 15)));
-      if (!st) return;
-      if (actEl) actionMap[st.id] = actEl.innerHTML;
-      if (dateEl) {
-        const dt = dateEl.textContent;
-        if (!dt.includes('Signed scan')) dateMap[st.id] = dt.replace('Recorded: ', '');
-        if (dt.includes('Signed scan')) scanMap[st.id] = true;
-      }
-    });
-
-    // Determine visible stages per role
-    let visibleStages = STAGES;
-    if (isFinance) visibleStages = STAGES.filter(s => s.id === 'claim_docs_ready');
-
-    // Render card grid
-    container.innerHTML = visibleStages.map((st, i) => {
-      const globalIdx = STAGE_IDS.indexOf(st.id);
-      const state = globalIdx < currIdx ? 'done' : globalIdx === currIdx ? 'active' : 'pending';
-      const icon = (typeof PIPE_ICONS !== 'undefined' && PIPE_ICONS[st.id]) || '📌';
-      const stepNum = globalIdx + 1;
-      const recordedDate = dateMap[st.id] || '';
-      const hasScan = !!scanMap[st.id];
-
-      let statusPill = '';
-      if (state === 'done') statusPill = '<span class="pipe-status-pill psp-done">✓ Done</span>';
-      else if (state === 'active') statusPill = '<span class="pipe-status-pill psp-active">● In Progress</span>';
-      else statusPill = '<span class="pipe-status-pill psp-pending">Upcoming</span>';
-
-      let bottomLine = '';
-      if (recordedDate) {
-        bottomLine = `<div class="pipe-date">✓ ${recordedDate}</div>`;
-      } else if (hasScan) {
-        bottomLine = `<div class="pipe-date">✓ Signed scan</div>`;
-      }
-      if (state === 'active') {
-        bottomLine += '<div class="pipe-cta-hint"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>Tap to act</div>';
-      } else if (state === 'done') {
-        bottomLine += '<div class="pipe-cta-hint" style="color:var(--tx3)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>View details</div>';
-      }
-
-      // Short label
-      const shortLbls = {
-        wo_received:'Work Order\nReceived', vo1_created:'VO1\nCreated',
-        linesman_notified:'Linesman\nNotified', field_received:'Field Findings\nReceived',
-        vo2_created:'VO2\nCreated', works_valuation_created:'Works\nValuation',
-        work_instruction_ready:'Works\nInstruction', teams_notified:'Teams\nNotified',
-        work_complete:'Work\nComplete', gis_notified:'GIS\nNotified',
-        gis_complete:'GIS Report\nReceived', claim_docs_ready:'Claim Docs\nReady',
-        job_complete:'Job\nComplete',
-      };
-      const shortLbl = shortLbls[st.id] || st.lbl;
-
-      const actHtml = actionMap[st.id] || '';
-      // Store for drawer
-      window._pipeDrawerData[st.id] = { actHtml, recordedDate, state, globalIdx, icon, fullLabel: st.lbl };
-
-      const pct = stagePct(st.id);
-
-      return `<div class="pipe-step ps-${state}" onclick="window._openStageDrawer('${st.id}','${wo}')" title="${st.lbl}">
-        <div class="pipe-card-inner">
-          <div class="pipe-step-num">Step ${stepNum}</div>
-          <div class="pipe-icon pi-${state}">${icon}</div>
-          <div class="pipe-lbl ${state}" style="white-space:pre-line">${shortLbl}</div>
-          ${bottomLine}
-          ${statusPill}
-        </div>
-      </div>`;
-    }).join('');
-
-    // For MD: also collect doc buttons from old md pipe rendering and store
-    if (isMD) {
-      // Re-run original to get the full doc HTML, stash it, then re-render cards
-      // The original already rendered md pipeline above; we captured what we needed
-    }
-  };
-
-  window._openStageDrawer = function(stageId, wo) {
-    if (typeof openPipeDrawer === 'undefined') return;
-    const data = window._pipeDrawerData[stageId];
-    if (!data) return;
-
-    const job = DB.jobs[wo];
-    const pct = job ? stagePct(job.stage) : 0;
-
-    // For MD, build doc buttons inline
-    let actHtml = data.actHtml;
-    if (CU === 'md' && !actHtml) {
-      const mdDocMap = {
-        vo1_created:['vo1'], field_received:['field_report'], vo2_created:['vo2'],
-        works_valuation_created:['works_valuation'], work_complete:['works_instruction'],
-        gis_complete:['gis_report','gis_cert'],
-        claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'],
-      };
-      const docLabels = {vo1:'VO1',vo2:'VO2',field_report:'Field Report',works_valuation:'Works Valuation',
-        works_instruction:'Works Instruction',gis_report:'GIS Report',gis_cert:'GIS Certificate',
-        annexure:'Annexure',payment_cert:'Payment Certificate',invoice:'Tax Invoice',
-        list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
-      const docs = mdDocMap[stageId] || [];
-      if (docs.length && data.state === 'done') {
-        actHtml = docs.map(dt => {
-          const hasSaved = job && job.savedDocs && job.savedDocs[dt];
-          const hasScan = job && job.scans && job.scans[dt];
-          if (hasSaved || hasScan) {
-            return `<button class="btn btn-bl" style="width:100%" onclick="openDocForAction('${wo}','${dt}');closePipeDrawer()">👁 View ${docLabels[dt]||dt}</button>`;
-          }
-          return `<span style="font-size:.78rem;color:var(--tx3)">📄 ${docLabels[dt]||dt} — not yet available</span>`;
-        }).join('');
-        if (stageId === 'claim_docs_ready') {
-          actHtml += `<button class="btn btn-am" style="width:100%;margin-top:6px" onclick="nav('claims');closePipeDrawer()">💰 Open Claim Batch</button>`;
-        }
-      }
-    }
-
-    openPipeDrawer(
-      stageId, data.state, data.globalIdx,
-      data.fullLabel, data.icon, pct,
-      actHtml, data.recordedDate
-    );
-  };
-})();
