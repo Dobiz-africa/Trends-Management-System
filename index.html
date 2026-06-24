@@ -614,5 +614,144 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="rates.js"></script>
 <script src="app.js"></script>
+
+<!-- ══ STAGE DRAWER MODAL ══ -->
+<div id="pipeDrawer">
+  <div id="pipeDrawerBackdrop" onclick="closePipeDrawer()"></div>
+  <div id="pipeDrawerPanel">
+    <div class="pd-handle"></div>
+    <button class="pd-close" onclick="closePipeDrawer()">✕</button>
+    <div class="pd-header">
+      <div class="pd-icon" id="pdIcon"></div>
+      <div style="flex:1;min-width:0">
+        <div class="pd-title" id="pdTitle"></div>
+        <div class="pd-meta">
+          <span id="pdStatusBadge"></span>
+          <span id="pdStepNum" style="color:var(--tx3)"></span>
+        </div>
+      </div>
+    </div>
+    <div class="pd-body">
+      <div class="pd-progress-wrap">
+        <div class="pd-progress-label">
+          <span>Job Progress</span>
+          <span id="pdPct"></span>
+        </div>
+        <div class="pd-progress-track">
+          <div class="pd-progress-fill" id="pdProgressFill"></div>
+        </div>
+      </div>
+      <div id="pdContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PIPELINE CARD RENDERER ══ -->
+<script>
+// Stage icons — makes the cards feel visual and professional
+const PIPE_ICONS = {
+  wo_received:           '📋',
+  vo1_created:           '📝',
+  linesman_notified:     '📡',
+  field_received:        '🔍',
+  vo2_created:           '📄',
+  works_valuation_created:'💰',
+  work_instruction_ready:'📐',
+  teams_notified:        '👷',
+  work_complete:         '🏗️',
+  gis_notified:          '🗺️',
+  gis_complete:          '📍',
+  claim_docs_ready:      '💼',
+  job_complete:          '✅',
+};
+
+// Short business-friendly labels for the cards
+const PIPE_SHORT = {
+  wo_received:            'Work Order\nReceived',
+  vo1_created:            'VO1\nCreated',
+  linesman_notified:      'Linesman\nNotified',
+  field_received:         'Field Findings\nReceived',
+  vo2_created:            'VO2\nCreated',
+  works_valuation_created:'Works\nValuation',
+  work_instruction_ready: 'Works\nInstruction',
+  teams_notified:         'Teams\nNotified',
+  work_complete:          'Work\nComplete',
+  gis_notified:           'GIS\nNotified',
+  gis_complete:           'GIS Report\nReceived',
+  claim_docs_ready:       'Claim Docs\nReady',
+  job_complete:           'Job\nComplete',
+};
+
+// Render pipeline as card grid
+function renderPipelineCards(stages, currIdx, stageIdxFn, pctFn, cardClickFn) {
+  const container = document.getElementById('jdPipeline');
+  if (!container) return;
+
+  container.innerHTML = stages.map((st, i) => {
+    const globalIdx = stageIdxFn(st.id);
+    const state = globalIdx < currIdx ? 'done' : globalIdx === currIdx ? 'active' : 'pending';
+    const icon = PIPE_ICONS[st.id] || '📌';
+    const shortLbl = (PIPE_SHORT[st.id] || st.lbl).replace('\\n', '\n');
+    const stepNum = globalIdx + 1;
+
+    let statusPill = '';
+    if (state === 'done') statusPill = '<span class="pipe-status-pill psp-done">✓ Done</span>';
+    else if (state === 'active') statusPill = '<span class="pipe-status-pill psp-active">● In Progress</span>';
+    else statusPill = '<span class="pipe-status-pill psp-pending">Upcoming</span>';
+
+    const ctaHint = state === 'active' ? '<div class="pipe-cta-hint"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>Tap to act</div>' : (state === 'done' ? '<div class="pipe-cta-hint" style="color:var(--tx3)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>View details</div>' : '');
+
+    return `<div class="pipe-step ps-${state}" onclick="(${cardClickFn.toString()})('${st.id}','${state}',${globalIdx})">
+      <div class="pipe-card-inner">
+        <div class="pipe-step-num">Step ${stepNum}</div>
+        <div class="pipe-icon pi-${state}">${icon}</div>
+        <div class="pipe-lbl ${state}" style="white-space:pre-line">${shortLbl}</div>
+        ${statusPill}
+        ${ctaHint}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Drawer state
+let _drawerActionsHtml = '';
+
+function openPipeDrawer(stageId, state, globalIdx, fullLabel, icon, pct, actionsHtml, recordedDate) {
+  _drawerActionsHtml = actionsHtml;
+  const el = id => document.getElementById(id);
+
+  el('pdIcon').className = 'pd-icon pi-' + state;
+  el('pdIcon').textContent = icon;
+  el('pdTitle').textContent = fullLabel;
+  el('pdStepNum').textContent = 'Step ' + (globalIdx + 1) + ' of ' + (typeof STAGES !== 'undefined' ? STAGES.length : 13);
+
+  const badgeCls = state === 'done' ? 'pdb-done' : state === 'active' ? 'pdb-active' : 'pdb-pending';
+  const badgeTxt = state === 'done' ? '✓ Complete' : state === 'active' ? '● In Progress' : 'Upcoming';
+  el('pdStatusBadge').innerHTML = `<span class="pd-status-badge ${badgeCls}">${badgeTxt}</span>`;
+
+  el('pdPct').textContent = pct + '% complete';
+  const fill = el('pdProgressFill');
+  fill.style.width = pct + '%';
+  fill.className = 'pd-progress-fill' + (state === 'active' ? ' pf-active' : '');
+
+  let bodyHtml = '';
+  if (recordedDate) {
+    bodyHtml += `<div class="pd-recorded">✓ Recorded on ${recordedDate}</div>`;
+  }
+  bodyHtml += `<div class="pd-actions">${actionsHtml || (state === 'pending' ? '<p style="font-size:.8rem;color:var(--tx3)">This step is upcoming — complete the previous steps first.</p>' : '<p style="font-size:.8rem;color:var(--tx2)">No actions available for this step.</p>')}</div>`;
+  el('pdContent').innerHTML = bodyHtml;
+
+  el('pipeDrawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePipeDrawer() {
+  document.getElementById('pipeDrawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Close on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePipeDrawer(); });
+</script>
 </body>
 </html>
