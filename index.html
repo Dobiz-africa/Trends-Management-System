@@ -600,6 +600,40 @@
 
 <!-- Rates database (defines global RATES_SEED) loads before app logic -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Load config with fallback to API -->
+<script>
+(async function() {
+  let configLoaded = false;
+  
+  if (typeof window.CLAIMDESK_CONFIG !== 'undefined' && window.CLAIMDESK_CONFIG) {
+    configLoaded = true;
+  } else {
+    try {
+      const response = await fetch('/api/config');
+      if (response.ok) {
+        const config = await response.json();
+        window.CLAIMDESK_CONFIG = config;
+        configLoaded = true;
+        console.log('Config loaded from /api/config');
+      }
+    } catch (err) {
+      console.warn('Could not fetch /api/config:', err);
+    }
+  }
+  
+  if (!configLoaded) {
+    window.CLAIMDESK_CONFIG = {
+      SUPABASE_URL: '',
+      SUPABASE_ANON_KEY: '',
+      SCANS_BUCKET: 'claimdesk-scans'
+    };
+  }
+  
+  window.CONFIG_READY = true;
+  window.dispatchEvent(new CustomEvent('configReady'));
+})();
+</script>
+
 <script src="config.js" onerror="console.info('No local config.js — using /api/config')"></script>
 <!-- jsPDF + AutoTable for proper PDF generation (no blank page issues) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
