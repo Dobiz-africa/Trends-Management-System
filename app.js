@@ -965,8 +965,7 @@ function renderJobs(){
     const isReady=['gis_complete','claim_docs_ready'].includes(j.stage);
     const isBusy=['teams_notified','gis_notified','work_complete'].includes(j.stage);
     const bl=isDone?'Complete':isReady?'Ready to Claim':isBusy?'In Progress':'Active';
-    const grad=GRADS[idx%GRADS.length];
-    return`<div class="wo-sc" style="background:${grad}" onclick="openJobDetail('${j.wo}')">
+    return`<div class="wo-sc" style="background:${GRADS[idx%GRADS.length]}" onclick="openJobDetail('${j.wo}')">
       <span class="wo-sc-arrow">↗</span>
       <span class="wo-sc-badge">${bl}</span>
       <div class="wo-sc-name">${j.cust}</div>
@@ -1143,194 +1142,59 @@ function renderJobDetail(wo){
       <div style="width:100px;margin-top:4px"><div class="prog-w" style="height:6px"><div class="prog-b" style="width:${pct}%"></div></div></div>
     </div>`;
 
-  // Pipeline - FILTERED BY ROLE
+  // Pipeline - Next Action + Timeline layout
   const currIdx=stageIdx(job.stage);
-
-  // MD gets a special rich view — not the action pipeline
-  if(isMD){
-    // Build MD pipeline view: ticked steps + documents per step
-    const mdStepDocs={
-      vo1_created:{label:'Works Valuation (VO1) Created',docs:['vo1']},
-      linesman_notified:{label:'Linesman Notified (External)',docs:[]},
-      field_received:{label:'Linesman Findings Received',docs:['field_report']},
-      vo2_created:{label:'Variation Order (VO2) Created',docs:['vo2']},
-      works_valuation_created:{label:'Works Valuation Document Created',docs:['works_valuation']},
-      work_instruction_ready:{label:'Works Instruction Prepared',docs:[]},
-      teams_notified:{label:'Teams Notified to Start Work',docs:[]},
-      work_complete:{label:'Teams Reported Work Complete',docs:['works_instruction']},
-      gis_notified:{label:'GIS Consultant Notified',docs:[]},
-      gis_complete:{label:'GIS Report & Certificate Received',docs:['gis_report','gis_cert']},
-      claim_docs_ready:{label:'Claim Documents Generated',docs:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']},
+  (()=>{
+    const NA_LABELS={
+      wo_received:'Create VO1 to begin',vo1_created:'Record linesman notification',
+      linesman_notified:'Record linesman findings',field_received:'Create VO2 from field findings',
+      vo2_created:'Create Works Valuation document',works_valuation_created:'Prepare Works Instruction',
+      work_instruction_ready:'Notify teams to start work',teams_notified:'Record work complete',
+      work_complete:'Notify GIS consultant',gis_notified:'Upload GIS report & certificate',
+      gis_complete:'Go to Claim Batch',claim_docs_ready:'Record job as complete',
+      job_complete:'Job is fully complete',
     };
-    const docLabelMap={vo1:'VO1',vo2:'VO2',field_report:'Field Report',works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'GIS Report',gis_cert:'GIS Certificate',annexure:'Annexure',payment_cert:'Payment Certificate',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Spreadsheet'};
-    document.getElementById('jdPipeline').innerHTML=STAGES.map(st=>{
-      const globalIdx=STAGE_IDS.indexOf(st.id);
-      const state=globalIdx<currIdx?'done':globalIdx===currIdx?'active':'pending';
-      const action=job.actions[st.id];
-      const stepInfo=mdStepDocs[st.id]||{docs:[]};
-      const docs=stepInfo.docs||[];
-      // Build doc buttons for this step
-      let docHtml='';
-      if(state==='done'&&docs.length){
-        docHtml='<div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap">';
-        docs.forEach(dt=>{
-          const hasSaved=job.savedDocs&&job.savedDocs[dt]&&job.savedDocs[dt].html;
-          const hasScan=job.scans&&job.scans[dt];
-          // For claim docs, also check batchDocs
-          let canView=hasSaved||hasScan;
-          if(!canView&&['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(dt)&&job.claimRef){
-            const bm=Object.values(DB.jobs).find(j=>j.claimRef===job.claimRef&&j.savedDocs&&j.savedDocs[dt]);
-            if(bm)canView=true;
-            if(!canView&&DB.batchDocs&&DB.batchDocs[job.claimRef]){
-              const bmap={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};
-              if(DB.batchDocs[job.claimRef][bmap[dt]])canView=true;
-            }
-          }
-          if(canView){
-            docHtml+=`<button class="btn btn-bl btn-sm" onclick="openDocForAction('${wo}','${dt}')">👁 ${docLabelMap[dt]||dt}</button>`;
-            if(hasScan)docHtml+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${dt}')">⬇ Signed</button>`;
-          } else {
-            docHtml+=`<span style="font-size:.68rem;color:var(--tx3);padding:2px 5px;border:1px solid var(--bd);border-radius:3px;opacity:.5">${docLabelMap[dt]||dt} — pending</span>`;
-          }
-        });
-        // Add claim batch button at claim_docs_ready step
-        if(st.id==='claim_docs_ready'){
-          docHtml+=`<button class="btn btn-am btn-sm" onclick="nav('claims')" style="margin-left:4px">💰 Open Claim Batch</button>`;
-        }
-        docHtml+='</div>';
-      }
-      return`<div class="pipe-step">
-        <div class="pipe-dot ${state}">${state==='done'?'✓':state==='active'?'●':''}</div>
-        <div class="pipe-info">
-          <div class="pipe-lbl ${state}">${st.lbl}</div>
-          ${action?`<div class="pipe-date">Recorded: ${action.date}${action.extra?' · '+action.extra:''}${action.notes?' · '+action.notes:''}</div>`:''}
-          ${docHtml}
-        </div>
-      </div>`;
-    }).join('');
-    // MD nav — make sure claims is visible
-    const claimsNav=document.getElementById('n-claims');
-    if(claimsNav)claimsNav.style.display='flex';
-  } else {
-
-  // Define which stages each role can see
-  let visibleStages = STAGES; // Default all
-  if(CU === 'finance') {
-    visibleStages = STAGES.filter(st => st.id === 'claim_docs_ready');
-  }
-  // Admin and MD see all stages (no filter)
-  
-  document.getElementById('jdPipeline').innerHTML=visibleStages.map((st,i)=>{
-    // Calculate proper index for display
-    const globalIdx = STAGE_IDS.indexOf(st.id);
-    const state = globalIdx < currIdx ? 'done' : globalIdx === currIdx ? 'active' : 'pending';
-    const action=job.actions[st.id];
-    const docKey=STAGE_DOCS[st.id];
-    const hasScan=docKey&&docKey.split(',').some(d=>job.scans[d]);
     let actBtns='';
-    // Show actions for: done steps, active step, or the very next pending step for each role
-    const adminNextSteps = {
-  wo_received:    'vo1_created',
-  vo1_created:    'linesman_notified',
-  linesman_notified: 'field_received',
-  field_received: 'vo2_created',
-  vo2_created:    'works_val_created',
-  works_val_created: 'work_instruction_ready',
-  work_instruction_ready: 'teams_notified',
-  teams_notified: 'work_complete',
-  work_complete:  'gis_notified',
-  gis_notified:   'gis_complete',
-  gis_complete:   null,
-  claim_docs_ready: null,
-};
-    const isAdminNext = canEdit && adminNextSteps[job.stage] === st.id;
-    const isMyNextStep = isAdminNext
-                      || (isFinance && st.id==='claim_docs_ready' && job.stage==='gis_complete');
-    if((globalIdx<=currIdx+1)&&(state!=='pending'||isMyNextStep)){
-      // Show appropriate action buttons per role + stage
+    const st=STAGES.find(s=>s.id===job.stage)||{id:job.stage,lbl:stageLabel(job.stage)};
+    const docKey=STAGE_DOCS[st.id];
+    const action=job.actions[st.id];
+    if(!isMD){
       if(canEdit){
-        if(st.id==='wo_received'&&state==='active')
-          actBtns+=`<div style="background:var(--bl-bg);border:1px solid var(--bl-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--bl);margin-bottom:5px">📥 Upload the BPC Work Order document you received by email using the Documents panel below, then create VO1.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
-        if(st.id==='vo1_created'&&state==='done')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo1')">View VO1</button>`;
-        if(st.id==='vo1_created'&&state==='active')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','linesman_notified','Record: Linesman Notified','Record when you notified the linesman. Reminder: contact the linesman externally (phone/email) and share the VO1 document.')">Record Linesman Notified</button>`;
-        if(st.id==='linesman_notified'&&state==='active')
-          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000">⏳ Waiting for linesman. When he reports back externally, use the button below to record his findings.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">📝 Record Linesman Findings</button>`;
-        if(st.id==='linesman_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Linesman notified on ${action?.date||'—'}</span>`;
-        if(st.id==='field_received'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">📝 Create VO2 from Field Findings</button>`;
-        if(st.id==='field_received'&&state==='done')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button>`;
-        if(st.id==='vo2_created'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button><button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">📄 Create Works Valuation Document →</button>`;
-        // vo2_created pending: handled by field_received active state
-        if(st.id==='vo2_created'&&state==='done')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','vo2')">View VO2</button>`;
-        if(st.id==='works_valuation_created'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">✓ Save Works Valuation — Proceed to Notify Teams</button>`;
-        if(st.id==='works_valuation_created'&&state==='pending')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="createWorksValuation('${wo}')">📄 Create Works Valuation Document</button>`;
-        if(st.id==='works_valuation_created'&&state==='done')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button>`;
-        if(st.id==='work_instruction_ready'&&state==='active')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="advanceStageWI('${wo}')">✓ Works Instruction Ready — Send to Teams</button>`;
-        if(st.id==='work_instruction_ready'&&state==='pending')
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">📄 Prepare Works Instruction</button>`;
-        if(st.id==='work_instruction_ready'&&state==='done')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button>`;
-        if(st.id==='teams_notified'&&(state==='active'||state==='pending'))
-          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">📤 Notify the field teams externally (WhatsApp/email) to commence work, then record below.</div><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','teams_notified','Record: Teams Notified to Start Work','Record when you notified the teams to start work.','Team(s) assigned (e.g. Shakawe Team A)')">📤 Record Teams Notified</button>`;
-        if(st.id==='teams_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Teams notified on ${action?.date||'—'} · ${action?.extra||''}</span><div style="margin-top:5px"><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','work_complete','Record: Teams Reported Work Complete','Record when the field team reported back to you that work is complete.')">✅ Record: Teams Reported Work Complete</button></div>`;
-        if(st.id==='work_complete'&&(state==='active'||state==='pending'))
-          actBtns+=`<div style="background:var(--bl-bg);border:1px solid var(--bl-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:var(--bl);margin-bottom:5px">✅ Teams have completed the work. Step 1: Fill in the Works Instruction (completion record). Step 2: Notify the GIS consultant.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">📄 Step 1: Fill in Works Instruction (Completion Record)</button><button class="btn btn-gy btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Consultant Notified','Record when you sent the assignment to the GIS consultant externally.')">📍 Step 2: Notify GIS Consultant (External) — Record</button>`;
-        if(st.id==='work_complete'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ Work complete on ${action?.date||'—'}</span>`;
-        if(st.id==='gis_notified'&&state==='active')
-          actBtns+=`<div style="background:var(--am-bg);border:1px solid var(--am-b);border-radius:var(--rs);padding:.4rem .7rem;font-size:.72rem;color:#c88000;margin-bottom:5px">📤 Notify the GIS consultant externally. When he returns, he will send you TWO documents: (1) GIS Report and (2) GIS Certificate. Upload both below.</div><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Record & Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 Record & Upload GIS Certificate</button>`;
-        if(st.id==='gis_notified'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ GIS notified on ${action?.date||'—'}</span><div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 Upload GIS Certificate</button></div>`;
-        if(st.id==='gis_complete'&&state==='active')
-          actBtns+=`<div style="font-size:.72rem;color:var(--am);margin-bottom:4px">Upload both GIS documents received from the consultant:</div><div style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">📋 GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">📋 GIS Certificate</button></div>`;
-        if(st.id==='gis_complete'&&state==='done')
-          actBtns+=`<span style="font-size:.72rem;color:var(--gn)">✓ GIS documents uploaded</span><div style="margin-top:4px;display:flex;gap:5px"><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','gis_cert')">View GIS Certificate</button></div>`;
-        if(st.id==='claim_docs_ready'&&state==='active')
-          actBtns+=`<div style="background:var(--gn-bg);border:1px solid var(--gn-b);border-radius:var(--rs);padding:.45rem .75rem;font-size:.73rem;color:var(--gn);margin-bottom:6px">✅ Finance has generated the claim documents. Review them below, then record this job as complete.</div><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Recording this marks the job as complete and adds it to the List of Jobs Done.')">✅ Record Job as Complete</button>`;
-        if(st.id==='claim_docs_ready'&&state==='done')
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Certificate</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All documents are ready. Record this job as complete. It will be added to the List of Jobs Done.')">✅ Record Job as Complete</button>`;
-        if(st.id==='job_complete'&&state==='done')
-          actBtns+=`<span class="badge b-gn">✅ Job complete on ${action?.date||'—'} — Added to List of Jobs Done</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs Done</button>`;
+        if(st.id==='wo_received') actBtns+=`<button class="btn btn-am" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
+        if(st.id==='vo1_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','linesman_notified','Record: Linesman Notified','Contact the linesman externally and share VO1, then record here.')">Record Linesman Notified</button>`;
+        if(st.id==='linesman_notified') actBtns+=`<button class="btn btn-am" onclick="openDocForAction('${wo}','field_report')">Record Linesman Findings</button>`;
+        if(st.id==='field_received') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">Create VO2</button>`;
+        if(st.id==='vo2_created') actBtns+=`<button class="btn btn-am" onclick="createWorksValuation('${wo}')">Create Works Valuation</button>`;
+        if(st.id==='works_valuation_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">Confirm & Proceed</button>`;
+        if(st.id==='work_instruction_ready') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="advanceStageWI('${wo}')">Confirm & Send to Teams</button>`;
+        if(st.id==='teams_notified') actBtns+=`<button class="btn btn-am" onclick="openRecord('${wo}','work_complete','Record: Work Complete','Record when the field team reported back that work is complete.')">Record Work Complete</button>`;
+        if(st.id==='work_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">Fill Works Instruction</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Notified','Record when you sent the assignment to the GIS consultant.')">Notify GIS Consultant</button>`;
+        if(st.id==='gis_notified') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">Upload GIS Certificate</button>`;
+        if(st.id==='gis_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">View GIS Certificate</button>`;
+        if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
+        if(st.id==='job_complete') actBtns+=`<span class="badge b-gn">Job complete — ${action?.date||''}</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs</button>`;
       }
-
-      if(isFinance&&st.id==='claim_docs_ready'){
-        if(job.stage==='gis_complete'){
-          actBtns+=`<button class="btn btn-am" onclick="nav('claims')">💰 Go to Claim Batch — Generate Documents</button>`;
-        } else if(state==='done') {
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','payment_cert')">View Payment Certificate</button>`;
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','invoice')">View Invoice</button>`;
-          actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${job.wo}','annexure')">View Annexure</button>`;
-        }
-      }
-      // Scan upload for any doc-producing stage
-      if((canEdit||isFinance)&&docKey){
-        docKey.split(',').forEach(dk=>{
-          actBtns+=`<span style="margin-left:2px">${scanWidget(wo,dk.trim(),true)}</span>`;
-        });
-      }
+      if(CU==='finance'&&st.id==='gis_complete') actBtns+=`<button class="btn btn-am" onclick="nav('claims')">Go to Claim Batch</button>`;
+      if((canEdit||CU==='finance')&&docKey) docKey.split(',').forEach(dk=>{actBtns+=`<span style="margin-left:2px">${scanWidget(wo,dk.trim(),true)}</span>`;});
     }
-    return`<div class="pipe-step">
-      <div class="pipe-dot ${state}">${state==='done'?'✓':state==='active'?'●':''}</div>
-      <div class="pipe-info">
-        <div class="pipe-lbl ${state}">${st.lbl}</div>
-        ${action?`<div class="pipe-date">Recorded: ${action.date}${action.extra?' · '+action.extra:''}${action.notes?' · '+action.notes:''}</div>`:''}
-        ${hasScan?`<div class="pipe-date" style="color:var(--gn)">✓ Signed scan available</div>`:''}
-        ${actBtns?`<div class="pipe-actions">${actBtns}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-  } // end non-MD pipeline
+    const mdStepDocs={vo1_created:['vo1'],field_received:['field_report'],vo2_created:['vo2'],works_valuation_created:['works_valuation'],work_complete:['works_instruction'],gis_complete:['gis_report','gis_cert'],claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']};
+    const docLabelMap={vo1:'VO1',vo2:'VO2',field_report:'Field Report',works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'GIS Report',gis_cert:'GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
+    const isDone=job.stage==='job_complete';
+    const nextCard=isDone
+      ?`<div class="na-done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><polyline points="20 6 9 17 4 12"/></svg><div class="na-done-txt">This job is complete</div></div>`
+      :`<div class="na-card"><div class="na-progress"><div class="na-prog-row"><span class="na-step-lbl">Step ${currIdx+1} of ${STAGES.length}</span><span class="na-pct">${stagePct(job.stage)}% complete</span></div><div class="na-bar"><div class="na-fill" style="width:${stagePct(job.stage)}%"></div></div></div><div class="na-action-box"><div class="na-action-eyebrow">Next action required</div><div class="na-action-title">${stageLabel(job.stage)}</div><div class="na-action-sub">${NA_LABELS[job.stage]||''}</div>${actBtns?`<div class="na-btns">${actBtns}</div>`:''}</div></div>`;
+    const timelineRows=STAGES.map(s=>{
+      const idx=STAGE_IDS.indexOf(s.id);
+      const state=idx<currIdx?'done':idx===currIdx?'active':'pending';
+      const rec=job.actions[s.id];
+      const mdDocs=isMD?(mdStepDocs[s.id]||[]):[];
+      const mdDocBtns=mdDocs.map(dt=>{const hasSaved=job.savedDocs&&job.savedDocs[dt]&&job.savedDocs[dt].html;const hasScan2=job.scans&&job.scans[dt];if(hasScan2)return`<button class="tl-doc-btn" onclick="event.stopPropagation();downloadScan('${wo}','${dt}')">&#11015; ${docLabelMap[dt]||dt}</button>`;if(hasSaved)return`<button class="tl-doc-btn" onclick="event.stopPropagation();openDocForAction('${wo}','${dt}')">${docLabelMap[dt]||dt}</button>`;return`<span class="tl-doc-pending">${docLabelMap[dt]||dt}</span>`;}).join('');
+      return`<div class="tl-row tl-${state}"><div class="tl-dot tl-dot-${state}"></div><div class="tl-body"><div class="tl-name">${s.lbl}</div>${rec?`<div class="tl-date">Recorded: ${rec.date}${rec.extra?' · '+rec.extra:''}${rec.notes?' · '+rec.notes:''}</div>`:''} ${state==='pending'?`<div class="tl-date">Pending</div>`:''} ${mdDocBtns?`<div class="tl-docs">${mdDocBtns}</div>`:''}</div>${state==='active'?`<span class="tl-now-badge">Now</span>`:''}${state==='done'?`<span class="tl-done-badge">Done</span>`:''}</div>`;
+    }).join('');
+    document.getElementById('jdPipeline').innerHTML=`${nextCard}<div class="tl-header"><span class="tl-header-lbl">Timeline</span><span class="tl-header-ct">${currIdx} done &middot; ${STAGES.length-currIdx-1} pending</span></div><div class="tl-list">${timelineRows}</div>`;
+    const claimsNav=document.getElementById('n-claims');
+    if(claimsNav&&isMD)claimsNav.style.display='flex';
+  })();
 
   // Documents panel - FILTERED BY ROLE
   const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_valuation','works_instruction','gis_report','gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
