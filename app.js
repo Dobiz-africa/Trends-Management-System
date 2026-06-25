@@ -1609,9 +1609,9 @@ function generateClaimDocs(){
   // Store batch documents — pass the first job with claimRef already set
   if(!DB.batchDocs)DB.batchDocs={};
   const firstJob=batchJobs[0];
-  const batchWOs=batchJobs.map(j=>j.wo); // Extract WO numbers for display
+  const batchWOList=batchJobs.map(j=>j.wo); // Extract WO numbers for display
   DB.batchDocs[certNo]={
-    wos:batchWOs, // Store WO numbers for dashboard card
+    wos:batchWOList, // Store WO numbers for dashboard card
     jobs:batchJobs,
     annexure:docAnnexure(firstJob),
     paymentCert:docPaymentCert(firstJob),
