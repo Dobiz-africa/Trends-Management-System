@@ -28,7 +28,6 @@
             </radialGradient>
           </defs>
           <rect width="800" height="1000" fill="url(#lhg)"/>
-          <rect width="800" height="1000" fill="url(#lglow)"/>
           <!-- transmission towers -->
           <g stroke="#2e3d58" stroke-width="3.5" fill="none">
             <path d="M150 250 L150 760 M110 290 L190 290 M118 330 L182 330 M100 250 L200 250 M150 250 L120 220 M150 250 L180 220"/>
@@ -47,560 +46,165 @@
           </g>
         </svg>
       </div>
-
       <div class="login-hero-content">
-        <div class="login-hero-brand">
-          <div class="lc-logo">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="rgba(240,165,0,0.12)" stroke="#f0a500" stroke-width="1.5"/>
-              <polygon points="24,6 40,15 40,33 24,42 8,33 8,15" fill="rgba(240,165,0,0.07)" stroke="rgba(240,165,0,0.4)" stroke-width=".8"/>
-              <path d="M27 8L16 26h9l-4 14L34 22h-9l2-14z" fill="#f0a500"/>
-            </svg>
-          </div>
-          <div><div class="login-hero-name">ClaimDesk</div>
-            <div class="login-hero-loc">Portal</div></div>
-        </div>
-
-        <!-- rotating tagline slideshow -->
-        <div class="login-slideshow" id="loginSlides">
+        <div class="logo">Trends Engineering Services</div>
+        <div id="loginSlides" class="login-slides">
           <div class="login-slide active">
-            <h2>Power connections, managed end to end.</h2>
-            <p>From BPC work order to final claim — every step tracked in one place.</p>
+            <h1>Jobs Management System</h1>
+            <p>Track work orders from creation to completion.</p>
           </div>
           <div class="login-slide">
-            <h2>Built for the field and the back office.</h2>
-            <p>Valuations, instructions, GIS reports and claim documents, all connected.</p>
+            <h1>Secure & Reliable</h1>
+            <p>All data synced to cloud and backed up automatically.</p>
           </div>
           <div class="login-slide">
-            <h2>Faster claims. Cleaner records.</h2>
-            <p>Generate certificates and invoices in a single batch, ready for BPC.</p>
+            <h1>Multi-User Collaboration</h1>
+            <p>Admin, Finance, and MD roles work seamlessly together.</p>
           </div>
-          <div class="login-dots">
-            <span class="login-dot active" data-i="0"></span><span class="login-dot" data-i="1"></span><span class="login-dot" data-i="2"></span>
-          </div>
+        </div>
+        <div class="login-dots">
+          <span class="login-dot active" data-i="0"></span>
+          <span class="login-dot" data-i="1"></span>
+          <span class="login-dot" data-i="2"></span>
         </div>
       </div>
     </div>
 
-    <!-- RIGHT: sign-in form -->
-    <div class="login-form-wrap">
+    <!-- RIGHT: login form -->
+    <div class="login-form-panel">
       <div class="login-form">
-        <div class="login-form-head">
-          <h1>Welcome back</h1>
-          <p>Sign in to ClaimDesk</p>
-        </div>
-
-        <label class="lf-label" for="loginRole">Role</label>
-        <div class="lf-select-wrap">
-          <select id="loginRole">
-            <option value="">Select your role…</option>
-            <option value="admin">Admin — Work orders &amp; valuations</option>
-            <option value="finance">Finance — Claims &amp; invoices</option>
-            <option value="md">Manager — Oversight &amp; reporting</option>
-          </select>
-        </div>
-
-        <label class="lf-label" for="loginUser">Username</label>
-        <div class="lf-input-wrap">
-          <svg class="lf-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <input id="loginUser" type="text" placeholder="e.g. admin" autocomplete="username">
-        </div>
-
-        <label class="lf-label" for="loginPass">Password</label>
-        <div class="lf-input-wrap">
-          <svg class="lf-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          <input id="loginPass" type="password" placeholder="Password (not required while testing)" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-        </div>
-        <div class="lf-hint">🔓 Password is unlocked for testing — just pick a role and sign in.</div>
-
-        <button class="lf-btn" onclick="doLogin()">Sign In &rarr;</button>
-
-        <div class="lf-quick">
-          <span>Quick access:</span>
-          <button onclick="pickRole('admin')">Admin</button>
-          <button onclick="pickRole('finance')">Finance</button>
-          <button onclick="pickRole('md')">Manager</button>
-        </div>
-
-        <p class="login-form-foot">Trends Engineering Services (PTY) Ltd · © 2026</p>
+        <h2>Sign In</h2>
+        <label>Select your role</label>
+        <select id="loginRole" style="width:100%; padding:10px; border:1px solid #888; border-radius:4px; font-size:16px; margin-top:8px;">
+          <option value="">Choose role...</option>
+          <option value="admin">Admin</option>
+          <option value="finance">Finance</option>
+          <option value="md">MD</option>
+        </select>
+        <button onclick="doLogin()" style="width:100%; padding:10px; margin-top:16px; background:#f0a500; border:none; border-radius:4px; font-weight:600; cursor:pointer;">Sign In</button>
       </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ADD WORK ORDER MODAL -->
-<div id="addWOModal" class="overlay">
-  <div class="modal" style="width:640px">
-    <h3>Add New Work Order</h3>
-    <p>Upload the BPC Work Order PDF for auto-population, or enter details manually</p>
-    
-    <!-- PDF Upload Section -->
-    <div class="fg">
-      <label>📎 Upload BPC Work Order PDF (Auto-fill fields)</label>
-      <input type="file" id="nw-pdf" accept="application/pdf,image/*" style="background:transparent;color:var(--tx2);border:none;padding:0;font-size:.8rem" onchange="parseWorkOrderPDF(this)">
-      <div id="pdf-parse-status" style="font-size:.72rem;color:var(--tx3);margin-top:4px;display:none"></div>
-    </div>
-
-    <div style="border-top:1px solid var(--bd);margin:1rem 0;padding-top:1rem">
-      <div class="fr2">
-        <div class="fg"><label>WO Number *</label><input id="nw-num" placeholder="e.g. 462524"></div>
-        <div class="fg"><label>Date</label><input id="nw-date" type="date"></div>
-      </div>
-      <div class="fg"><label>Project Type</label><input id="nw-projtype" placeholder="e.g. NESC" value="NESC"></div>
-      <div class="fg"><label>Customer Name *</label><input id="nw-cust" placeholder="e.g. OMPHILE KAFIKWA"></div>
-      <div class="fr3">
-        <div class="fg"><label>Contract Account</label><input id="nw-contract" placeholder="e.g. 2001020589"></div>
-        <div class="fg"><label>Customer No.</label><input id="nw-custno" placeholder="e.g. 40602744"></div>
-        <div class="fg"><label>Plot No.</label><input id="nw-plotno" placeholder="e.g. 4824"></div>
-      </div>
-      <div class="fr3">
-        <div class="fg"><label>Town / Location *</label><input id="nw-loc" placeholder="e.g. SHAKAWE"></div>
-        <div class="fg"><label>Ward</label><input id="nw-ward" placeholder="e.g. LAYOUT"></div>
-        <div class="fg"><label>Mobile Number</label><input id="nw-mobile" placeholder="e.g. 71219411"></div>
-      </div>
-      <div class="fr3">
-        <div class="fg"><label>BPC Project No.</label><input id="nw-bpcprojno" placeholder="e.g. 0000429636"></div>
-        <div class="fg"><label>Project Number</label><input id="nw-projno" placeholder="e.g. DSW/TRENDS/ZC"></div>
-        <div class="fg"><label>Meter Number</label><input id="nw-meter" placeholder="e.g. 12345678"></div>
-      </div>
-      <div class="fg"><label>Customer Address</label><input id="nw-address" placeholder="e.g. Plot 4824, Block 5, Shakawe"></div>
-      <div class="fr2">
-        <div class="fg"><label>Phase</label>
-          <select id="nw-phase">
-            <option value="46">Phase 46</option>
-            <option value="47" selected>Phase 47</option>
-          </select>
-        </div>
-        <div class="fg"><label>Location Factor (%)</label><input id="nw-lf" type="number" value="29.25" step="0.01"></div>
-      </div>
-    </div>
-    
-    <div class="modal-btns">
-      <button class="btn btn-gy" onclick="closeModal('addWOModal');clearWOForm()">Cancel</button>
-      <button class="btn btn-am" onclick="saveNewWO()">Add Work Order</button>
     </div>
   </div>
 </div>
 
-<!-- RECORD ACTION MODAL -->
-<div id="recordModal" class="overlay">
-  <div class="modal">
-    <h3 id="rec-title">Record Action</h3>
-    <p id="rec-desc">Record this external step</p>
-    <div class="fg"><label>Date *</label><input type="date" id="rec-date"></div>
-    <div class="fg"><label id="rec-extra-label" style="display:none">Details</label><input id="rec-extra" placeholder="" style="display:none"></div>
-    <div class="fg"><label>Notes (optional)</label><textarea id="rec-notes" placeholder="Any additional notes..."></textarea></div>
-    <div class="modal-btns">
-      <button class="btn btn-gy" onclick="closeModal('recordModal')">Cancel</button>
-      <button class="btn btn-am" onclick="confirmRecord()">Save Record</button>
+<!-- MAIN APP (hidden until login) -->
+<div id="mainApp" style="display:none">
+
+  <!-- TOP NAV -->
+  <div id="topNav" style="background:#1d2942; color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #888;">
+    <div style="font-weight:600; font-size:16px;">ClaimDesk <span id="tbt"></span></div>
+    <div style="display:flex; gap:12px; align-items:center;">
+      <button id="themeIcon" onclick="toggleTheme()" style="background:none; border:none; color:#fff; cursor:pointer; font-size:18px;">☀️</button>
+      <span id="themeLabel" style="font-size:12px;">Light</span>
+      <span style="color:#888;">|</span>
+      <span id="loginStatus" style="font-size:12px;"></span>
+      <button onclick="doLogout()" style="background:#d32f2f; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px;">Logout</button>
     </div>
   </div>
-</div>
 
-<!-- VIEW DOCUMENT MODAL (paper doc viewer) -->
-<div id="docModal" class="overlay" onclick="if(event.target===this){closeModal('docModal');refreshDetail();}">
-  <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;width:min(860px,95vw);max-height:90vh;display:flex;flex-direction:column">
-    <div style="padding:.8rem 1.25rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-      <span style="font-size:.9rem;font-weight:600;color:var(--tx)" id="docModalTitle">Document</span>
-      <div style="display:flex;gap:7px;align-items:center">
-        <button class="btn btn-print btn-sm" onclick="printModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print
-        </button>
-        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
+  <!-- MAIN CONTENT -->
+  <div style="display:flex; height:calc(100vh - 50px);">
+    <!-- SIDEBAR -->
+    <div id="sidebar" style="width:240px; background:#0c1322; color:#fff; overflow-y:auto; border-right:1px solid #888;">
+      <div style="padding:16px;">
+        <button id="n-dashboard" onclick="nav('dashboard')" style="width:100%; text-align:left; padding:10px; margin-bottom:8px; background:#1d2942; color:#fff; border:none; border-radius:4px; cursor:pointer;">Dashboard</button>
+        <button id="n-jobs" onclick="nav('jobs')" style="width:100%; text-align:left; padding:10px; margin-bottom:8px; background:#1d2942; color:#fff; border:none; border-radius:4px; cursor:pointer;">All Jobs</button>
+        <button id="n-addwo" onclick="openModal('addWOModal')" style="width:100%; text-align:left; padding:10px; margin-bottom:8px; background:#f0a500; color:#000; border:none; border-radius:4px; cursor:pointer; font-weight:600;">+ Add WO</button>
+        <button id="n-claims" onclick="nav('claims')" style="width:100%; text-align:left; padding:10px; margin-bottom:8px; background:#1d2942; color:#fff; border:none; border-radius:4px; cursor:pointer;">Claim Batches</button>
+        <button id="n-inbox" onclick="nav('inbox')" style="width:100%; text-align:left; padding:10px; margin-bottom:8px; background:#1d2942; color:#fff; border:none; border-radius:4px; cursor:pointer;">Inbox</button>
+        <button id="n-actlog" onclick="nav('actlog')" style="width:100%; text-align:left; padding:10px; margin-bottom:8px; background:#1d2942; color:#fff; border:none; border-radius:4px; cursor:pointer;">Activity Log</button>
+        <button id="n-rates" onclick="nav('rates')" style="width:100%; text-align:left; padding:10px; margin-bottom:8px; background:#1d2942; color:#fff; border:none; border-radius:4px; cursor:pointer;">Rates</button>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:1.25rem" id="docModalBody"></div>
-    <div style="padding:.8rem 1.25rem;border-top:1px solid var(--bd);background:var(--sf2);display:flex;gap:7px;flex-wrap:wrap" id="docModalFoot"></div>
+
+    <!-- CONTENT AREA -->
+    <div id="content" style="flex:1; overflow-y:auto; padding:20px; background:#f5f5f5;">
+      <div id="n-dashboard" style="display:none;"><h1>Dashboard</h1><p>Loading...</p></div>
+      <div id="n-jobs" style="display:none;"><h1>All Jobs</h1><div id="jobsList"></div></div>
+      <div id="n-claims" style="display:none;"><h1>Claim Batches</h1><div id="batchList"></div></div>
+      <div id="n-inbox" style="display:none;"><h1>Inbox</h1><div id="notifList"></div></div>
+      <div id="n-actlog" style="display:none;"><h1>Activity Log</h1><div id="actLogList"></div></div>
+      <div id="n-rates" style="display:none;"><h1>Rates</h1><div id="ratesList"></div></div>
+      <div id="n-jobdetail" style="display:none;"><h1 id="detailTitle">Job Detail</h1><div id="detailContent"></div></div>
+    </div>
   </div>
-</div>
 
-<!-- MAIN APP -->
-<div id="mainApp">
-  <div class="shell">
-    <aside class="sb">
-      <div class="sb-hd">
-        <div class="sb-brand">
-          <div class="sb-logo">
-            <svg viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="17,1 33,9.5 33,24.5 17,33 1,24.5 1,9.5" fill="rgba(240,165,0,0.1)" stroke="#f0a500" stroke-width="1.2"/>
-              <path d="M19.5 5L11 19.5h6.5L15 29l10.5-14H19l.5-10z" fill="#f0a500"/>
-            </svg>
-          </div>
-          <div><h1>ClaimDesk</h1><p>Document Portal</p></div>
-        </div>
-      </div>
-      <div class="sb-role"><div class="sb-rl">Logged in as</div><div class="sb-rn" id="sbRn">—</div></div>
-      <div class="sb-sec">Navigation</div>
-      <div class="ni act" onclick="nav('dashboard')" id="n-dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
-      </div>
-      <div class="ni" onclick="nav('jobs')" id="n-jobs">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Work Orders
-      </div>
-      <div class="ni" onclick="nav('inbox')" id="n-inbox" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox
-        <span class="nbadge" id="ibadge" style="display:none">0</span>
-      </div>
-      <div class="ni" onclick="nav('claims')" id="n-claims" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Claim Batch
-      </div>
-      <div class="ni" onclick="nav('rates')" id="n-rates" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>Rates Sheet
-      </div>
-      <div class="ni" onclick="nav('jobdetail')" id="n-jobdetail" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Job Detail
-      </div>
-      <div class="sb-ft">
-        <button class="sbfbtn logout" onclick="doLogout()">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Sign Out
-        </button>
-      </div>
-    </aside>
-
-    <div class="mc">
-      <div class="tb">
-        <div><div class="tb-t" id="tbt">Dashboard</div><div class="tb-m">Trends Engineering Services (PTY) Ltd</div></div>
-        <div class="tb-r">
-          <button class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
-            <span class="tog-icon" id="themeIcon">🌙</span>
-            <span id="themeLabel">Dark</span>
-          </button>
-          <div class="notif-wrap">
-            <button class="nbell" onclick="toggleNotif()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-              <div class="npip" id="npip"></div>
-            </button>
-            <div class="npanel" id="npanel">
-              <div class="npanel-hd"><span>Notifications</span><button onclick="markAllRead()">Mark all read</button></div>
-              <div id="nlist"><div class="n-empty">No notifications</div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="ca">
-
-        <!-- DASHBOARD -->
-        <div id="sc-dashboard" class="screen act">
-
-          <!-- ADMIN DASHBOARD -->
-          <div id="dash-admin" style="display:none">
-            <div class="hero hero-admin">
-              <div class="hero-scene" aria-hidden="true">
-                <svg viewBox="0 0 600 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="hgA" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stop-color="#f0a500" stop-opacity=".30"/><stop offset="1" stop-color="#f0a500" stop-opacity="0"/>
-                    </linearGradient>
-                    <linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stop-color="#1a2740"/><stop offset="1" stop-color="#0c1322"/>
-                    </linearGradient>
-                  </defs>
-                  <rect width="600" height="240" fill="url(#hsky)"/>
-                  <circle cx="470" cy="62" r="120" fill="url(#hgA)"/>
-                  <g stroke="#2e3d58" stroke-width="3" fill="none" opacity=".9">
-                    <path d="M70 40 L70 210 M44 56 L96 56 M48 74 L92 74 M40 40 L100 40"/>
-                    <path d="M260 30 L260 210 M232 48 L288 48 M236 68 L284 68 M228 30 L292 30"/>
-                    <path d="M450 40 L450 210 M424 56 L476 56 M428 74 L472 74 M420 40 L480 40"/>
-                  </g>
-                  <g stroke="#f0a500" stroke-width="1.6" fill="none" opacity=".55">
-                    <path class="hwire" d="M70 40 Q165 96 260 30"/><path class="hwire" d="M70 56 Q165 112 260 48"/>
-                    <path class="hwire" d="M260 30 Q355 96 450 40"/><path class="hwire" d="M260 48 Q355 112 450 56"/>
-                  </g>
-                  <g fill="#f0a500" opacity=".85"><circle cx="70" cy="40" r="3"/><circle cx="260" cy="30" r="3"/><circle cx="450" cy="40" r="3"/></g>
-                </svg>
-              </div>
-              <div class="hero-copy">
-                <span class="hero-eyebrow">Operations Console</span>
-                <h2 class="hero-title">Work Order Management</h2>
-                <p class="hero-sub">Review incoming BPC orders, prepare valuations, and move every job through to claim.</p>
-              </div>
-            </div>
-            <div class="srow">
-              <div class="sc"><div class="sc-l">Total Work Orders</div><div class="sc-v" id="a-total">0</div><div class="sc-s">This phase</div></div>
-              <div class="sc"><div class="sc-l">Awaiting Your Action</div><div class="sc-v" style="color:var(--rd)" id="a-action">0</div><div class="sc-s">Need you now</div></div>
-              <div class="sc"><div class="sc-l">In Progress</div><div class="sc-v" style="color:var(--am)" id="a-prog">0</div><div class="sc-s">External parties</div></div>
-              <div class="sc"><div class="sc-l">Total Claim Value</div><div class="sc-v" style="font-size:1.15rem" id="a-val">P 0</div><div class="sc-s">All active jobs</div></div>
-            </div>
-            <!-- Tasks needing admin action now -->
-            <div class="crd" style="margin-bottom:1rem">
-              <div class="crd-hd" style="justify-content:space-between">
-                <div class="crd-hd-l">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  Requires Your Action
-                </div>
-                <button class="btn btn-am btn-sm" onclick="openModal('addWOModal')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order
-                </button>
-              </div>
-              <div id="a-tasks"></div>
-            </div>
-            <!-- Waiting on external parties -->
-            <div class="crd">
-              <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Waiting on External Parties</div></div>
-              <div id="a-waiting"></div>
-            </div>
-          </div>
-
-          <!-- FINANCE DASHBOARD -->
-          <div id="dash-finance" style="display:none">
-            <div class="hero hero-finance">
-              <div class="hero-scene" aria-hidden="true">
-                <svg viewBox="0 0 600 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="hgF" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stop-color="#1db87a" stop-opacity=".30"/><stop offset="1" stop-color="#1db87a" stop-opacity="0"/>
-                    </linearGradient>
-                    <linearGradient id="hskyF" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stop-color="#10331f"/><stop offset="1" stop-color="#0a1a13"/>
-                    </linearGradient>
-                  </defs>
-                  <rect width="600" height="240" fill="url(#hskyF)"/>
-                  <circle cx="480" cy="60" r="130" fill="url(#hgF)"/>
-                  <g transform="translate(40,150)">
-                    <rect x="0" y="-30" width="34" height="60" rx="3" fill="#1db87a" opacity=".30"/>
-                    <rect x="48" y="-58" width="34" height="88" rx="3" fill="#1db87a" opacity=".45"/>
-                    <rect x="96" y="-86" width="34" height="116" rx="3" fill="#1db87a" opacity=".60"/>
-                    <rect x="144" y="-110" width="34" height="140" rx="3" fill="#1db87a" opacity=".80"/>
-                    <path d="M14 -26 L62 -52 L110 -80 L160 -104" stroke="#1db87a" stroke-width="2.5" fill="none"/>
-                    <circle cx="14" cy="-26" r="4" fill="#1db87a"/><circle cx="62" cy="-52" r="4" fill="#1db87a"/>
-                    <circle cx="110" cy="-80" r="4" fill="#1db87a"/><circle cx="160" cy="-104" r="4" fill="#1db87a"/>
-                  </g>
-                </svg>
-              </div>
-              <div class="hero-copy">
-                <span class="hero-eyebrow">Claims &amp; Billing</span>
-                <h2 class="hero-title">Finance Workspace</h2>
-                <p class="hero-sub">Generate claim batches, certificates and invoices — ready to submit to BPC.</p>
-              </div>
-            </div>
-            <div class="srow">
-              <div class="sc"><div class="sc-l">Ready for Claim Docs</div><div class="sc-v" style="color:var(--am)" id="f-ready">0</div><div class="sc-s">GIS report received</div></div>
-              <div class="sc"><div class="sc-l">Docs Generated</div><div class="sc-v" style="color:var(--gn)" id="f-done">0</div><div class="sc-s">Sent to admin</div></div>
-              <div class="sc"><div class="sc-l">Total Net Payable</div><div class="sc-v" style="font-size:1.1rem" id="f-net">P 0</div><div class="sc-s">After retention &amp; WHT</div></div>
-              <div class="sc"><div class="sc-l">Submitted to BPC</div><div class="sc-v" style="color:var(--bl)" id="f-sub">0</div><div class="sc-s">Claims closed</div></div>
-            </div>
-            <div class="crd" style="margin-bottom:1rem">
-              <div class="crd-hd" style="justify-content:space-between">
-                <div class="crd-hd-l">📋 Jobs Ready — Generate Claim Documents</div>
-                <button class="btn btn-am btn-sm" onclick="nav('claims')">Open Claim Batch →</button>
-              </div>
-              <div id="f-tasks"></div>
-            </div>
-            <div class="crd">
-              <div class="crd-hd">Already Processed</div>
-              <div id="f-processed"></div>
-            </div>
-          </div>
-
-          <!-- MD DASHBOARD -->
-          <div id="dash-md" style="display:none">
-            <div class="hero hero-md">
-              <div class="hero-scene" aria-hidden="true">
-                <svg viewBox="0 0 600 240" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="hgM" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stop-color="#3d8ef0" stop-opacity=".32"/><stop offset="1" stop-color="#3d8ef0" stop-opacity="0"/>
-                    </linearGradient>
-                    <linearGradient id="hskyM" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stop-color="#16243f"/><stop offset="1" stop-color="#0a1322"/>
-                    </linearGradient>
-                  </defs>
-                  <rect width="600" height="240" fill="url(#hskyM)"/>
-                  <circle cx="120" cy="70" r="140" fill="url(#hgM)"/>
-                  <g stroke="#3d8ef0" stroke-width="1.5" fill="none" opacity=".5">
-                    <circle cx="300" cy="120" r="34"/><circle cx="300" cy="120" r="68"/><circle cx="300" cy="120" r="102"/>
-                  </g>
-                  <g fill="#3d8ef0">
-                    <circle cx="300" cy="120" r="6" opacity=".95"/>
-                    <circle cx="334" cy="120" r="4" opacity=".8"/><circle cx="266" cy="120" r="4" opacity=".8"/>
-                    <circle cx="368" cy="86" r="4" opacity=".7"/><circle cx="232" cy="154" r="4" opacity=".7"/>
-                    <circle cx="402" cy="120" r="4" opacity=".6"/><circle cx="300" cy="52" r="4" opacity=".6"/>
-                    <circle cx="300" cy="188" r="4" opacity=".6"/><circle cx="198" cy="120" r="4" opacity=".6"/>
-                  </g>
-                </svg>
-              </div>
-              <div class="hero-copy">
-                <span class="hero-eyebrow">Executive Overview</span>
-                <h2 class="hero-title">Manager Dashboard</h2>
-                <p class="hero-sub">Full visibility across every work order, document and team in the pipeline.</p>
-              </div>
-            </div>
-            <div class="srow">
-              <div class="sc"><div class="sc-l">Total Jobs</div><div class="sc-v" id="m-total">0</div><div class="sc-s">All work orders</div></div>
-              <div class="sc"><div class="sc-l">In Pipeline</div><div class="sc-v" style="color:var(--am)" id="m-active">0</div><div class="sc-s">Not yet claimed</div></div>
-              <div class="sc"><div class="sc-l">Docs Ready</div><div class="sc-v" style="color:var(--gn)" id="m-docs">0</div><div class="sc-s">Ready to submit</div></div>
-              <div class="sc"><div class="sc-l">Total Value</div><div class="sc-v" style="font-size:1.1rem" id="m-val">P 0</div><div class="sc-s">Gross claim value</div></div>
-            </div>
-            <!-- Who is currently doing what -->
-            <div class="crd" style="margin-bottom:1rem">
-              <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Currently Active — Who Is Doing What</div></div>
-              <div id="m-whoswhat"></div>
-            </div>
-            <!-- Completed Jobs — List of Jobs Done -->
-            <div class="crd" style="margin-bottom:1rem">
-              <div class="crd-hd" style="justify-content:space-between">
-                <div class="crd-hd-l" style="color:var(--gn)">✅ Completed Jobs — List of Jobs Done</div>
-                <button class="btn btn-gn btn-sm" onclick="openDocForAction(null,'list_of_jobs')">📄 View / Download List of Jobs</button>
-              </div>
-              <div style="display:grid;grid-template-columns:80px 1fr 80px 110px 100px 110px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">WO No.</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Value</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Completed</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Status</span>
-              </div>
-              <div id="m-done-jobs"></div>
-            </div>
-            <!-- All jobs overview -->
-            <div class="crd">
-              <div class="crd-hd" style="justify-content:space-between">
-                <div class="crd-hd-l">All Work Orders — Full Overview</div>
-                <span style="font-size:.7rem;color:var(--tx3)">Click any row to see documents</span>
-              </div>
-              <div style="display:grid;grid-template-columns:80px 1fr 80px 100px 1fr 80px;gap:10px;padding:.5rem 1rem;background:var(--sf2)">
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">WO No.</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Value</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Current Stage</span>
-                <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Docs Ready</span>
-              </div>
-              <div id="m-alljobs"></div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- WORK ORDERS LIST -->
-        <div id="sc-jobs" class="screen">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-            <span style="font-size:.88rem;font-weight:600;color:var(--tx)">All Work Orders</span>
-            <div id="jobs-add-btn"></div>
-          </div>
-          <div class="crd">
-            <div id="jobsList"></div>
-          </div>
-        </div>
-
-        <!-- INBOX (Admin/Finance/GIS) -->
-        <div id="sc-inbox" class="screen">
-          <div class="ua ua-am"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Click a task to open the job detail for that work order.
-          </div>
-          <div class="crd"><div id="inboxList"></div></div>
-        </div>
-
-        <!-- CLAIM BATCH (Finance) -->
-        <div id="sc-claims" class="screen">
-          <div class="ua ua-bl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Select completed jobs to include in this claim. Then generate Annexure, Payment Certificate, and Invoice as a batch.
-          </div>
-          <div class="crd">
-            <div class="crd-hd" style="justify-content:space-between">
-              <div class="crd-hd-l">Completed Jobs — Ready for Claim</div>
-              <div style="display:flex;gap:7px;align-items:center">
-                <input id="certInput" placeholder="Cert No. e.g. TES-001" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.78rem;outline:none;width:130px">
-                <button class="btn btn-am btn-sm" onclick="generateClaimDocs()">Generate Claim Documents</button>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:32px 90px 1fr 90px 130px 90px;gap:10px;padding:.5rem 1rem;background:var(--sf2)">
-              <span></span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">WO No.</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">VO2 Value</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Completed</span>
-            </div>
-            <div id="claimsList"></div>
-          </div>
-          <div id="claimSummary" style="margin-top:.5rem"></div>
-        </div>
-
-        <!-- RATES -->
-        <div id="sc-rates" class="screen">
-          <div class="ua ua-am"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Active rates appear in VO autocomplete. Toggle to control visibility.
-          </div>
-          <div class="crd">
-            <div class="crd-hd" style="justify-content:space-between">
-              <div class="crd-hd-l">BPC Rates Schedule &nbsp;<span id="ratesCount" style="color:var(--am);font-weight:700;font-size:.75rem;font-family:'Inter',sans-serif"></span></div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <select id="ratePhase" onchange="renderRates(document.getElementById('rateSearch').value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;cursor:pointer">
-                  <option value="">All Phases</option>
-                  <option value="46">Phase 46 only</option>
-                  <option value="47">Phase 47 only</option>
-                </select>
-                <input id="rateSearch" placeholder="Search rates..." oninput="renderRates(this.value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none;width:180px">
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 55px 105px 90px 62px 80px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Description</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Unit</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Rate (BWP)</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Category</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Phase</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Active</span>
-            </div>
-            <div id="ratesList"></div>
-          </div>
-        </div>
-
-        <!-- ACTIVITY LOG -->
-        <div id="sc-actlog" class="screen">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-            <span style="font-size:.88rem;font-weight:600">Activity Log</span>
-            <select id="logFilter" onchange="renderActLog(this.value)" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.35rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.75rem;outline:none">
-              <option value="">All</option><option value="Admin">Admin</option><option value="Finance">Finance</option><option value="GIS">GIS</option><option value="MD">MD</option>
-            </select>
-          </div>
-          <div class="crd" style="max-height:72vh;overflow-y:auto"><div id="actLogList"></div></div>
-        </div>
-
-        <!-- JOB DETAIL -->
-        <div id="sc-jobdetail" class="screen">
-          <button onclick="goBackFromDetail()" style="background:transparent;border:1px solid var(--bd);border-radius:var(--rs);padding:.35rem .75rem;color:var(--tx2);font-family:'Inter',sans-serif;font-size:.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:1rem;transition:.12s" onmouseover="this.style.borderColor='var(--am)';this.style.color='var(--am)'" onmouseout="this.style.borderColor='var(--bd)';this.style.color='var(--tx2)'">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg>Back to Work Orders
-          </button>
-          <div class="jd-hdr" id="jdHeader"></div>
-          <div class="jd-lay">
-            <div>
-              <!-- PIPELINE + ACTIONS -->
-              <div class="crd" style="margin-bottom:1rem">
-                <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Workflow Pipeline</div></div>
-                <div id="jdPipeline" style="padding:.5rem .25rem"></div>
-              </div>
-              <!-- DOCUMENTS FOR MD / DOWNLOAD PANEL -->
-              <div class="crd" id="jdDocsPanel">
-                <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Documents</div><span class="badge b-gy" id="jdDocsCount">0 ready</span></div>
-                <div id="jdDocsList" style="padding:.75rem 1rem"></div>
-              </div>
-            </div>
-            <div>
-              <!-- SUMMARY -->
-              <div class="crd" style="margin-bottom:1rem">
-                <div class="crd-hd">Job Summary</div>
-                <div id="jdSummary" style="padding:.85rem 1rem"></div>
-              </div>
-              <!-- ACTIVITY -->
-              <div class="crd">
-                <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Activity</div></div>
-                <div id="jdActivity" style="max-height:260px;overflow-y:auto;padding:.5rem .75rem"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
+  <!-- MODALS (hidden by default) -->
+  <div id="addWOModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('addWOModal')">&times;</span>
+      <h2>Add New Work Order</h2>
+      <input type="text" id="nw-num" placeholder="WO Number" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-cust" placeholder="Customer Name" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-loc" placeholder="Location" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-type" placeholder="Type" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-phase" placeholder="Phase" value="47" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="number" id="nw-lf" placeholder="LF" value="29.25" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="date" id="nw-date" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-projtype" placeholder="Project Type" value="NESC" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-contract" placeholder="Contract" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-custno" placeholder="Customer No" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-plotno" placeholder="Plot No" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-ward" placeholder="Ward" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-mobile" placeholder="Mobile" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-bpcprojno" placeholder="BPC Project No" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-projno" placeholder="Project No" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-meter" placeholder="Meter No" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="text" id="nw-address" placeholder="Address" style="width:100%; padding:8px; margin:8px 0; border:1px solid #ccc; border-radius:4px;">
+      <input type="file" id="nw-scan" placeholder="BPC Scan (PDF)" style="width:100%; padding:8px; margin:8px 0;">
+      <div id="pdf-parse-status" style="display:none; padding:10px; margin:8px 0; border-radius:4px;"></div>
+      <button onclick="saveNewWO()" style="width:100%; padding:10px; background:#4CAF50; color:#fff; border:none; border-radius:4px; cursor:pointer;">Save</button>
     </div>
   </div>
 </div>
 
 <!-- Rates database (defines global RATES_SEED) loads before app logic -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Load config with fallback to API -->
+<script>
+// Try to load local config.js first, fallback to /api/config
+(async function() {
+  // First, try to load config.js
+  let configLoaded = false;
+  
+  // Check if config is already loaded from a script tag
+  if (typeof window.CLAIMDESK_CONFIG !== 'undefined' && window.CLAIMDESK_CONFIG) {
+    configLoaded = true;
+  } else {
+    // Try to fetch from API
+    try {
+      const response = await fetch('/api/config');
+      if (response.ok) {
+        const config = await response.json();
+        window.CLAIMDESK_CONFIG = config;
+        configLoaded = true;
+        console.log('Config loaded from /api/config');
+      }
+    } catch (err) {
+      console.warn('Could not fetch /api/config:', err);
+    }
+  }
+  
+  // If still not configured, use empty config (will run in offline mode)
+  if (!configLoaded) {
+    window.CLAIMDESK_CONFIG = {
+      SUPABASE_URL: '',
+      SUPABASE_ANON_KEY: '',
+      SCANS_BUCKET: 'claimdesk-scans'
+    };
+    console.warn('No config available - running in offline localStorage mode');
+  }
+  
+  // Signal that config is ready
+  window.CONFIG_READY = true;
+  // Dispatch event for app.js to listen to
+  window.dispatchEvent(new CustomEvent('configReady'));
+})();
+</script>
+
 <script src="config.js" onerror="console.info('No local config.js — using /api/config')"></script>
+
 <!-- jsPDF + AutoTable for proper PDF generation (no blank page issues) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
