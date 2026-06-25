@@ -942,29 +942,6 @@ function mdToggle(id){
     const el=document.getElementById('md-panel-'+s);
     if(el)el.style.display=(id===s&&el.style.display==='none')?'block':'none';
   });
-  // When a panel is opened, hide only the 4-card grid and other dashboard sections
-  const dashboardContent=document.getElementById('dash-md');
-  if(dashboardContent){
-    const isAnyPanelOpen=['completed','inprogress','claimready','batches'].some(s=>
-      document.getElementById('md-panel-'+s)?.style.display==='block'
-    );
-    // Hide the card grid section (the 4 colored cards)
-    const cardGrid=dashboardContent.querySelector('.cd-sc-grid');
-    if(cardGrid)cardGrid.style.display=isAnyPanelOpen?'none':'';
-    // Hide the hero section if exists
-    const hero=dashboardContent.querySelector('.hero-md');
-    if(hero)hero.parentElement.style.display=isAnyPanelOpen?'none':'';
-    // Hide the "Currently Active" section
-    const whoswhat=dashboardContent.querySelector('#m-whoswhat');
-    if(whoswhat)whoswhat.parentElement.parentElement.style.display=isAnyPanelOpen?'none':'';
-    // Hide the "Completed Jobs" section
-    const completedJobs=dashboardContent.querySelectorAll('.crd');
-    completedJobs.forEach(crd=>{
-      if(crd.querySelector('.cd-hd-l')?.textContent.includes('Completed')){
-        crd.style.display=isAnyPanelOpen?'none':'';
-      }
-    });
-  }
 }
 function renderJobs(){
   document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
