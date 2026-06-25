@@ -171,7 +171,7 @@ async function parseWorkOrderPDF(input){
 
     // Populate form fields
 const set=(id,val)=>{const e=document.getElementById(id);if(e&&val)e.value=val;};
-set('nw-num',wo&&/^\d+$/.test(wo)?wo.padStart(10,'0'):wo);
+set('nw-num',wo&&/^\d+$/.test(wo)?wo.padStart(6,'0'):wo);
 set('nw-date',date);
 set('nw-projtype',projType||'NESC');
 set('nw-bpcprojno',bpcProjNo);
@@ -2975,8 +2975,46 @@ function recalcVO2(wo){
   s(`vo2loc${wo}`,loc.toFixed(2));s(`vo2sub${wo}`,(sub+loc).toFixed(2));s(`vo2mk${wo}`,markup.toFixed(2));s(`vo2tot${wo}`,tot.toFixed(2));
   saveDB();
 }
-function addVO1Row(wo){DB.jobs[wo].vo1.items.push({d:'New Item',u:'Ea',q:1,r:0});saveDB();openDocForAction(wo,'vo1');}
-function addVO2Row(wo){DB.jobs[wo].vo2.items.push({d:'New Item',u:'Ea',q:1,r:0});saveDB();openDocForAction(wo,'vo2');}
+function addVO1Row(wo){
+  DB.jobs[wo].vo1.items.push({d:'New Item',u:'Ea',q:1,r:0});
+  saveDB();
+  // Re-render only the table rows instead of reopening the entire modal
+  const job=DB.jobs[wo];
+  const rows=job.vo1.items.map((it,i)=>`<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo1u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo1q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+  </tr>`).join('');
+  const tbody=document.getElementById(`vo1rows${wo}`);
+  if(tbody)tbody.innerHTML=rows;
+  // Focus on the new row's description field
+  const newIdx=job.vo1.items.length-1;
+  const newInput=document.getElementById(`vo1d${wo}${newIdx}`);
+  if(newInput)setTimeout(()=>newInput.focus(),10);
+}
+function addVO2Row(wo){
+  DB.jobs[wo].vo2.items.push({d:'New Item',u:'Ea',q:1,r:0});
+  saveDB();
+  // Re-render only the table rows instead of reopening the entire modal
+  const job=DB.jobs[wo];
+  const rows=job.vo2.items.map((it,i)=>`<tr>
+    <td>${i+1}.0</td>
+    <td style="min-width:190px"><div class="ac-wrap"><input class="ac-in" id="vo2d${job.wo}${i}" value="${(it.d||'').replace(/"/g,'&quot;')}" placeholder="Search rates..." oninput="acS('${job.wo}','vo2',${i},this.value)" onfocus="acS('${job.wo}','vo2',${i},this.value)" onblur="setTimeout(()=>acC('acd-vo2-${job.wo}-${i}'),180)" onkeydown="acK(event,'${job.wo}','vo2',${i})"><div class="ac-dd" id="acd-vo2-${job.wo}-${i}" style="display:none"></div></div></td>
+    <td class="c"><input class="ef ef-b" id="vo2u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo2q${job.wo}${i}" value="${it.q||0}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].q=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo2r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].r=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r" id="vo2v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+  </tr>`).join('');
+  const tbody=document.querySelector(`table.boq tbody`);
+  if(tbody)tbody.innerHTML=rows;
+  // Focus on the new row's description field
+  const newIdx=job.vo2.items.length-1;
+  const newInput=document.getElementById(`vo2d${wo}${newIdx}`);
+  if(newInput)setTimeout(()=>newInput.focus(),10);
+}
 function createWorksValuation(wo){
   const job=DB.jobs[wo];
   if(!job||!job.vo2.items.length){toast('VO2 must be created first','am');return;}
