@@ -942,16 +942,26 @@ function mdToggle(id){
     const el=document.getElementById('md-panel-'+s);
     if(el)el.style.display=(id===s&&el.style.display==='none')?'block':'none';
   });
-  // When any panel is opened, hide all dashboard cards and sections except the open panel
+  // When a panel is opened, hide only the 4-card grid and other dashboard sections
   const dashboardContent=document.getElementById('dash-md');
   if(dashboardContent){
     const isAnyPanelOpen=['completed','inprogress','claimready','batches'].some(s=>
       document.getElementById('md-panel-'+s)?.style.display==='block'
     );
-    // Hide all direct child elements except panels
-    Array.from(dashboardContent.children).forEach(child=>{
-      if(!child.id || !child.id.startsWith('md-panel-')){
-        child.style.display=isAnyPanelOpen?'none':'';
+    // Hide the card grid section (the 4 colored cards)
+    const cardGrid=dashboardContent.querySelector('.cd-sc-grid');
+    if(cardGrid)cardGrid.style.display=isAnyPanelOpen?'none':'';
+    // Hide the hero section if exists
+    const hero=dashboardContent.querySelector('.hero-md');
+    if(hero)hero.parentElement.style.display=isAnyPanelOpen?'none':'';
+    // Hide the "Currently Active" section
+    const whoswhat=dashboardContent.querySelector('#m-whoswhat');
+    if(whoswhat)whoswhat.parentElement.parentElement.style.display=isAnyPanelOpen?'none':'';
+    // Hide the "Completed Jobs" section
+    const completedJobs=dashboardContent.querySelectorAll('.crd');
+    completedJobs.forEach(crd=>{
+      if(crd.querySelector('.cd-hd-l')?.textContent.includes('Completed')){
+        crd.style.display=isAnyPanelOpen?'none':'';
       }
     });
   }
