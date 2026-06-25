@@ -946,18 +946,17 @@ function mdToggle(id){
 function renderJobs(){
   document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
   const jobs=Object.values(DB.jobs);
-  if(!jobs.length){document.getElementById('jobsList').innerHTML='<div class="cd-empty" style="padding:2rem;text-align:center;color:var(--tx3)">No work orders yet. Click Add Work Order to begin.</div>';return;}
+  if(!jobs.length){document.getElementById('jobsList').innerHTML='<div style="padding:2rem;text-align:center;color:var(--tx3)">No work orders yet. Click Add Work Order to begin.</div>';return;}
   const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Notifying Teams',teams_notified:'Teams On Site',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
-  // 8 unique gradients — cycles per card index
   const GRADS=[
-    'linear-gradient(145deg,#0a4a28 0%,#1a8a56 100%)',  // green
-    'linear-gradient(145deg,#6b3600 0%,#c47000 100%)',  // amber
-    'linear-gradient(145deg,#0a2560 0%,#1a50b0 100%)',  // blue
-    'linear-gradient(145deg,#4a0a2e 0%,#a01860 100%)',  // magenta
-    'linear-gradient(145deg,#18222e 0%,#2e4055 100%)',  // slate
-    'linear-gradient(145deg,#3a0a0a 0%,#a03030 100%)',  // red
-    'linear-gradient(145deg,#0a3a4a 0%,#1a7a9a 100%)',  // teal
-    'linear-gradient(145deg,#2a1a60 0%,#5a3ab0 100%)',  // purple
+    'linear-gradient(145deg,#0a4a28 0%,#1a8a56 100%)',
+    'linear-gradient(145deg,#6b3600 0%,#c47000 100%)',
+    'linear-gradient(145deg,#0a2560 0%,#1a50b0 100%)',
+    'linear-gradient(145deg,#4a0a2e 0%,#a01860 100%)',
+    'linear-gradient(145deg,#18222e 0%,#2e4055 100%)',
+    'linear-gradient(145deg,#3a0a0a 0%,#a03030 100%)',
+    'linear-gradient(145deg,#0a3a4a 0%,#1a7a9a 100%)',
+    'linear-gradient(145deg,#2a1a60 0%,#5a3ab0 100%)',
   ];
   document.getElementById('jobsList').innerHTML=`<div class="wo-sc-grid">${jobs.map((j,idx)=>{
     const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
@@ -976,6 +975,7 @@ function renderJobs(){
       <div class="wo-sc-val">${P(t.total)}</div>
       <div class="wo-sc-stage">${ST_LBL[j.stage]||j.stage}</div>
       <div class="wo-sc-track"><i style="width:${pct}%"></i></div>
+      <button class="wo-sc-btn" onclick="event.stopPropagation();openJobDetail('${j.wo}')">View Details ↗</button>
     </div>`;
   }).join('')}</div>`;
 }
