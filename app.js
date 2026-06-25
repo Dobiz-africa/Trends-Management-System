@@ -171,7 +171,7 @@ async function parseWorkOrderPDF(input){
 
     // Populate form fields
 const set=(id,val)=>{const e=document.getElementById(id);if(e&&val)e.value=val;};
-set('nw-num',wo&&/^\d+$/.test(wo)?'0000'+wo:wo);
+set('nw-num',wo&&/^\d+$/.test(wo)?'0000'+(wo.replace(/^0+/,'')||'0'):wo);
 set('nw-date',date);
 set('nw-projtype',projType||'NESC');
 set('nw-bpcprojno',bpcProjNo);
@@ -982,7 +982,7 @@ function renderJobs(){
 ═══════════════════════════════════════ */
 function saveNewWO(){
   const rawNum=document.getElementById('nw-num').value.trim();
-  const num=rawNum&&/^\d+$/.test(rawNum)?'0000'+rawNum:rawNum;
+  const num=rawNum&&/^\d+$/.test(rawNum)?'0000'+(rawNum.replace(/^0+/,'')||'0'):rawNum;
   const cust=document.getElementById('nw-cust').value.trim();
   const loc=document.getElementById('nw-loc').value.trim();
   const type=document.getElementById('nw-type')?.value||'';
