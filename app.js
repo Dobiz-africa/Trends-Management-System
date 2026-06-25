@@ -171,7 +171,7 @@ async function parseWorkOrderPDF(input){
 
     // Populate form fields
 const set=(id,val)=>{const e=document.getElementById(id);if(e&&val)e.value=val;};
-set('nw-num',wo&&/^\d+$/.test(wo)?wo.padStart(6,'0'):wo);
+set('nw-num',wo&&/^\d+$/.test(wo)?'0000'+wo:wo);
 set('nw-date',date);
 set('nw-projtype',projType||'NESC');
 set('nw-bpcprojno',bpcProjNo);
@@ -942,6 +942,19 @@ function mdToggle(id){
     const el=document.getElementById('md-panel-'+s);
     if(el)el.style.display=(id===s&&el.style.display==='none')?'block':'none';
   });
+  // When any panel is opened, hide all dashboard cards and sections except the open panel
+  const dashboardContent=document.getElementById('dash-md');
+  if(dashboardContent){
+    const isAnyPanelOpen=['completed','inprogress','claimready','batches'].some(s=>
+      document.getElementById('md-panel-'+s)?.style.display==='block'
+    );
+    // Hide all direct child elements except panels
+    Array.from(dashboardContent.children).forEach(child=>{
+      if(!child.id || !child.id.startsWith('md-panel-')){
+        child.style.display=isAnyPanelOpen?'none':'';
+      }
+    });
+  }
 }
 function renderJobs(){
   document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
@@ -982,7 +995,7 @@ function renderJobs(){
 ═══════════════════════════════════════ */
 function saveNewWO(){
   const rawNum=document.getElementById('nw-num').value.trim();
-  const num=rawNum&&/^\d+$/.test(rawNum)?rawNum.padStart(6,'0'):rawNum;
+  const num=rawNum&&/^\d+$/.test(rawNum)?'0000'+rawNum:rawNum;
   const cust=document.getElementById('nw-cust').value.trim();
   const loc=document.getElementById('nw-loc').value.trim();
   const type=document.getElementById('nw-type')?.value||'';
