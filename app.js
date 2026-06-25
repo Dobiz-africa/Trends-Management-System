@@ -801,7 +801,7 @@ function renderMDDash(){
   const claimReady=jobs.filter(j=>j.stage==='gis_complete'||j.stage==='claim_docs_ready');
   const inProgress=jobs.filter(j=>!['job_complete','gis_complete','claim_docs_ready'].includes(j.stage));
   const batches   =Object.entries(DB.batchDocs||{});
-  const val       =jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const val=jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
   document.getElementById('m-total').textContent=jobs.length;
   document.getElementById('m-active').textContent=inProgress.length;
   document.getElementById('m-docs').textContent=claimReady.length;
@@ -810,114 +810,130 @@ function renderMDDash(){
   const MD_STEPS=[{sid:'vo1_created',dt:'vo1',lbl:'VO1'},{sid:'vo2_created',dt:'vo2',lbl:'VO2'},{sid:'works_valuation_created',dt:'works_valuation',lbl:'WV'},{sid:'work_instruction_ready',dt:'works_instruction',lbl:'WI'},{sid:'gis_complete',dt:'gis_report',lbl:'GIS'}];
   const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Notifying Teams',teams_notified:'Teams On Site',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
 
-  function docPills(j){
+  function dpills(j){
     const saved=j.savedDocs||{},scans=j.scans||{};
-    return`<div class="cl-doc-row">${MD_STEPS.map(s=>{
+    return`<div class="cd-dp-row">${MD_STEPS.map(s=>{
       const done=stageIdx(j.stage)>=stageIdx(s.sid);
-      if(!done)return`<span class="cl-dp cl-dp-off">${s.lbl}</span>`;
-      if(scans[s.dt])return`<button class="cl-dp cl-dp-gn" onclick="event.stopPropagation();downloadScan('${j.wo}','${s.dt}')">&#11015; ${s.lbl}</button>`;
-      if(saved[s.dt])return`<button class="cl-dp cl-dp-bl" onclick="event.stopPropagation();downloadSavedDoc('${j.wo}','${s.dt}')">&#11015; ${s.lbl}</button>`;
-      return`<button class="cl-dp cl-dp-gy" onclick="event.stopPropagation();openDocForAction('${j.wo}','${s.dt}')">&#128065; ${s.lbl}</button>`;
+      if(!done)return`<span class="cd-dp cd-dp-off">${s.lbl}</span>`;
+      if(scans[s.dt])return`<button class="cd-dp cd-dp-gn" onclick="event.stopPropagation();downloadScan('${j.wo}','${s.dt}')">&#11015; ${s.lbl}</button>`;
+      if(saved[s.dt])return`<button class="cd-dp cd-dp-bl" onclick="event.stopPropagation();downloadSavedDoc('${j.wo}','${s.dt}')">&#11015; ${s.lbl}</button>`;
+      return`<button class="cd-dp cd-dp-gy" onclick="event.stopPropagation();openDocForAction('${j.wo}','${s.dt}')">&#128065; ${s.lbl}</button>`;
     }).join('')}</div>`;
   }
 
-  function jobCard(j,showDocs){
+  function jcard(j,showDocs){
     const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');
     const isDone=j.stage==='job_complete';
     const isReady=['gis_complete','claim_docs_ready'].includes(j.stage);
     const isBusy=['teams_notified','gis_notified','work_complete'].includes(j.stage);
+    const pct=stagePct(j.stage);
+    const acc=isDone?'#1a8a56':isReady?'#1a50b0':isBusy?'#c47000':'#888';
+    const accBg=isDone?'#E4F5EA':isReady?'#E4EEFB':isBusy?'#FAF0DB':'#ECEFF1';
     const bc=isDone?'b-gn':isReady?'b-bl':isBusy?'b-am':'b-gy';
     const bl=isDone?'Complete':isReady?'Ready to Claim':isBusy?'In Progress':'Active';
-    const pct=stagePct(j.stage);
-    return`<div class="cl-card" onclick="openJobDetail('${j.wo}')">
-      <div class="cl-card-top">
-        <div class="cl-card-left">
-          <div class="cl-card-wo">WO ${j.wo}</div>
-          <div class="cl-card-name">${j.cust}</div>
-          <div class="cl-card-loc">${j.loc.split(',')[0]}</div>
-        </div>
-        <div class="cl-card-right">
-          <span class="badge ${bc}">${bl}</span>
-          <div class="cl-card-val">${P(t.total)}</div>
-        </div>
+    return`<div class="cd-card" style="--ca:${acc};--ca-bg:${accBg}" onclick="openJobDetail('${j.wo}')">
+      <div class="cd-card-body">
+        <div class="cd-card-wo">WO ${j.wo}</div>
+        <div class="cd-card-name">${j.cust}</div>
+        <div class="cd-card-loc">${j.loc.split(',')[0]}</div>
+        <div class="cd-card-stage">${ST_LBL[j.stage]||j.stage}</div>
+        ${showDocs?dpills(j):''}
       </div>
-      <div class="cl-card-stage">${ST_LBL[j.stage]||j.stage}</div>
-      <div class="cl-card-prog">
-        <div class="cl-card-bar"><div class="cl-card-fill" style="width:${pct}%;background:${isDone?'var(--gn)':isReady?'var(--bl)':'var(--am)'}"></div></div>
-        <span class="cl-card-pct">${pct}%</span>
+      <div class="cd-card-right">
+        <span class="badge ${bc}">${bl}</span>
+        <div class="cd-card-val">${P(t.total)}</div>
+        <div class="cd-card-prog">
+          <div class="cd-card-bar"><div class="cd-card-fill" style="width:${pct}%;background:${acc}"></div></div>
+          <span class="cd-card-pct">${pct}%</span>
+        </div>
+        <button class="cd-card-btn">View details</button>
       </div>
-      ${showDocs?docPills(j):''}
-      <div class="cl-card-action">View job details &rarr;</div>
     </div>`;
   }
 
   const wwEl=document.getElementById('m-whoswhat');
+  const tot=jobs.length||1;
   wwEl.innerHTML=`
-    <div class="cl-sc-grid">
-      <div class="cl-sc cl-sc-green" onclick="mdToggle('completed')">
-        <div class="cl-sc-num">${completed.length}</div>
-        <div class="cl-sc-lbl">Completed</div>
-        <div class="cl-sc-sub">Fully done — ready to claim</div>
-        <div class="cl-sc-bar"><div style="width:${jobs.length?Math.round(completed.length/jobs.length*100):0}%"></div></div>
+    <div class="cd-sc-grid">
+      <div class="cd-sc cd-sc-green" onclick="mdToggle('completed')">
+        <span class="cd-sc-arrow">↗</span>
+        <span class="cd-sc-badge">Completed</span>
+        <div class="cd-sc-num">${completed.length}</div>
+        <div class="cd-sc-lbl">Jobs Done</div>
+        <div class="cd-sc-sub">Fully done — ready to claim</div>
+        <div class="cd-sc-track"><i style="width:${Math.round(completed.length/tot*100)}%"></i></div>
       </div>
-      <div class="cl-sc cl-sc-amber" onclick="mdToggle('inprogress')">
-        <div class="cl-sc-num">${inProgress.length}</div>
-        <div class="cl-sc-lbl">In Progress</div>
-        <div class="cl-sc-sub">Moving through pipeline</div>
-        <div class="cl-sc-bar"><div style="width:${jobs.length?Math.round(inProgress.length/jobs.length*100):0}%"></div></div>
+      <div class="cd-sc cd-sc-amber" onclick="mdToggle('inprogress')">
+        <span class="cd-sc-arrow">↗</span>
+        <span class="cd-sc-badge">In Progress</span>
+        <div class="cd-sc-num">${inProgress.length}</div>
+        <div class="cd-sc-lbl">Active Jobs</div>
+        <div class="cd-sc-sub">Moving through pipeline</div>
+        <div class="cd-sc-track"><i style="width:${Math.round(inProgress.length/tot*100)}%"></i></div>
       </div>
-      <div class="cl-sc cl-sc-blue" onclick="mdToggle('claimready')">
-        <div class="cl-sc-num">${claimReady.length}</div>
-        <div class="cl-sc-lbl">Ready to Claim</div>
-        <div class="cl-sc-sub">GIS done — awaiting Finance</div>
-        <div class="cl-sc-bar"><div style="width:${jobs.length?Math.round(claimReady.length/jobs.length*100):0}%"></div></div>
+      <div class="cd-sc cd-sc-blue" onclick="mdToggle('claimready')">
+        <span class="cd-sc-arrow">↗</span>
+        <span class="cd-sc-badge">Ready to Claim</span>
+        <div class="cd-sc-num">${claimReady.length}</div>
+        <div class="cd-sc-lbl">Awaiting Finance</div>
+        <div class="cd-sc-sub">GIS done — Finance to generate docs</div>
+        <div class="cd-sc-track"><i style="width:${Math.round(claimReady.length/tot*100)}%"></i></div>
       </div>
-      <div class="cl-sc cl-sc-slate" onclick="mdToggle('batches')">
-        <div class="cl-sc-num">${batches.length}</div>
-        <div class="cl-sc-lbl">Claim Batches</div>
-        <div class="cl-sc-sub">Finance docs generated</div>
-        <div class="cl-sc-bar"><div style="width:${batches.length?60:0}%"></div></div>
+      <div class="cd-sc cd-sc-slate" onclick="mdToggle('batches')">
+        <span class="cd-sc-arrow">↗</span>
+        <span class="cd-sc-badge">Claim Batches</span>
+        <div class="cd-sc-num">${batches.length}</div>
+        <div class="cd-sc-lbl">Batch Documents</div>
+        <div class="cd-sc-sub">Finance docs ready to submit</div>
+        <div class="cd-sc-track"><i style="width:${Math.min(batches.length*20,100)}%"></i></div>
       </div>
     </div>
 
-    <div id="md-panel-completed" class="cl-panel" style="display:none">
-      <div class="cl-panel-hd"><span>Completed Jobs <span class="badge b-gn">${completed.length}</span></span><button onclick="mdToggle(null)">Close ×</button></div>
-      ${!completed.length?'<div class="cl-empty">No completed jobs yet</div>':completed.map(j=>jobCard(j,true)).join('')}
+    <div id="md-panel-completed" class="cd-panel" style="display:none">
+      <div class="cd-panel-hd"><span>Completed Jobs <span class="badge b-gn">${completed.length}</span></span><button onclick="mdToggle(null)">Close ×</button></div>
+      ${!completed.length?'<div class="cd-empty">No completed jobs yet</div>':completed.map(j=>jcard(j,true)).join('')}
     </div>
-    <div id="md-panel-inprogress" class="cl-panel" style="display:none">
-      <div class="cl-panel-hd"><span>In Progress <span class="badge b-am">${inProgress.length}</span></span><button onclick="mdToggle(null)">Close ×</button></div>
-      ${!inProgress.length?'<div class="cl-empty">No jobs in progress</div>':inProgress.map(j=>jobCard(j,false)).join('')}
+    <div id="md-panel-inprogress" class="cd-panel" style="display:none">
+      <div class="cd-panel-hd"><span>In Progress <span class="badge b-am">${inProgress.length}</span></span><button onclick="mdToggle(null)">Close ×</button></div>
+      ${!inProgress.length?'<div class="cd-empty">No jobs in progress</div>':inProgress.map(j=>jcard(j,false)).join('')}
     </div>
-    <div id="md-panel-claimready" class="cl-panel" style="display:none">
-      <div class="cl-panel-hd"><span>Ready to Claim <span class="badge b-bl">${claimReady.length}</span></span><button onclick="mdToggle(null)">Close ×</button></div>
-      ${!claimReady.length?'<div class="cl-empty">No jobs awaiting claim documents</div>':claimReady.map(j=>jobCard(j,true)).join('')}
+    <div id="md-panel-claimready" class="cd-panel" style="display:none">
+      <div class="cd-panel-hd"><span>Ready to Claim <span class="badge b-bl">${claimReady.length}</span></span><button onclick="mdToggle(null)">Close ×</button></div>
+      ${!claimReady.length?'<div class="cd-empty">No jobs awaiting claim documents</div>':claimReady.map(j=>jcard(j,true)).join('')}
     </div>
-    <div id="md-panel-batches" class="cl-panel" style="display:none">
-      <div class="cl-panel-hd"><span>Claim Batches <span class="badge b-gy">${batches.length}</span></span><button onclick="mdToggle(null)">Close ×</button></div>
-      ${!batches.length?'<div class="cl-empty">No claim batches yet — Finance generates these after GIS documents are uploaded</div>':
+    <div id="md-panel-batches" class="cd-panel" style="display:none">
+      <div class="cd-panel-hd"><span>Claim Batches <span class="badge b-gy">${batches.length}</span></span><button onclick="mdToggle(null)">Close ×</button></div>
+      ${!batches.length?'<div class="cd-empty">No claim batches yet — Finance generates these after GIS documents are uploaded</div>':
         batches.map(([certNo,b])=>{
           const bWOs=b.wos||[];const bJobs=bWOs.map(wo=>DB.jobs[wo]).filter(Boolean);
           const bTotal=bJobs.reduce((s,j)=>{const t=(j.vo2&&j.vo2.items&&j.vo2.items.length)?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);
-          const scans=b.scans||{};const bget=(k)=>{const m={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};return b[m[k]]||b[k];};
+          const scans=b.scans||{};
+          const bget=(k)=>{const m={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};return b[m[k]]||b[k];};
           const docDefs=[{dt:'annexure',lbl:'Annexure'},{dt:'payment_cert',lbl:'Payment Cert'},{dt:'invoice',lbl:'Invoice'},{dt:'list_of_jobs',lbl:'List of Jobs'},{dt:'bpc_spreadsheet',lbl:'BPC Sheet'}];
-          const docBtns=docDefs.map(d=>{if(scans[d.dt])return`<button class="cl-dp cl-dp-gn" onclick="downloadScan(null,'${d.dt}','${certNo}')">&#11015; ${d.lbl}</button>`;if(bget(d.dt))return`<button class="cl-dp cl-dp-bl" onclick="viewBatchDoc('${certNo}','${d.dt}')">&#11015; ${d.lbl}</button>`;return`<span class="cl-dp cl-dp-off">${d.lbl}</span>`;}).join('');
-          return`<div class="cl-card">
-            <div class="cl-card-top">
-              <div class="cl-card-left"><div class="cl-card-wo">Cert ${certNo}</div><div class="cl-card-name">${bWOs.length} work order${bWOs.length>1?'s':''}</div><div class="cl-card-loc">WOs: ${bWOs.join(', ')}</div></div>
-              <div class="cl-card-right"><div class="cl-card-val">${P(bTotal)}</div></div>
+          const docBtns=docDefs.map(d=>{
+            if(scans[d.dt])return`<button class="cd-dp cd-dp-gn" onclick="downloadScan(null,'${d.dt}','${certNo}')">&#11015; ${d.lbl}</button>`;
+            if(bget(d.dt))return`<button class="cd-dp cd-dp-bl" onclick="viewBatchDoc('${certNo}','${d.dt}')">&#11015; ${d.lbl}</button>`;
+            return`<span class="cd-dp cd-dp-off">${d.lbl}</span>`;
+          }).join('');
+          return`<div class="cd-card" style="--ca:#888;--ca-bg:#ECEFF1">
+            <div class="cd-card-body">
+              <div class="cd-card-wo">Cert ${certNo}</div>
+              <div class="cd-card-name">${bWOs.length} work order${bWOs.length>1?'s':''}</div>
+              <div class="cd-card-loc">WOs: ${bWOs.join(', ')}</div>
+              <div class="cd-dp-row">${docBtns}</div>
             </div>
-            <div class="cl-doc-row">${docBtns}</div>
+            <div class="cd-card-right"><div class="cd-card-val">${P(bTotal)}</div></div>
           </div>`;
         }).join('')}
     </div>`;
 
   const jobsDone=jobs.filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
   const doneEl=document.getElementById('m-done-jobs');
-  if(doneEl){doneEl.innerHTML=!jobsDone.length?'<div class="cl-empty">No completed jobs yet</div>':jobsDone.map(j=>jobCard(j,true)).join('');}
+  if(doneEl)doneEl.innerHTML=!jobsDone.length?'<div class="cd-empty">No completed jobs yet</div>':jobsDone.map(j=>jcard(j,true)).join('');
   const batchEl=document.getElementById('m-claim-batches');
-  if(batchEl){batchEl.innerHTML=!batches.length?'<div class="cl-empty">No claim batches yet</div>':batches.map(([certNo,b])=>{const bWOs=b.wos||[];const bJobs=bWOs.map(wo=>DB.jobs[wo]).filter(Boolean);const bTotal=bJobs.reduce((s,j)=>{const t=(j.vo2&&j.vo2.items&&j.vo2.items.length)?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);const scans=b.scans||{};const bget=(k)=>{const m={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};return b[m[k]]||b[k];};const docDefs=[{dt:'annexure',lbl:'Annexure'},{dt:'payment_cert',lbl:'Payment Cert'},{dt:'invoice',lbl:'Invoice'},{dt:'list_of_jobs',lbl:'List of Jobs'},{dt:'bpc_spreadsheet',lbl:'BPC Sheet'}];const docBtns=docDefs.map(d=>{if(scans[d.dt])return`<button class="cl-dp cl-dp-gn" onclick="downloadScan(null,'${d.dt}','${certNo}')">&#11015; ${d.lbl}</button>`;if(bget(d.dt))return`<button class="cl-dp cl-dp-bl" onclick="viewBatchDoc('${certNo}','${d.dt}')">&#11015; ${d.lbl}</button>`;return`<span class="cl-dp cl-dp-off">${d.lbl}</span>`;}).join('');return`<div class="cl-card"><div class="cl-card-top"><div class="cl-card-left"><div class="cl-card-wo">Cert ${certNo}</div><div class="cl-card-name">${bWOs.length} job${bWOs.length>1?'s':''}</div><div class="cl-card-loc">WOs: ${bWOs.join(', ')}</div></div><div class="cl-card-right"><div class="cl-card-val">${P(bTotal)}</div></div></div><div class="cl-doc-row">${docBtns}</div></div>`;}).join('');}
+  if(batchEl){const bt=Object.entries(DB.batchDocs||{});batchEl.innerHTML=!bt.length?'<div class="cd-empty">No claim batches yet</div>':bt.map(([certNo,b])=>{const bWOs=b.wos||[];const bJobs=bWOs.map(wo=>DB.jobs[wo]).filter(Boolean);const bTotal=bJobs.reduce((s,j)=>{const t=(j.vo2&&j.vo2.items&&j.vo2.items.length)?jTotal(j,'vo2'):jTotal(j,'vo1');return s+t.total;},0);const scans=b.scans||{};const bget=(k)=>{const m={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};return b[m[k]]||b[k];};const docDefs=[{dt:'annexure',lbl:'Annexure'},{dt:'payment_cert',lbl:'Payment Cert'},{dt:'invoice',lbl:'Invoice'},{dt:'list_of_jobs',lbl:'List of Jobs'},{dt:'bpc_spreadsheet',lbl:'BPC Sheet'}];const docBtns=docDefs.map(d=>{if(scans[d.dt])return`<button class="cd-dp cd-dp-gn" onclick="downloadScan(null,'${d.dt}','${certNo}')">&#11015; ${d.lbl}</button>`;if(bget(d.dt))return`<button class="cd-dp cd-dp-bl" onclick="viewBatchDoc('${certNo}','${d.dt}')">&#11015; ${d.lbl}</button>`;return`<span class="cd-dp cd-dp-off">${d.lbl}</span>`;}).join('');return`<div class="cd-card" style="--ca:#888;--ca-bg:#ECEFF1"><div class="cd-card-body"><div class="cd-card-wo">Cert ${certNo}</div><div class="cd-card-name">${bWOs.length} job${bWOs.length>1?'s':''}</div><div class="cd-card-loc">WOs: ${bWOs.join(', ')}</div><div class="cd-dp-row">${docBtns}</div></div><div class="cd-card-right"><div class="cd-card-val">${P(bTotal)}</div></div></div>`;}).join('');}
   const allEl=document.getElementById('m-alljobs');
-  if(allEl){allEl.innerHTML=!jobs.length?'<div class="cl-empty">No work orders yet</div>':jobs.map(j=>jobCard(j,false)).join('');}
+  if(allEl)allEl.innerHTML=!jobs.length?'<div class="cd-empty">No work orders yet</div>':jobs.map(j=>jcard(j,false)).join('');
 }
 function mdToggle(id){
   ['completed','inprogress','claimready','batches'].forEach(s=>{
@@ -928,34 +944,34 @@ function mdToggle(id){
 function renderJobs(){
   document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
   const jobs=Object.values(DB.jobs);
-  if(!jobs.length){document.getElementById('jobsList').innerHTML='<div class="cl-empty">No work orders yet. Click Add Work Order to begin.</div>';return;}
+  if(!jobs.length){document.getElementById('jobsList').innerHTML='<div class="cd-empty">No work orders yet. Click Add Work Order to begin.</div>';return;}
   const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Notifying Teams',teams_notified:'Teams On Site',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
   document.getElementById('jobsList').innerHTML=jobs.map(j=>{
     const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
     const isDone=j.stage==='job_complete';
     const isReady=['gis_complete','claim_docs_ready'].includes(j.stage);
     const isBusy=['teams_notified','gis_notified','work_complete'].includes(j.stage);
+    const pct=stagePct(j.stage);
+    const acc=isDone?'#1a8a56':isReady?'#1a50b0':isBusy?'#c47000':'#888';
+    const accBg=isDone?'#E4F5EA':isReady?'#E4EEFB':isBusy?'#FAF0DB':'#ECEFF1';
     const bc=isDone?'b-gn':isReady?'b-bl':isBusy?'b-am':'b-gy';
     const bl=isDone?'Complete':isReady?'Ready to Claim':isBusy?'In Progress':'Active';
-    const pct=stagePct(j.stage);
-    return`<div class="cl-card" onclick="openJobDetail('${j.wo}')">
-      <div class="cl-card-top">
-        <div class="cl-card-left">
-          <div class="cl-card-wo">WO ${j.wo}</div>
-          <div class="cl-card-name">${j.cust}</div>
-          <div class="cl-card-loc">${j.loc.split(',')[0]}</div>
-        </div>
-        <div class="cl-card-right">
-          <span class="badge ${bc}">${bl}</span>
-          <div class="cl-card-val">${P(t.total)}</div>
-        </div>
+    return`<div class="cd-card" style="--ca:${acc};--ca-bg:${accBg}" onclick="openJobDetail('${j.wo}')">
+      <div class="cd-card-body">
+        <div class="cd-card-wo">WO ${j.wo}</div>
+        <div class="cd-card-name">${j.cust}</div>
+        <div class="cd-card-loc">${j.loc.split(',')[0]}</div>
+        <div class="cd-card-stage">${ST_LBL[j.stage]||j.stage}</div>
       </div>
-      <div class="cl-card-stage">${ST_LBL[j.stage]||j.stage}</div>
-      <div class="cl-card-prog">
-        <div class="cl-card-bar"><div class="cl-card-fill" style="width:${pct}%;background:${isDone?'var(--gn)':isReady?'var(--bl)':'var(--am)'}"></div></div>
-        <span class="cl-card-pct">${pct}%</span>
+      <div class="cd-card-right">
+        <span class="badge ${bc}">${bl}</span>
+        <div class="cd-card-val">${P(t.total)}</div>
+        <div class="cd-card-prog">
+          <div class="cd-card-bar"><div class="cd-card-fill" style="width:${pct}%;background:${acc}"></div></div>
+          <span class="cd-card-pct">${pct}%</span>
+        </div>
+        <button class="cd-card-btn">View details</button>
       </div>
-      <div class="cl-card-action">View job details &rarr;</div>
     </div>`;
   }).join('');
 }
