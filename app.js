@@ -301,27 +301,8 @@ const STAGE_DOCS = {
 ═══════════════════════════════════════ */
 const SB = { client:null, enabled:false, bucket:'claimdesk-scans', ready:false };
 
-async function initSupabase(){
+(function initSupabase(){
   try{
-    // Wait for config to be loaded from API (with timeout)
-    const waitForConfig = new Promise((resolve) => {
-      if (window.CONFIG_READY) {
-        resolve();
-      } else {
-        const timeout = setTimeout(() => {
-          console.warn('Config loading timeout - proceeding with offline mode');
-          resolve();
-        }, 3000);
-        
-        window.addEventListener('configReady', () => {
-          clearTimeout(timeout);
-          resolve();
-        }, { once: true });
-      }
-    });
-    
-    await waitForConfig;
-    
     const cfg = (window.CLAIMDESK_CONFIG)||{};
     if(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && window.supabase){
       SB.client  = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
@@ -335,11 +316,6 @@ async function initSupabase(){
     console.error('ClaimDesk: Supabase init failed, using offline mode.', e);
     SB.enabled = false;
   }
-}
-
-// Run initSupabase immediately
-(async () => {
-  await initSupabase();
 })();
 
 /* Pull all shared data from Supabase into the in-memory DB (called on login). */
