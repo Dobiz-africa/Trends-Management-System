@@ -946,36 +946,38 @@ function mdToggle(id){
 function renderJobs(){
   document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
   const jobs=Object.values(DB.jobs);
-  if(!jobs.length){document.getElementById('jobsList').innerHTML='<div class="cd-empty">No work orders yet. Click Add Work Order to begin.</div>';return;}
+  if(!jobs.length){document.getElementById('jobsList').innerHTML='<div class="cd-empty" style="padding:2rem;text-align:center;color:var(--tx3)">No work orders yet. Click Add Work Order to begin.</div>';return;}
   const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Notifying Teams',teams_notified:'Teams On Site',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
-  document.getElementById('jobsList').innerHTML=jobs.map(j=>{
+  // 8 unique gradients — cycles per card index
+  const GRADS=[
+    'linear-gradient(145deg,#0a4a28 0%,#1a8a56 100%)',  // green
+    'linear-gradient(145deg,#6b3600 0%,#c47000 100%)',  // amber
+    'linear-gradient(145deg,#0a2560 0%,#1a50b0 100%)',  // blue
+    'linear-gradient(145deg,#4a0a2e 0%,#a01860 100%)',  // magenta
+    'linear-gradient(145deg,#18222e 0%,#2e4055 100%)',  // slate
+    'linear-gradient(145deg,#3a0a0a 0%,#a03030 100%)',  // red
+    'linear-gradient(145deg,#0a3a4a 0%,#1a7a9a 100%)',  // teal
+    'linear-gradient(145deg,#2a1a60 0%,#5a3ab0 100%)',  // purple
+  ];
+  document.getElementById('jobsList').innerHTML=`<div class="wo-sc-grid">${jobs.map((j,idx)=>{
     const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    const pct=stagePct(j.stage);
     const isDone=j.stage==='job_complete';
     const isReady=['gis_complete','claim_docs_ready'].includes(j.stage);
     const isBusy=['teams_notified','gis_notified','work_complete'].includes(j.stage);
-    const pct=stagePct(j.stage);
-    const acc=isDone?'#1a8a56':isReady?'#1a50b0':isBusy?'#c47000':'#888';
-    const accBg=isDone?'#E4F5EA':isReady?'#E4EEFB':isBusy?'#FAF0DB':'#ECEFF1';
-    const bc=isDone?'b-gn':isReady?'b-bl':isBusy?'b-am':'b-gy';
     const bl=isDone?'Complete':isReady?'Ready to Claim':isBusy?'In Progress':'Active';
-    return`<div class="cd-card" style="--ca:${acc};--ca-bg:${accBg}" onclick="openJobDetail('${j.wo}')">
-      <div class="cd-card-body">
-        <div class="cd-card-wo">WO ${j.wo}</div>
-        <div class="cd-card-name">${j.cust}</div>
-        <div class="cd-card-loc">${j.loc.split(',')[0]}</div>
-        <div class="cd-card-stage">${ST_LBL[j.stage]||j.stage}</div>
-      </div>
-      <div class="cd-card-right">
-        <span class="badge ${bc}">${bl}</span>
-        <div class="cd-card-val">${P(t.total)}</div>
-        <div class="cd-card-prog">
-          <div class="cd-card-bar"><div class="cd-card-fill" style="width:${pct}%;background:${acc}"></div></div>
-          <span class="cd-card-pct">${pct}%</span>
-        </div>
-        <button class="cd-card-btn">View details</button>
-      </div>
+    const grad=GRADS[idx%GRADS.length];
+    return`<div class="wo-sc" style="background:${grad}" onclick="openJobDetail('${j.wo}')">
+      <span class="wo-sc-arrow">↗</span>
+      <span class="wo-sc-badge">${bl}</span>
+      <div class="wo-sc-name">${j.cust}</div>
+      <div class="wo-sc-wo">WO ${j.wo}</div>
+      <div class="wo-sc-loc">${j.loc.split(',')[0]}</div>
+      <div class="wo-sc-val">${P(t.total)}</div>
+      <div class="wo-sc-stage">${ST_LBL[j.stage]||j.stage}</div>
+      <div class="wo-sc-track"><i style="width:${pct}%"></i></div>
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
 }
 /* ═══════════════════════════════════════
    ADD WORK ORDER
