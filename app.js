@@ -932,7 +932,7 @@ function renderMDDash(){
           bpc_spreadsheet: 'BPC Spreadsheet'
         };
         
-        // Collect all Finance-saved documents
+        // Collect all Finance-saved documents from jobs ready for claims
         const docCollections = {};
         Object.values(DB.jobs).forEach(j => {
           if((j.stage === 'gis_complete' || j.stage === 'claim_docs_ready') && j.savedDocs) {
