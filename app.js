@@ -3048,10 +3048,26 @@ function pickRole(role){
   document.getElementById('loginRole').value = role;
   doLogin();
 }
+/* Auto-restore session if user was previously logged in */
+async function restoreSession(){
+  const saved=localStorage.getItem('tes_currentRole');
+  if(!saved)return;// No saved session
+  try{
+    // Silently restore the role and log in
+    document.getElementById('loginRole').value=saved;
+    await doLogin();
+  }catch(e){
+    console.error('Session restore failed:',e);
+    // Clear broken session
+    localStorage.removeItem('tes_currentRole');
+  }
+}
 async function doLogin(){
   const r=document.getElementById('loginRole').value;
   if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
   CU=r;
+  // Persist session to localStorage so user stays logged in after page reload
+  localStorage.setItem('tes_currentRole',r);
   // Reset all screens — clear any stale job detail from a previous role session
   detailWO=null;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
@@ -3083,7 +3099,12 @@ async function doLogin(){
 function doLogout(){
   addLog('','Signed out');saveDB();
   CU='';detailWO=null;
+  // Clear session from localStorage
+  localStorage.removeItem('tes_currentRole');
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginRole').value='';
 }
+
+/* Auto-restore user session on page load */
+window.addEventListener('DOMContentLoaded',restoreSession);
