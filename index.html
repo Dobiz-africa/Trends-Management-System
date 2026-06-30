@@ -480,6 +480,33 @@
             <span style="font-size:.88rem;font-weight:600;color:var(--tx)">All Work Orders</span>
             <div id="jobs-add-btn"></div>
           </div>
+          
+          <!-- Search and Filter Controls -->
+          <div style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+            <input type="text" 
+                   placeholder="🔍 Search by WO#, customer, location..." 
+                   oninput="updateJobsSearch(this.value)"
+                   style="flex:1;min-width:200px;padding:0.6rem;background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);font-size:0.9rem;color:var(--tx);font-family:var(--font-body)">
+            
+            <select onchange="setJobsFilterStage(this.value)" 
+                    style="padding:0.6rem;background:var(--sf2);border:0.5px solid var(--bd);border-radius:var(--rs);font-size:0.9rem;color:var(--tx);font-family:var(--font-body);cursor:pointer">
+              <option value="">All Stages</option>
+              <option value="wo_received">📋 Work Order Received</option>
+              <option value="vo1_created">📤 VO1 Created</option>
+              <option value="linesman_notified">👷 Linesman Notified</option>
+              <option value="field_received">📝 Field Received</option>
+              <option value="vo2_created">👷 VO2 Created</option>
+              <option value="works_valuation_created">📄 Works Valuation</option>
+              <option value="work_instruction_ready">📄 Work Instruction</option>
+              <option value="teams_notified">🔨 Teams Notified</option>
+              <option value="work_complete">📍 Work Complete</option>
+              <option value="gis_notified">📋 GIS Notified</option>
+              <option value="gis_complete">✅ GIS Complete</option>
+              <option value="claim_docs_ready">✅ Claim Docs Ready</option>
+              <option value="job_complete">✅ Complete</option>
+            </select>
+          </div>
+          
           <div class="crd">
             <div id="jobsList"></div>
           </div>
