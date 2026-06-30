@@ -551,6 +551,9 @@ let CU=''; // current role
 let detailWO=null;
 let selClaimJobs=new Set();
 let recordCb=null;
+let hasUnsavedChanges=false; // Track if user has unsaved edits in modals
+let jobsSearchQuery=''; // Search query for jobs
+let jobsFilterStage=''; // Filter by stage (empty = all)
 
 const RN={admin:'Admin',finance:'Finance',md:'Manager'};
 
@@ -984,9 +987,36 @@ function mdToggle(id){
     if(el)el.style.display=(id===s&&el.style.display==='none')?'block':'none';
   });
 }
+
+/* ═══════════════════════════════════════
+   JOBS SEARCH & FILTER
+═══════════════════════════════════════ */
+function updateJobsSearch(query){
+  jobsSearchQuery=query.trim().toLowerCase();
+  renderJobs();
+}
+function setJobsFilterStage(stage){
+  jobsFilterStage=stage;
+  renderJobs();
+}
+function getFilteredJobs(){
+  let jobs=Object.values(DB.jobs);
+  // Filter by stage
+  if(jobsFilterStage){jobs=jobs.filter(j=>j.stage===jobsFilterStage);}
+  // Filter by search query (WO #, customer name, location)
+  if(jobsSearchQuery){
+    jobs=jobs.filter(j=>
+      j.wo.toLowerCase().includes(jobsSearchQuery)||
+      j.cust.toLowerCase().includes(jobsSearchQuery)||
+      j.loc.toLowerCase().includes(jobsSearchQuery)
+    );
+  }
+  return jobs;
+}
+
 function renderJobs(){
   document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
-  const jobs=Object.values(DB.jobs);
+  const jobs=getFilteredJobs();
   if(!jobs.length){document.getElementById('jobsList').innerHTML='<div style="padding:2rem;text-align:center;color:var(--tx3)">No work orders yet. Click Add Work Order to begin.</div>';return;}
   const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Notifying Teams',teams_notified:'Teams On Site',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
   const GRADS=[
@@ -1028,8 +1058,16 @@ function saveNewWO(){
   const cust=document.getElementById('nw-cust').value.trim();
   const loc=document.getElementById('nw-loc').value.trim();
   const type=document.getElementById('nw-type')?.value||'';
+  
+  // Validation: Required fields
   if(!num||!cust||!loc){toast('Fill in WO Number, Customer Name and Location','am');return;}
+  // Validation: WO number format (must be numeric)
+  if(!/^\d+$/.test(rawNum)){toast('WO Number must contain only digits','am');return;}
+  // Validation: Duplicate check
   if(DB.jobs[num]){toast('WO number already exists','rd');return;}
+  // Validation: Customer/Location minimum length
+  if(cust.length<2){toast('Customer Name must be at least 2 characters','am');return;}
+  if(loc.length<2){toast('Location must be at least 2 characters','am');return;}
   const phase=document.getElementById('nw-phase').value||'47';
   const lf=parseFloat(document.getElementById('nw-lf').value)||29.25;
   const date=document.getElementById('nw-date').value||'';
@@ -1472,7 +1510,15 @@ function saveVO2(wo){
     q:parseFloat(document.getElementById(`vo2-q-${wo}-${i}`)?.value)||it.q||0,
     r:parseFloat(document.getElementById(`vo2-r-${wo}-${i}`)?.value)||it.r||0,
   }));
-  job.vo2.items=items.length?items:job.vo2.items;
+  
+  // Validation: Remove empty rows, validate non-empty rows have qty > 0 and rate > 0
+  const validItems=items.filter(it=>it.d&&it.d.trim().length>0);
+  if(validItems.length===0){toast('VO2 must have at least one item with description and rate','am');return;}
+  
+  const invalidItems=validItems.filter(it=>(!it.q||it.q<=0)||(!it.r||it.r<=0));
+  if(invalidItems.length>0){toast('All VO2 items must have quantity > 0 and rate > 0','am');return;}
+  
+  job.vo2.items=validItems;
   job.stage='vo2_created';
   job.actions['vo2_created']={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
   const t1=jTotal(job,'vo1'),t2=jTotal(job,'vo2');
@@ -1490,6 +1536,7 @@ function saveVO2(wo){
    CLAIMS BATCH (Finance)
 ═══════════════════════════════════════ */
 function renderClaims(){
+  restoreClaimBatchState();
   const eligible=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('gis_complete'));
   const list=document.getElementById('claimsList');
   if(!eligible.length){list.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No eligible jobs yet — GIS report must be uploaded first</div>';document.getElementById('claimSummary').innerHTML='';return;}
@@ -1504,7 +1551,7 @@ function renderClaims(){
     </div>`;}).join('');
   updateClaimSummary();
 }
-function toggleClaim(wo,e){if(e)e.stopPropagation();selClaimJobs.has(wo)?selClaimJobs.delete(wo):selClaimJobs.add(wo);renderClaims();}
+function toggleClaim(wo,e){if(e)e.stopPropagation();selClaimJobs.has(wo)?selClaimJobs.delete(wo):selClaimJobs.add(wo);saveClaimBatchState();renderClaims();}
 function updateClaimSummary(){
   const total=Array.from(selClaimJobs).reduce((s,wo)=>{const j=DB.jobs[wo];if(!j)return s;return s+jTotal(j,j.vo2.items.length?'vo2':'vo1').total;},0);
   const n=selClaimJobs.size;
@@ -1512,6 +1559,24 @@ function updateClaimSummary(){
     <div class="ua ua-gn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       <span>${n} job${n>1?'s':''} selected · Gross: <strong>${P(total)}</strong> · Retention (5%): <strong>(${P(total*.05)})</strong> · WHT (3%): <strong>(${P(total*.03)})</strong> · Net Payable: <strong>${P(total*.92)}</strong></span>
     </div>`:'';
+}
+function saveClaimBatchState(){
+  localStorage.setItem('tes_claimBatch',JSON.stringify(Array.from(selClaimJobs)));
+}
+function restoreClaimBatchState(){
+  const saved=localStorage.getItem('tes_claimBatch');
+  if(saved){
+    try{
+      const jobs=JSON.parse(saved);
+      selClaimJobs=new Set(jobs);
+    }catch(e){
+      console.error('Failed to restore claim batch:',e);
+    }
+  }
+}
+function clearClaimBatchState(){
+  selClaimJobs.clear();
+  localStorage.removeItem('tes_claimBatch');
 }
 function generateClaimDocs(){
   if(!selClaimJobs.size){toast('Select at least one job','am');return;}
@@ -2735,13 +2800,21 @@ function serializeToHTML(container){
 
 /* Build a complete, standalone HTML document string for the paper document */
 function buildPrintableHTML(innerHtml, title){
+  const now=new Date();
+  const timestamp=now.toLocaleDateString('en-BW',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-BW',{hour:'2-digit',minute:'2-digit'});
+  const role=RN[CU]||CU;
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8">
 <title>${title||'ClaimDesk Document'}</title>
-<style>${DOC_PRINT_CSS}</style>
+<style>${DOC_PRINT_CSS}
+@page { margin: 1cm; }
+body { position: relative; }
+.pdf-footer { position: fixed; bottom: 0.5cm; left: 0; right: 0; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; }
+</style>
 </head><body>
 ${innerHtml}
+<div class="pdf-footer">Generated by ${role} on ${timestamp} · ClaimDesk</div>
 </body></html>`;
 }
 
@@ -3018,7 +3091,14 @@ function printModal(){
    MODALS
 ═══════════════════════════════════════ */
 function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModal(id){
+  // Warn if there are unsaved changes in the modal
+  if(hasUnsavedChanges&&id==='docModal'){
+    if(!confirm('You have unsaved changes. Close without saving?')){return;}
+  }
+  hasUnsavedChanges=false;
+  document.getElementById(id).classList.remove('open');
+}
 
 /* ═══════════════════════════════════════
    NAVIGATION
