@@ -94,7 +94,7 @@ create trigger jobs_touch before update on public.jobs
 for each row execute function public.touch_updated_at();
 
 -- ============================================================
---  ROW LEVEL SECURITY — TESTING — TIGHTEN LATER
+--  ROW LEVEL SECURITY — PRODUCTION RULES
 -- ============================================================
 alter table public.jobs           enable row level security;
 alter table public.documents      enable row level security;
@@ -103,17 +103,66 @@ alter table public.activity_log   enable row level security;
 alter table public.notifications  enable row level security;
 alter table public.app_meta       enable row level security;
 
-do $$
-declare t text;
-begin
-  foreach t in array array['jobs','documents','claim_batches','activity_log','notifications','app_meta']
-  loop
-    execute format('drop policy if exists "testing_all_%s" on public.%I;', t, t);
-    execute format(
-      'create policy "testing_all_%s" on public.%I for all to anon, authenticated using (true) with check (true);',
-      t, t);
-  end loop;
-end $$;
+-- IMPORTANT: Before deploying, ensure Supabase Auth is configured and users have role claims.
+-- Store user role in JWT custom claims: auth.jwt() ->> 'user_role'
+-- Roles: 'admin', 'finance', 'manager', 'system'
+
+-- ── Jobs: All authenticated users can read. Admins can write/update. ──
+drop policy if exists "jobs_read_all" on public.jobs;
+create policy "jobs_read_all" on public.jobs for select to authenticated using (true);
+
+drop policy if exists "jobs_write_admin_only" on public.jobs;
+create policy "jobs_write_admin_only" on public.jobs for insert, update, delete to authenticated 
+  using (auth.jwt() ->> 'user_role' = 'admin') 
+  with check (auth.jwt() ->> 'user_role' = 'admin');
+
+-- ── Documents: All users can read. Only uploader's role can delete. ──
+drop policy if exists "documents_read_all" on public.documents;
+create policy "documents_read_all" on public.documents for select to authenticated using (true);
+
+drop policy if exists "documents_write_uploader" on public.documents;
+create policy "documents_write_uploader" on public.documents for insert to authenticated 
+  with check (auth.uid() is not null);
+
+drop policy if exists "documents_delete_own" on public.documents;
+create policy "documents_delete_own" on public.documents for delete to authenticated 
+  using (uploaded_role = (auth.jwt() ->> 'user_role'));
+
+-- ── Claim Batches: Finance can create/update. All can read. ──
+drop policy if exists "claim_batches_read_all" on public.claim_batches;
+create policy "claim_batches_read_all" on public.claim_batches for select to authenticated using (true);
+
+drop policy if exists "claim_batches_write_finance" on public.claim_batches;
+create policy "claim_batches_write_finance" on public.claim_batches for insert, update to authenticated 
+  using (auth.jwt() ->> 'user_role' in ('finance', 'admin'))
+  with check (auth.jwt() ->> 'user_role' in ('finance', 'admin'));
+
+-- ── Activity Log: All users can write (append-only). All can read. ──
+drop policy if exists "activity_log_read_all" on public.activity_log;
+create policy "activity_log_read_all" on public.activity_log for select to authenticated using (true);
+
+drop policy if exists "activity_log_insert_all" on public.activity_log;
+create policy "activity_log_insert_all" on public.activity_log for insert to authenticated 
+  with check (auth.uid() is not null);
+
+-- ── Notifications: Users can only read their own. ──
+drop policy if exists "notifications_read_own" on public.notifications;
+create policy "notifications_read_own" on public.notifications for select to authenticated 
+  using (role = (auth.jwt() ->> 'user_role'));
+
+drop policy if exists "notifications_insert_system" on public.notifications;
+create policy "notifications_insert_system" on public.notifications for insert to authenticated 
+  using (auth.jwt() ->> 'user_role' = 'admin')
+  with check (true);
+
+-- ── App Meta: Read-only for users (system jobs update). ──
+drop policy if exists "app_meta_read_all" on public.app_meta;
+create policy "app_meta_read_all" on public.app_meta for select to authenticated using (true);
+
+drop policy if exists "app_meta_write_admin" on public.app_meta;
+create policy "app_meta_write_admin" on public.app_meta for update to authenticated 
+  using (auth.jwt() ->> 'user_role' = 'admin')
+  with check (auth.jwt() ->> 'user_role' = 'admin');
 
 -- ============================================================
 --  STORAGE BUCKET for signed scans
