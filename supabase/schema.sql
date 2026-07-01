@@ -111,10 +111,18 @@ alter table public.app_meta       enable row level security;
 drop policy if exists "jobs_read_all" on public.jobs;
 create policy "jobs_read_all" on public.jobs for select to authenticated using (true);
 
-drop policy if exists "jobs_write_admin_only" on public.jobs;
-create policy "jobs_write_admin_only" on public.jobs for insert, update, delete to authenticated 
+drop policy if exists "jobs_insert_admin_only" on public.jobs;
+create policy "jobs_insert_admin_only" on public.jobs for insert to authenticated 
+  with check (auth.jwt() ->> 'user_role' = 'admin');
+
+drop policy if exists "jobs_update_admin_only" on public.jobs;
+create policy "jobs_update_admin_only" on public.jobs for update to authenticated 
   using (auth.jwt() ->> 'user_role' = 'admin') 
   with check (auth.jwt() ->> 'user_role' = 'admin');
+
+drop policy if exists "jobs_delete_admin_only" on public.jobs;
+create policy "jobs_delete_admin_only" on public.jobs for delete to authenticated 
+  using (auth.jwt() ->> 'user_role' = 'admin');
 
 -- ── Documents: All users can read. Only uploader's role can delete. ──
 drop policy if exists "documents_read_all" on public.documents;
@@ -132,8 +140,12 @@ create policy "documents_delete_own" on public.documents for delete to authentic
 drop policy if exists "claim_batches_read_all" on public.claim_batches;
 create policy "claim_batches_read_all" on public.claim_batches for select to authenticated using (true);
 
-drop policy if exists "claim_batches_write_finance" on public.claim_batches;
-create policy "claim_batches_write_finance" on public.claim_batches for insert, update to authenticated 
+drop policy if exists "claim_batches_insert_finance" on public.claim_batches;
+create policy "claim_batches_insert_finance" on public.claim_batches for insert to authenticated 
+  with check (auth.jwt() ->> 'user_role' in ('finance', 'admin'));
+
+drop policy if exists "claim_batches_update_finance" on public.claim_batches;
+create policy "claim_batches_update_finance" on public.claim_batches for update to authenticated 
   using (auth.jwt() ->> 'user_role' in ('finance', 'admin'))
   with check (auth.jwt() ->> 'user_role' in ('finance', 'admin'));
 
@@ -152,8 +164,7 @@ create policy "notifications_read_own" on public.notifications for select to aut
 
 drop policy if exists "notifications_insert_system" on public.notifications;
 create policy "notifications_insert_system" on public.notifications for insert to authenticated 
-  using (auth.jwt() ->> 'user_role' = 'admin')
-  with check (true);
+  with check (auth.jwt() ->> 'user_role' = 'admin');
 
 -- ── App Meta: Read-only for users (system jobs update). ──
 drop policy if exists "app_meta_read_all" on public.app_meta;
