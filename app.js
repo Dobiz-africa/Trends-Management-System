@@ -973,7 +973,36 @@ function renderMDDash(){
       })()}
     </div>`;
 
-  const jobsDone=jobs.filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
+  // CLAIMS READY FOR APPROVAL — Show jobs with claim docs generated but not yet completed
+  const claimsReadyJobs=jobs.filter(j=>j.stage==='claim_docs_ready');
+  const claimsEl=document.getElementById('m-claims-ready');
+  if(claimsEl){
+    if(!claimsReadyJobs.length){
+      claimsEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No claims waiting for approval yet — Finance will generate them as work completes</div>';
+    } else {
+      claimsEl.innerHTML=`<div style="display:grid;grid-template-columns:80px 1fr 80px 110px 110px 130px;gap:10px;padding:.45rem 1rem;background:var(--sf2)">
+        <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">WO No.</span>
+        <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
+        <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
+        <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Value</span>
+        <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Cert No</span>
+        <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Action</span>
+      </div>` + claimsReadyJobs.map(j=>{
+        const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+        return`<div style="display:grid;grid-template-columns:80px 1fr 80px 110px 110px 130px;gap:10px;padding:.62rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center">
+          <span class="mono">${j.wo}</span>
+          <span>${j.cust}</span>
+          <span class="tag">${j.loc.split(',')[0]}</span>
+          <span class="mono">${P(t.total)}</span>
+          <span class="mono" style="background:var(--sf2);padding:.3rem .6rem;border-radius:var(--rs);font-weight:600;color:var(--gn)">${j.claimRef||'—'}</span>
+          <button class="btn btn-gn btn-sm" onclick="openJobDetail('${j.wo}')">Review & Approve</button>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // COMPLETED JOBS — Only show jobs marked as job_complete
+  const jobsDone=jobs.filter(j=>j.stage==='job_complete');
   const doneEl=document.getElementById('m-done-jobs');
   if(doneEl)doneEl.innerHTML=!jobsDone.length?'<div class="cd-empty">No completed jobs yet</div>':jobsDone.map(j=>jcard(j,true)).join('');
   const batchEl=document.getElementById('m-claim-batches');
@@ -1240,16 +1269,25 @@ function renderJobDetail(wo){
     if(!isMD){
       if(canEdit){
         if(st.id==='wo_received') actBtns+=`<button class="btn btn-am" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
-        if(st.id==='vo1_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','linesman_notified','Record: Linesman Notified','Contact the linesman externally and share VO1, then record here.')">Record Linesman Notified</button>`;
-        if(st.id==='linesman_notified') actBtns+=`<button class="btn btn-am" onclick="openDocForAction('${wo}','field_report')">Record Linesman Findings</button>`;
-        if(st.id==='field_received') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">Create VO2</button>`;
+        if(st.id==='vo1_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-am btn-sm" onclick="notifyExternalRole('${wo}','linesman')">🔔 Notify Linesman (External)</button>`;
+        if(st.id==='linesman_notified') {
+          const hasFiles=(job.linesmanDocs&&job.linesmanDocs.length)?true:false;
+          actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','linesman_findings')">📎 Upload Linesman Findings (${hasFiles?job.linesmanDocs.length+' files':''} files)</button>`;
+        }
+        if(st.id==='field_received') {
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="showLinesmanDocumentsModal('${wo}')">📄 View Linesman Documents</button>`;
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">Create VO2</button>`;
+        }
         if(st.id==='vo2_created') actBtns+=`<button class="btn btn-am" onclick="createWorksValuation('${wo}')">Create Works Valuation</button>`;
         if(st.id==='works_valuation_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">Confirm & Proceed</button>`;
         if(st.id==='work_instruction_ready') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="advanceStageWI('${wo}')">Confirm & Send to Teams</button>`;
         if(st.id==='teams_notified') actBtns+=`<button class="btn btn-am" onclick="openRecord('${wo}','work_complete','Record: Work Complete','Record when the field team reported back that work is complete.')">Record Work Complete</button>`;
-        if(st.id==='work_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">Fill Works Instruction</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Notified','Record when you sent the assignment to the GIS consultant.')">Notify GIS Consultant</button>`;
-        if(st.id==='gis_notified') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">Upload GIS Certificate</button>`;
-        if(st.id==='gis_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">View GIS Certificate</button>`;
+        if(st.id==='work_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">Fill Works Instruction</button><button class="btn btn-am btn-sm" onclick="notifyExternalRole('${wo}','gis')">🔔 Notify GIS Consultant (External)</button>`;
+        if(st.id==='gis_notified') {
+          const hasFiles=(job.gisDocs&&job.gisDocs.length)?true:false;
+          actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','gis_report')">📎 Upload GIS Documents (${hasFiles?job.gisDocs.length+' files':''} files)</button>`;
+        }
+        if(st.id==='gis_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="showGISDocumentsModal('${wo}')">📄 View GIS Documents</button>`;
         if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
         if(st.id==='job_complete') actBtns+=`<span class="badge b-gn">Job complete — ${action?.date||''}</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs</button>`;
       }
@@ -1436,6 +1474,236 @@ function buildDocFoot(docType,job){
   }
   return btns;
 }
+/* ═══════════════════════════════════════
+   EXTERNAL ROLE UPLOADS (Linesman, GIS, Teams)
+═══════════════════════════════════════ */
+
+/**
+ * Handle external role uploads (Linesman findings, GIS reports, etc.)
+ * Opens file browser, accepts multiple files, saves directly without modal form
+ * externalRole: 'linesman_findings' | 'gis_report' | 'teams_photo'
+ */
+function openExternalUpload(wo, externalRole) {
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.multiple = true;  // Allow multiple files
+  fileInput.accept = 'image/*,application/pdf,.doc,.docx';
+  
+  fileInput.onchange = (e) => handleExternalUpload(wo, externalRole, e.target.files);
+  fileInput.click();
+}
+
+/**
+ * Process external role uploads
+ * Saves files directly to job without creating document forms
+ */
+async function handleExternalUpload(wo, externalRole, files) {
+  if (!files || files.length === 0) return;
+  
+  const job = DB.jobs[wo];
+  if (!job) return;
+  
+  // Map external role to internal field
+  const roleFieldMap = {
+    linesman_findings: 'linesmanDocs',
+    gis_report: 'gisDocs',
+    teams_photo: 'teamPhotos'
+  };
+  const field = roleFieldMap[externalRole];
+  if (!field) return;
+  
+  // Initialize array if doesn't exist
+  if (!job[field]) job[field] = [];
+  
+  // Add each uploaded file
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const fileData = {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: CU,
+        data: e.target.result  // Base64 encoded file
+      };
+      job[field].push(fileData);
+    };
+    reader.readAsDataURL(file);
+  });
+  
+  // Save and advance stage based on role
+  setTimeout(() => {
+    if (externalRole === 'linesman_findings') {
+      job.stage = 'field_received';
+      addLog(wo, `${files.length} linesman document(s) uploaded`);
+      toast(`✅ ${files.length} linesman document(s) uploaded successfully`);
+    } else if (externalRole === 'gis_report') {
+      job.stage = 'gis_complete';
+      addLog(wo, `${files.length} GIS document(s) uploaded`);
+      toast(`✅ ${files.length} GIS document(s) uploaded successfully`);
+    }
+    saveDB();
+    refreshDetail();
+    refreshAll();
+  }, 100);
+}
+
+/**
+ * Download external role uploaded file
+ */
+function downloadExternalFile(wo, externalRole, fileIndex) {
+  const job = DB.jobs[wo];
+  if (!job) return;
+  
+  const roleFieldMap = {
+    linesman_findings: 'linesmanDocs',
+    gis_report: 'gisDocs',
+    teams_photo: 'teamPhotos'
+  };
+  const field = roleFieldMap[externalRole];
+  if (!field || !job[field] || !job[field][fileIndex]) return;
+  
+  const file = job[field][fileIndex];
+  const link = document.createElement('a');
+  link.href = file.data;
+  link.download = file.name;
+  link.click();
+}
+
+/**
+ * Delete external role uploaded file
+ */
+function deleteExternalFile(wo, externalRole, fileIndex) {
+  const job = DB.jobs[wo];
+  if (!job) return;
+  
+  const roleFieldMap = {
+    linesman_findings: 'linesmanDocs',
+    gis_report: 'gisDocs',
+    teams_photo: 'teamPhotos'
+  };
+  const field = roleFieldMap[externalRole];
+  if (!field || !job[field]) return;
+  
+  if (confirm('Delete this file?')) {
+    job[field].splice(fileIndex, 1);
+    saveDB();
+    refreshDetail();
+    toast('File deleted');
+  }
+}
+
+/**
+ * Show list of uploaded external files
+ */
+function showExternalFiles(wo, externalRole) {
+  const job = DB.jobs[wo];
+  if (!job) return '';
+  
+  const roleFieldMap = {
+    linesman_findings: 'linesmanDocs',
+    gis_report: 'gisDocs',
+    teams_photo: 'teamPhotos'
+  };
+  const field = roleFieldMap[externalRole];
+  const files = job[field] || [];
+  
+  if (!files.length) {
+    return '<div style="padding:1rem;color:var(--tx3);font-size:.8rem">No files uploaded yet</div>';
+  }
+  
+  return files.map((f, idx) => `
+    <div style="display:flex;gap:10px;padding:.75rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem">
+      <span style="flex:1">
+        <div style="font-weight:600;font-size:.9rem">${f.name}</div>
+        <div style="font-size:.75rem;color:var(--tx3)">
+          ${(f.size / 1024).toFixed(1)} KB · ${new Date(f.uploadedAt).toLocaleDateString()}
+        </div>
+      </span>
+      <button class="btn btn-gn btn-sm" onclick="downloadExternalFile('${wo}','${externalRole}',${idx})">⬇ Download</button>
+      <button class="btn btn-rd btn-sm" onclick="deleteExternalFile('${wo}','${externalRole}',${idx})">✕ Delete</button>
+    </div>
+  `).join('');
+}
+
+/**
+ * Notify external role (Linesman or GIS) - no form, just mark as notified
+ */
+function notifyExternalRole(wo, role) {
+  const job = DB.jobs[wo];
+  if (!job) return;
+  
+  if (role === 'linesman') {
+    job.stage = 'linesman_notified';
+    job.actions['linesman_notified'] = { date: new Date().toISOString().slice(0,10), notes: '', extra: '' };
+    addLog(wo, 'Linesman notified externally — awaiting field findings');
+    notify(['md'], `Linesman notified for WO ${wo} — ${job.cust}. Awaiting field findings.`, wo);
+    toast('✅ Linesman notified. Now upload their findings when ready.');
+  } else if (role === 'gis') {
+    job.stage = 'gis_notified';
+    job.actions['gis_notified'] = { date: new Date().toISOString().slice(0,10), notes: '', extra: '' };
+    addLog(wo, 'GIS consultant notified externally — awaiting GIS report');
+    notify(['md'], `GIS consultant notified for WO ${wo} — ${job.cust}. Awaiting GIS report.`, wo);
+    toast('✅ GIS consultant notified. Now upload their report when ready.');
+  }
+  
+  saveDB();
+  refreshDetail();
+  refreshAll();
+}
+
+/**
+ * Show Linesman uploaded documents in modal
+ */
+function showLinesmanDocumentsModal(wo) {
+  const job = DB.jobs[wo];
+  if (!job) return;
+  
+  document.getElementById('docModalTitle').textContent = `📋 Linesman Documents — WO ${wo}`;
+  document.getElementById('docModalBody').innerHTML = `
+    <div style="padding:1rem">
+      <div style="margin-bottom:1rem;font-size:.9rem;color:var(--tx2)">
+        Linesman documents uploaded by field team:
+      </div>
+      ${showExternalFiles(wo, 'linesman_findings')}
+      ${job.linesmanDocs && job.linesmanDocs.length > 0 ? `
+        <button class="btn btn-am" style="margin-top:1rem" onclick="openExternalUpload('${wo}','linesman_findings')">📎 Add More Documents</button>
+      ` : ''}
+    </div>
+  `;
+  document.getElementById('docModalFoot').innerHTML = `
+    <button class="btn btn-gy" onclick="closeModal('docModal')">✕ Close</button>
+  `;
+  openModal('docModal');
+}
+
+/**
+ * Show GIS uploaded documents in modal
+ */
+function showGISDocumentsModal(wo) {
+  const job = DB.jobs[wo];
+  if (!job) return;
+  
+  document.getElementById('docModalTitle').textContent = `📋 GIS Documents — WO ${wo}`;
+  document.getElementById('docModalBody').innerHTML = `
+    <div style="padding:1rem">
+      <div style="margin-bottom:1rem;font-size:.9rem;color:var(--tx2)">
+        GIS consultant documents uploaded:
+      </div>
+      ${showExternalFiles(wo, 'gis_report')}
+      ${job.gisDocs && job.gisDocs.length > 0 ? `
+        <button class="btn btn-am" style="margin-top:1rem" onclick="openExternalUpload('${wo}','gis_report')">📎 Add More Documents</button>
+      ` : ''}
+    </div>
+  `;
+  document.getElementById('docModalFoot').innerHTML = `
+    <button class="btn btn-gy" onclick="closeModal('docModal')">✕ Close</button>
+  `;
+  openModal('docModal');
+}
+
+/* ════════════════════════════════════════════════════════════ */
 function checkGISComplete(wo){
   const job=DB.jobs[wo];if(!job)return;
   const hasReport=job.scans?.['gis_report']||job.savedDocs?.['gis_report'];
@@ -1537,9 +1805,10 @@ function saveVO2(wo){
 ═══════════════════════════════════════ */
 function renderClaims(){
   restoreClaimBatchState();
-  const eligible=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('gis_complete'));
+  // Only show jobs that are GIS complete but NOT yet processed for claims
+  const eligible=Object.values(DB.jobs).filter(j=>j.stage==='gis_complete'&&!j.claimRef);
   const list=document.getElementById('claimsList');
-  if(!eligible.length){list.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No eligible jobs yet — GIS report must be uploaded first</div>';document.getElementById('claimSummary').innerHTML='';return;}
+  if(!eligible.length){list.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No eligible jobs yet — GIS report must be uploaded first (and not already in a claim batch)</div>';document.getElementById('claimSummary').innerHTML='';return;}
   list.innerHTML=eligible.map(j=>{
     const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
     return`<div style="display:grid;grid-template-columns:32px 90px 1fr 90px 130px 90px;gap:10px;padding:.62rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center;cursor:pointer;transition:.1s" onclick="toggleClaim('${j.wo}')" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
