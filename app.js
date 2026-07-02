@@ -1935,114 +1935,65 @@ function clearClaimBatchState(){
 }
 function generateClaimDocs(){
   if(!selClaimJobs.size){toast('Select at least one job','am');return;}
-  
   const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
+  DB.certSeq++;
   const batchWOs=Array.from(selClaimJobs);
   const batchJobs=batchWOs.map(wo=>DB.jobs[wo]).filter(j=>j&&j.vo1&&j.vo1.items);
   
   if(!batchJobs.length){toast('Selected jobs are missing data — please re-add them','rd');return;}
 
-  // PREVIEW documents without finalizing (no claimRef set yet)
+  // Set claimRef on all selected jobs
+  batchJobs.forEach(job=>{
+    job.claimRef=certNo;
+    job.stage='claim_docs_ready';
+    addLog(job.wo,`Claim docs generated — Cert: ${certNo}`);
+  });
+  
+  saveDB();
+  
+  // Store batch documents
   if(!DB.batchDocs)DB.batchDocs={};
   const firstJob=batchJobs[0];
   const batchWOList=batchJobs.map(j=>j.wo);
-  
-  // Create temporary preview docs (not saved to job yet)
-  const previewDocs={
+  DB.batchDocs[certNo]={
     wos:batchWOList,
     jobs:batchJobs,
     annexure:docAnnexure(firstJob),
     paymentCert:docPaymentCert(firstJob),
     invoice:docInvoice(firstJob),
     listOfJobs:docListOfJobs(firstJob),
-    bpcSpreadsheet:docBPCSpreadsheet(batchJobs,certNo),
-    preview: true  // Mark as preview (not finalized yet)
+    bpcSpreadsheet:docBPCSpreadsheet(batchJobs,certNo)
   };
-
-  // Show preview modal with CONFIRMATION buttons
-  document.getElementById('docModalTitle').textContent=`Preview Claim Batch ${certNo} — ${batchJobs.length} Job${batchJobs.length>1?'s':''}`;
-  document.getElementById('docModalBody').innerHTML=docBatchSummary(batchJobs,certNo);
-  document.getElementById('docModalFoot').innerHTML=`
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">Preview:</span>
-      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','annexure')">Annexure</button>
-      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','payment_cert')">Payment Cert</button>
-      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','invoice')">Invoice</button>
-      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','list_of_jobs')">List of Jobs</button>
-      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','bpc_spreadsheet')">BPC Spreadsheet</button>
-      <div style="flex-grow:1"></div>
-      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal')">✕ Go Back</button>
-      <button class="btn btn-gn" onclick="confirmClaimGeneration('${certNo}')">✓ Confirm & Finalize</button>
-    </div>`;
-  
-  // Store preview temporarily
-  DB.batchDocs[certNo]=previewDocs;
-  openModal('docModal');
-}
-
-/**
- * Preview batch doc without finalizing
- */
-function previewBatchDoc(certNo,docType){
-  const batch=DB.batchDocs?.[certNo];
-  if(!batch)return;
-  
-  const batchJobs=batch.jobs;
-  const firstJob=batchJobs[0];
-  
-  const titles={
-    annexure:'Annexure to Payment Certificate',
-    payment_cert:'Payment Certificate',
-    invoice:'Invoice',
-    list_of_jobs:'List of Jobs',
-    bpc_spreadsheet:'BPC Spreadsheet'
-  };
-  
-  const html=
-    docType==='annexure'?batch.annexure:
-    docType==='payment_cert'?batch.paymentCert:
-    docType==='invoice'?batch.invoice:
-    docType==='list_of_jobs'?batch.listOfJobs:
-    docType==='bpc_spreadsheet'?batch.bpcSpreadsheet:'';
-  
-  openPrintWindow(html,titles[docType]);
-}
-
-/**
- * CONFIRM claim generation - NOW set claimRef and finalize
- */
-function confirmClaimGeneration(certNo){
-  const batch=DB.batchDocs?.[certNo];
-  if(!batch)return;
-  
-  DB.certSeq++;  // Increment cert sequence
-  const batchJobs=batch.jobs;
-  
-  // NOW finalize: set claimRef on all jobs
-  batchJobs.forEach(job=>{
-    job.claimRef=certNo;
-    job.stage='claim_docs_ready';
-    addLog(job.wo,`Claim docs finalized — Cert: ${certNo}`);
-  });
   
   // Auto-save all claim docs on each job so MD can view them
   batchJobs.forEach(job=>{
     if(!job.savedDocs)job.savedDocs={};
-    job.savedDocs['annexure']={html:batch.annexure,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-    job.savedDocs['payment_cert']={html:batch.paymentCert,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-    job.savedDocs['invoice']={html:batch.invoice,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-    job.savedDocs['list_of_jobs']={html:batch.listOfJobs,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-    job.savedDocs['bpc_spreadsheet']={html:batch.bpcSpreadsheet,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['annexure']={html:docAnnexure(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['payment_cert']={html:docPaymentCert(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['invoice']={html:docInvoice(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['list_of_jobs']={html:docListOfJobs(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['bpc_spreadsheet']={html:docBPCSpreadsheet(batchJobs,certNo),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
   });
-  
   saveDB();
-  notify(['admin','md'],`Claim ${certNo} finalized — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
-  
-  closeModal('docModal');
+  notify(['admin','md'],`Claim ${certNo} generated — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
   renderClaims();renderInbox();renderDashboard();
   
-  clearClaimBatchState();  // Clear selection after finalization
-  toast(`✅ Claim ${certNo} finalized — ${batchJobs.length} job${batchJobs.length>1?'s':''} moved to Manager approval`);
+  // Show batch doc modal
+  document.getElementById('docModalTitle').textContent=`Claim Batch ${certNo} — ${batchJobs.length} Jobs`;
+  document.getElementById('docModalBody').innerHTML=docBatchSummary(batchJobs,certNo);
+  document.getElementById('docModalFoot').innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">Open document:</span>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','annexure')">Annexure</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','payment_cert')">Payment Cert</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','invoice')">Invoice</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','list_of_jobs')">List of Jobs</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','bpc_spreadsheet')">BPC Spreadsheet</button>
+      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
+    </div>`;
+  openModal('docModal');
+  selClaimJobs.clear();
+  toast(`Claim ${certNo} generated — ${batchJobs.length} jobs`);
 }
 
 // Add this function to view batch docs
