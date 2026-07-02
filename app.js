@@ -1288,6 +1288,8 @@ function renderJobDetail(wo){
           const hasCerts=(job.gisCerts&&job.gisCerts.length)?true:false;
           actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','gis_report')">📎 Upload GIS Reports (${hasGISFiles?job.gisDocs.length+' files':''} files)</button>`;
           actBtns+=`<button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','gis_certificate')">📋 Upload GIS Certificate (${hasCerts?job.gisCerts.length+' files':''} files)</button>`;
+          if(hasGISFiles||hasCerts) actBtns+=`<button class="btn btn-am btn-sm" onclick="showGISDocumentsModal('${wo}')">📄 View GIS Documents</button>`;
+          if(hasGISFiles) actBtns+=`<button class="btn btn-gn btn-sm" onclick="markGISComplete('${wo}')">✓ Mark GIS Complete & Proceed</button>`;
         }
         if(st.id==='gis_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="showGISDocumentsModal('${wo}')">📄 View GIS Documents</button>`;
         if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
@@ -1498,6 +1500,7 @@ function openExternalUpload(wo, externalRole) {
 /**
  * Process external role uploads
  * Saves files to BOTH stage arrays AND Documents section (savedDocs) for sync
+ * Does NOT auto-advance stage for GIS - user must manually "Mark GIS Complete"
  */
 async function handleExternalUpload(wo, externalRole, files) {
   if (!files || files.length === 0) return;
@@ -1507,9 +1510,9 @@ async function handleExternalUpload(wo, externalRole, files) {
   
   // Map external role to both stage storage AND documents storage
   const roleFieldMap = {
-    linesman_findings: { stage: 'linesmanDocs', doc: 'field_report' },
-    gis_report: { stage: 'gisDocs', doc: 'gis_report' },
-    gis_certificate: { stage: 'gisCerts', doc: 'gis_cert' }
+    linesman_findings: { stage: 'linesmanDocs', doc: 'field_report', autoAdvance: 'field_received' },
+    gis_report: { stage: 'gisDocs', doc: 'gis_report', autoAdvance: null },
+    gis_certificate: { stage: 'gisCerts', doc: 'gis_cert', autoAdvance: null }
   };
   const config = roleFieldMap[externalRole];
   if (!config) return;
@@ -1559,16 +1562,19 @@ async function handleExternalUpload(wo, externalRole, files) {
   
   // Save and advance stage based on role
   setTimeout(() => {
+    // Linesman: Auto-advance after upload
     if (externalRole === 'linesman_findings') {
       job.stage = 'field_received';
       addLog(wo, `${job.linesmanDocs.length} linesman document(s) uploaded`);
       toast(`✅ ${job.linesmanDocs.length} linesman document(s) uploaded successfully`);
-    } else if (externalRole === 'gis_report') {
-      job.stage = 'gis_complete';
-      addLog(wo, `${job.gisDocs.length} GIS document(s) uploaded`);
-      toast(`✅ ${job.gisDocs.length} GIS document(s) uploaded successfully`);
-    } else if (externalRole === 'gis_certificate') {
-      addLog(wo, `GIS certificate(s) uploaded`);
+    } 
+    // GIS: Do NOT auto-advance - user must manually click "Mark GIS Complete"
+    else if (externalRole === 'gis_report') {
+      addLog(wo, `${job.gisDocs.length} GIS report(s) uploaded`);
+      toast(`✅ ${job.gisDocs.length} GIS report(s) uploaded successfully`);
+    } 
+    else if (externalRole === 'gis_certificate') {
+      addLog(wo, `${job.gisCerts.length} GIS certificate(s) uploaded`);
       toast(`✅ ${job.gisCerts.length} GIS certificate(s) uploaded successfully`);
     }
     
@@ -1576,6 +1582,29 @@ async function handleExternalUpload(wo, externalRole, files) {
     refreshDetail();
     refreshAll();
   }, 300);
+}
+
+/**
+ * Manually mark GIS as complete after uploads are done
+ */
+function markGISComplete(wo) {
+  const job = DB.jobs[wo];
+  if (!job) return;
+  
+  if (!job.gisDocs || job.gisDocs.length === 0) {
+    toast('Upload at least one GIS report first', 'am');
+    return;
+  }
+  
+  job.stage = 'gis_complete';
+  job.actions['gis_complete'] = { date: new Date().toISOString().slice(0, 10), notes: '', extra: '' };
+  addLog(wo, 'GIS documents complete — ready for claim batch');
+  notify(['finance', 'md'], `GIS documents complete for WO ${wo} — ${job.cust}. Ready for claim batch.`, wo);
+  toast('✅ GIS marked as complete. Ready for Finance to generate claims.');
+  
+  saveDB();
+  refreshDetail();
+  refreshAll();
 }
 
 /**
@@ -1906,65 +1935,114 @@ function clearClaimBatchState(){
 }
 function generateClaimDocs(){
   if(!selClaimJobs.size){toast('Select at least one job','am');return;}
+  
   const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
-  DB.certSeq++;
   const batchWOs=Array.from(selClaimJobs);
   const batchJobs=batchWOs.map(wo=>DB.jobs[wo]).filter(j=>j&&j.vo1&&j.vo1.items);
   
   if(!batchJobs.length){toast('Selected jobs are missing data — please re-add them','rd');return;}
 
-  // Set claimRef on all selected jobs FIRST before generating docs
-  batchJobs.forEach(job=>{
-    job.claimRef=certNo;
-    job.stage='claim_docs_ready';
-    addLog(job.wo,`Claim docs generated — Cert: ${certNo}`);
-  });
-  
-  saveDB();
-  
-  // Store batch documents — pass the first job with claimRef already set
+  // PREVIEW documents without finalizing (no claimRef set yet)
   if(!DB.batchDocs)DB.batchDocs={};
   const firstJob=batchJobs[0];
-  const batchWOList=batchJobs.map(j=>j.wo); // Extract WO numbers for display
-  DB.batchDocs[certNo]={
-    wos:batchWOList, // Store WO numbers for dashboard card
+  const batchWOList=batchJobs.map(j=>j.wo);
+  
+  // Create temporary preview docs (not saved to job yet)
+  const previewDocs={
+    wos:batchWOList,
     jobs:batchJobs,
     annexure:docAnnexure(firstJob),
     paymentCert:docPaymentCert(firstJob),
     invoice:docInvoice(firstJob),
     listOfJobs:docListOfJobs(firstJob),
-    bpcSpreadsheet:docBPCSpreadsheet(batchJobs,certNo)
+    bpcSpreadsheet:docBPCSpreadsheet(batchJobs,certNo),
+    preview: true  // Mark as preview (not finalized yet)
   };
+
+  // Show preview modal with CONFIRMATION buttons
+  document.getElementById('docModalTitle').textContent=`Preview Claim Batch ${certNo} — ${batchJobs.length} Job${batchJobs.length>1?'s':''}`;
+  document.getElementById('docModalBody').innerHTML=docBatchSummary(batchJobs,certNo);
+  document.getElementById('docModalFoot').innerHTML=`
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">Preview:</span>
+      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','annexure')">Annexure</button>
+      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','payment_cert')">Payment Cert</button>
+      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','invoice')">Invoice</button>
+      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','list_of_jobs')">List of Jobs</button>
+      <button class="btn btn-am btn-sm" onclick="previewBatchDoc('${certNo}','bpc_spreadsheet')">BPC Spreadsheet</button>
+      <div style="flex-grow:1"></div>
+      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal')">✕ Go Back</button>
+      <button class="btn btn-gn" onclick="confirmClaimGeneration('${certNo}')">✓ Confirm & Finalize</button>
+    </div>`;
+  
+  // Store preview temporarily
+  DB.batchDocs[certNo]=previewDocs;
+  openModal('docModal');
+}
+
+/**
+ * Preview batch doc without finalizing
+ */
+function previewBatchDoc(certNo,docType){
+  const batch=DB.batchDocs?.[certNo];
+  if(!batch)return;
+  
+  const batchJobs=batch.jobs;
+  const firstJob=batchJobs[0];
+  
+  const titles={
+    annexure:'Annexure to Payment Certificate',
+    payment_cert:'Payment Certificate',
+    invoice:'Invoice',
+    list_of_jobs:'List of Jobs',
+    bpc_spreadsheet:'BPC Spreadsheet'
+  };
+  
+  const html=
+    docType==='annexure'?batch.annexure:
+    docType==='payment_cert'?batch.paymentCert:
+    docType==='invoice'?batch.invoice:
+    docType==='list_of_jobs'?batch.listOfJobs:
+    docType==='bpc_spreadsheet'?batch.bpcSpreadsheet:'';
+  
+  openPrintWindow(html,titles[docType]);
+}
+
+/**
+ * CONFIRM claim generation - NOW set claimRef and finalize
+ */
+function confirmClaimGeneration(certNo){
+  const batch=DB.batchDocs?.[certNo];
+  if(!batch)return;
+  
+  DB.certSeq++;  // Increment cert sequence
+  const batchJobs=batch.jobs;
+  
+  // NOW finalize: set claimRef on all jobs
+  batchJobs.forEach(job=>{
+    job.claimRef=certNo;
+    job.stage='claim_docs_ready';
+    addLog(job.wo,`Claim docs finalized — Cert: ${certNo}`);
+  });
   
   // Auto-save all claim docs on each job so MD can view them
   batchJobs.forEach(job=>{
     if(!job.savedDocs)job.savedDocs={};
-    job.savedDocs['annexure']={html:docAnnexure(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-    job.savedDocs['payment_cert']={html:docPaymentCert(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-    job.savedDocs['invoice']={html:docInvoice(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-    job.savedDocs['list_of_jobs']={html:docListOfJobs(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-    job.savedDocs['bpc_spreadsheet']={html:docBPCSpreadsheet(batchJobs,certNo),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['annexure']={html:batch.annexure,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['payment_cert']={html:batch.paymentCert,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['invoice']={html:batch.invoice,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['list_of_jobs']={html:batch.listOfJobs,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    job.savedDocs['bpc_spreadsheet']={html:batch.bpcSpreadsheet,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
   });
+  
   saveDB();
-  notify(['admin','md'],`Claim ${certNo} generated — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
+  notify(['admin','md'],`Claim ${certNo} finalized — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
+  
+  closeModal('docModal');
   renderClaims();renderInbox();renderDashboard();
   
-  // Show batch doc modal
-  document.getElementById('docModalTitle').textContent=`Claim Batch ${certNo} — ${batchJobs.length} Jobs`;
-  document.getElementById('docModalBody').innerHTML=docBatchSummary(batchJobs,certNo);
- document.getElementById('docModalFoot').innerHTML=`
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">Open document:</span>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','annexure')">Annexure</button>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','payment_cert')">Payment Cert</button>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','invoice')">Invoice</button>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','list_of_jobs')">List of Jobs</button>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','bpc_spreadsheet')">BPC Spreadsheet</button>
-      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
-    </div>`;
-  openModal('docModal');
-  selClaimJobs.clear();
-  toast(`Claim ${certNo} generated — ${batchJobs.length} jobs`);
+  clearClaimBatchState();  // Clear selection after finalization
+  toast(`✅ Claim ${certNo} finalized — ${batchJobs.length} job${batchJobs.length>1?'s':''} moved to Manager approval`);
 }
 
 // Add this function to view batch docs
