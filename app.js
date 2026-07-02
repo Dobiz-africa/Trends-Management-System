@@ -676,57 +676,6 @@ function removeScan(wo,docType){
     })();
   }
 }
-function handleMultiDocUpload(wo,docType,input){
-  if(!input.files||input.files.length===0)return;
-  const files=Array.from(input.files);
-  let successCount=0;
-  files.forEach((file,idx)=>{
-    if(file.size>10*1024*1024){toast('File '+(idx+1)+' too large — max 10MB','am');return;}
-    if(SB.enabled){
-      _uploadMultiDocToSupabase(wo,docType,file,idx,files.length);
-    }else{
-      const reader=new FileReader();
-      reader.onload=e=>{
-        if(!DB.jobs[wo].scans)DB.jobs[wo].scans={};
-        // Store multiple files under docType with timestamp/index as suffix
-        const storeKey=docType+'_'+(idx+1);
-        DB.jobs[wo].scans[storeKey]={dataUrl:e.target.result,filename:file.name,uploadedAt:new Date().toISOString(),role:CU,multiFile:true,fileIndex:idx+1};
-        successCount++;
-        if(successCount===files.length){
-          addLog(wo,`${files.length} document(s) uploaded for ${docType}`);
-          saveDB();refreshDetail();
-          toast('✓ '+files.length+' document(s) uploaded');
-          notify(['md'],`${files.length} ${docType} document(s) uploaded for WO ${wo}`,wo);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-}
-async function _uploadMultiDocToSupabase(wo,docType,file,idx,totalFiles){
-  try{
-    const ext=(file.name.split('.').pop()||'pdf').toLowerCase();
-    const path=`${wo}/${docType}_${idx+1}_${Date.now()}.${ext}`;
-    const {error:upErr}=await SB.client.storage.from(SB.bucket).upload(path,file,{upsert:false,contentType:file.type||undefined});
-    if(upErr)throw upErr;
-    const url=SB.client.storage.from(SB.bucket).getPublicUrl(path).data.publicUrl;
-    if(!DB.jobs[wo].scans)DB.jobs[wo].scans={};
-    const storeKey=docType+'_'+(idx+1);
-    DB.jobs[wo].scans[storeKey]={storagePath:path,url,filename:file.name,uploadedAt:new Date().toISOString(),role:CU,multiFile:true,fileIndex:idx+1};
-    await SB.client.from('documents').insert({
-      wo, doc_type:docType, is_signed:true, storage_path:path, filename:file.name, uploaded_role:CU,
-    });
-    if(idx+1===totalFiles){
-      addLog(wo,`${totalFiles} document(s) uploaded for ${docType}`);
-      saveDB();refreshDetail();
-      toast('✓ '+totalFiles+' document(s) uploaded');
-      notify(['md'],`${totalFiles} ${docType} document(s) uploaded for WO ${wo}`,wo);
-    }
-  }catch(e){
-    console.error(e);
-    toast('Upload failed for file '+(idx+1)+': '+(e.message||'check connection'),'rd');
-  }
-}
 function downloadScan(wo,docType){
   let s;
   if(wo&&DB.jobs[wo]){s=DB.jobs[wo]?.scans?.[docType];}
@@ -743,50 +692,20 @@ function downloadScan(wo,docType){
   }catch(e){toast('Download failed: '+e.message,'rd');}
 }
 function scanWidget(wo,docType,editable){
-  const scans=DB.jobs[wo]?.scans||{};
-  // For multi-file docTypes, gather all files with this prefix
-  const isMulti=['field_report','gis_report'].includes(docType);
-  let files=[];
-  if(isMulti){
-    Object.keys(scans).forEach(k=>{
-      if(k.startsWith(docType+'_')&&scans[k].multiFile){
-        files.push({key:k,...scans[k]});
-      }
-    });
-    files.sort((a,b)=>(a.fileIndex||0)-(b.fileIndex||0));
-  }else{
-    const s=scans[docType];
-    if(s)files.push({key:docType,...s});
-  }
-  
-  if(files.length>0){
-    return `<div>${files.map((f,i)=>`<div class="scan-done" style="margin-bottom:6px">
+  const s=DB.jobs[wo]?.scans?.[docType];
+  if(s){
+    return `<div class="scan-done">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
-      <strong>${f.filename}</strong> ${isMulti?'(File '+(i+1)+')':''} · ${fd(f.uploadedAt)}
-      <button class="btn btn-gy btn-sm" onclick="event.stopPropagation();downloadScanByKey('${wo}','${f.key}')">⬇ Download</button>
-      ${editable?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${f.key}')">✕ Remove</button>`:''}
-    </div>`).join('')}</div>`;
+      <strong>${s.filename}</strong> · ${fd(s.uploadedAt)}
+      <button class="btn btn-gy btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${docType}')">⬇ Download</button>
+      ${editable?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${docType}')">✕ Remove</button>`:''}
+    </div>`;
   }
-  if(!editable) return `<span style="font-size:.72rem;color:var(--tx3)">No documents uploaded yet</span>`;
+  if(!editable) return `<span style="font-size:.72rem;color:var(--tx3)">No scan uploaded yet</span>`;
   return `<label class="scan-upload-label">
     📎 Upload Signed Scan
     <input type="file" id="scan-input-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this)" style="display:none">
   </label>`;
-}
-function downloadScanByKey(wo,scanKey){
-  let s;
-  if(wo&&DB.jobs[wo]){s=DB.jobs[wo]?.scans?.[scanKey];}
-  if(!s){toast('No scan found to download','am');return;}
-  try{
-    const a=document.createElement('a');
-    a.href=s.url||s.dataUrl;
-    a.download=s.filename||scanKey+'.pdf';
-    if(s.url){a.target='_blank';a.rel='noopener';}
-    a.style.display='none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }catch(e){toast('Download failed: '+e.message,'rd');}
 }
 
 /* ═══════════════════════════════════════
@@ -1234,16 +1153,6 @@ function openRecord(wo,stage,title,desc,extraLabel=''){
   document.getElementById('rec-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('rec-notes').value='';
   document.getElementById('rec-extra').value='';
-  
-  // Hide notes field for external notifications (linesman & GIS)
-  const hideNotesForExternal=['linesman_notified','gis_notified'];
-  const notesContainer=document.getElementById('rec-notes')?.parentElement?.parentElement;
-  if(hideNotesForExternal.includes(stage)){
-    if(notesContainer)notesContainer.style.display='none';
-  } else {
-    if(notesContainer)notesContainer.style.display='block';
-  }
-  
   if(extraLabel){
     document.getElementById('rec-extra-label').textContent=extraLabel;
     document.getElementById('rec-extra-label').style.display='block';
@@ -1332,14 +1241,14 @@ function renderJobDetail(wo){
       if(canEdit){
         if(st.id==='wo_received') actBtns+=`<button class="btn btn-am" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
         if(st.id==='vo1_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','linesman_notified','Record: Linesman Notified','Contact the linesman externally and share VO1, then record here.')">Record Linesman Notified</button>`;
-        if(st.id==='linesman_notified') actBtns+=`<button class="btn btn-am" onclick="openRecord('${wo}','linesman_notified','Linesman Notification Sent','You've notified the linesman. Once they send you the documents via WhatsApp/email, upload them here.','')">✓ Mark Notified</button><div style="margin-top:10px;font-size:.75rem;color:var(--tx2);font-weight:500">After linesman sends documents:</div><label class="scan-upload-label btn btn-gn btn-sm" style="margin-top:6px">📎 Upload Linesman Documents<input type="file" id="linesman-multi-upload-${wo}" multiple accept="image/*,application/pdf" onchange="handleMultiDocUpload('${wo}','field_report',this)" style="display:none"></label>`;
+        if(st.id==='linesman_notified') actBtns+=`<button class="btn btn-am" onclick="openDocForAction('${wo}','field_report')">Record Linesman Findings</button>`;
         if(st.id==='field_received') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','field_report')">View Field Findings</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">Create VO2</button>`;
         if(st.id==='vo2_created') actBtns+=`<button class="btn btn-am" onclick="createWorksValuation('${wo}')">Create Works Valuation</button>`;
         if(st.id==='works_valuation_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">Confirm & Proceed</button>`;
         if(st.id==='work_instruction_ready') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-am btn-sm" onclick="advanceStageWI('${wo}')">Confirm & Send to Teams</button>`;
         if(st.id==='teams_notified') actBtns+=`<button class="btn btn-am" onclick="openRecord('${wo}','work_complete','Record: Work Complete','Record when the field team reported back that work is complete.')">Record Work Complete</button>`;
         if(st.id==='work_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">Fill Works Instruction</button><button class="btn btn-am btn-sm" onclick="openRecord('${wo}','gis_notified','Record: GIS Notified','Record when you sent the assignment to the GIS consultant.')">Notify GIS Consultant</button>`;
-        if(st.id==='gis_notified') actBtns+=`<div style="font-size:.75rem;color:var(--tx2);font-weight:500;margin-bottom:8px">GIS consultant has been notified. Once they send documents via WhatsApp/email, upload them:</div><label class="scan-upload-label btn btn-gn btn-sm">📎 Upload GIS Documents<input type="file" id="gis-multi-upload-${wo}" multiple accept="image/*,application/pdf" onchange="handleMultiDocUpload('${wo}','gis_report',this)" style="display:none"></label>`;
+        if(st.id==='gis_notified') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">Upload GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">Upload GIS Certificate</button>`;
         if(st.id==='gis_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_report')">View GIS Report</button><button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','gis_cert')">View GIS Certificate</button>`;
         if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
         if(st.id==='job_complete') actBtns+=`<span class="badge b-gn">Job complete — ${action?.date||''}</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs</button>`;
@@ -1628,8 +1537,7 @@ function saveVO2(wo){
 ═══════════════════════════════════════ */
 function renderClaims(){
   restoreClaimBatchState();
-  // Show only jobs that are gis_complete and DON'T have a claimRef yet
-  const eligible=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('gis_complete')&&!j.claimRef);
+  const eligible=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('gis_complete'));
   const list=document.getElementById('claimsList');
   if(!eligible.length){list.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No eligible jobs yet — GIS report must be uploaded first</div>';document.getElementById('claimSummary').innerHTML='';return;}
   list.innerHTML=eligible.map(j=>{
