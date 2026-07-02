@@ -1284,8 +1284,10 @@ function renderJobDetail(wo){
         if(st.id==='teams_notified') actBtns+=`<button class="btn btn-am" onclick="openRecord('${wo}','work_complete','Record: Work Complete','Record when the field team reported back that work is complete.')">Record Work Complete</button>`;
         if(st.id==='work_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">Fill Works Instruction</button><button class="btn btn-am btn-sm" onclick="notifyExternalRole('${wo}','gis')">🔔 Notify GIS Consultant (External)</button>`;
         if(st.id==='gis_notified') {
-          const hasFiles=(job.gisDocs&&job.gisDocs.length)?true:false;
-          actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','gis_report')">📎 Upload GIS Documents (${hasFiles?job.gisDocs.length+' files':''} files)</button>`;
+          const hasGISFiles=(job.gisDocs&&job.gisDocs.length)?true:false;
+          const hasCerts=(job.gisCerts&&job.gisCerts.length)?true:false;
+          actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','gis_report')">📎 Upload GIS Reports (${hasGISFiles?job.gisDocs.length+' files':''} files)</button>`;
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','gis_certificate')">📋 Upload GIS Certificate (${hasCerts?job.gisCerts.length+' files':''} files)</button>`;
         }
         if(st.id==='gis_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="showGISDocumentsModal('${wo}')">📄 View GIS Documents</button>`;
         if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
@@ -1495,7 +1497,7 @@ function openExternalUpload(wo, externalRole) {
 
 /**
  * Process external role uploads
- * Saves files directly to job without creating document forms
+ * Saves files to BOTH stage arrays AND Documents section (savedDocs) for sync
  */
 async function handleExternalUpload(wo, externalRole, files) {
   if (!files || files.length === 0) return;
@@ -1503,17 +1505,20 @@ async function handleExternalUpload(wo, externalRole, files) {
   const job = DB.jobs[wo];
   if (!job) return;
   
-  // Map external role to internal field
+  // Map external role to both stage storage AND documents storage
   const roleFieldMap = {
-    linesman_findings: 'linesmanDocs',
-    gis_report: 'gisDocs',
-    teams_photo: 'teamPhotos'
+    linesman_findings: { stage: 'linesmanDocs', doc: 'field_report' },
+    gis_report: { stage: 'gisDocs', doc: 'gis_report' },
+    gis_certificate: { stage: 'gisCerts', doc: 'gis_cert' }
   };
-  const field = roleFieldMap[externalRole];
-  if (!field) return;
+  const config = roleFieldMap[externalRole];
+  if (!config) return;
   
-  // Initialize array if doesn't exist
-  if (!job[field]) job[field] = [];
+  // Initialize both storage locations
+  if (!job[config.stage]) job[config.stage] = [];
+  if (!job.savedDocs) job.savedDocs = {};
+  
+  let uploadedCount = 0;
   
   // Add each uploaded file
   Array.from(files).forEach(file => {
@@ -1527,7 +1532,27 @@ async function handleExternalUpload(wo, externalRole, files) {
         uploadedBy: CU,
         data: e.target.result  // Base64 encoded file
       };
-      job[field].push(fileData);
+      
+      // Save to STAGE array (for stage display)
+      job[config.stage].push(fileData);
+      
+      // ALSO save to DOCUMENTS section (savedDocs) for sync
+      if (!job.savedDocs[config.doc]) {
+        job.savedDocs[config.doc] = {
+          files: [],
+          savedAt: new Date().toISOString(),
+          role: CU,
+          html: `Document uploaded`
+        };
+      }
+      
+      // Add to savedDocs files array
+      if (!job.savedDocs[config.doc].files) job.savedDocs[config.doc].files = [];
+      job.savedDocs[config.doc].files.push(fileData);
+      job.savedDocs[config.doc].html = `Multiple files uploaded: ${job[config.stage].length} files`;
+      job.savedDocs[config.doc].savedAt = new Date().toISOString();
+      
+      uploadedCount++;
     };
     reader.readAsDataURL(file);
   });
@@ -1536,17 +1561,21 @@ async function handleExternalUpload(wo, externalRole, files) {
   setTimeout(() => {
     if (externalRole === 'linesman_findings') {
       job.stage = 'field_received';
-      addLog(wo, `${files.length} linesman document(s) uploaded`);
-      toast(`✅ ${files.length} linesman document(s) uploaded successfully`);
+      addLog(wo, `${job.linesmanDocs.length} linesman document(s) uploaded`);
+      toast(`✅ ${job.linesmanDocs.length} linesman document(s) uploaded successfully`);
     } else if (externalRole === 'gis_report') {
       job.stage = 'gis_complete';
-      addLog(wo, `${files.length} GIS document(s) uploaded`);
-      toast(`✅ ${files.length} GIS document(s) uploaded successfully`);
+      addLog(wo, `${job.gisDocs.length} GIS document(s) uploaded`);
+      toast(`✅ ${job.gisDocs.length} GIS document(s) uploaded successfully`);
+    } else if (externalRole === 'gis_certificate') {
+      addLog(wo, `GIS certificate(s) uploaded`);
+      toast(`✅ ${job.gisCerts.length} GIS certificate(s) uploaded successfully`);
     }
+    
     saveDB();
     refreshDetail();
     refreshAll();
-  }, 100);
+  }, 300);
 }
 
 /**
@@ -1559,6 +1588,7 @@ function downloadExternalFile(wo, externalRole, fileIndex) {
   const roleFieldMap = {
     linesman_findings: 'linesmanDocs',
     gis_report: 'gisDocs',
+    gis_certificate: 'gisCerts',
     teams_photo: 'teamPhotos'
   };
   const field = roleFieldMap[externalRole];
@@ -1581,6 +1611,7 @@ function deleteExternalFile(wo, externalRole, fileIndex) {
   const roleFieldMap = {
     linesman_findings: 'linesmanDocs',
     gis_report: 'gisDocs',
+    gis_certificate: 'gisCerts',
     teams_photo: 'teamPhotos'
   };
   const field = roleFieldMap[externalRole];
@@ -1588,6 +1619,20 @@ function deleteExternalFile(wo, externalRole, fileIndex) {
   
   if (confirm('Delete this file?')) {
     job[field].splice(fileIndex, 1);
+    
+    // Also remove from savedDocs if exists
+    const docFieldMap = {
+      linesman_findings: 'field_report',
+      gis_report: 'gis_report',
+      gis_certificate: 'gis_cert'
+    };
+    const docField = docFieldMap[externalRole];
+    if (docField && job.savedDocs && job.savedDocs[docField]) {
+      if (job.savedDocs[docField].files) {
+        job.savedDocs[docField].files.splice(fileIndex, 1);
+      }
+    }
+    
     saveDB();
     refreshDetail();
     toast('File deleted');
@@ -1604,6 +1649,7 @@ function showExternalFiles(wo, externalRole) {
   const roleFieldMap = {
     linesman_findings: 'linesmanDocs',
     gis_report: 'gisDocs',
+    gis_certificate: 'gisCerts',
     teams_photo: 'teamPhotos'
   };
   const field = roleFieldMap[externalRole];
@@ -1689,12 +1735,23 @@ function showGISDocumentsModal(wo) {
   document.getElementById('docModalBody').innerHTML = `
     <div style="padding:1rem">
       <div style="margin-bottom:1rem;font-size:.9rem;color:var(--tx2)">
-        GIS consultant documents uploaded:
+        <strong>GIS Reports & Certificates uploaded:</strong>
       </div>
-      ${showExternalFiles(wo, 'gis_report')}
-      ${job.gisDocs && job.gisDocs.length > 0 ? `
-        <button class="btn btn-am" style="margin-top:1rem" onclick="openExternalUpload('${wo}','gis_report')">📎 Add More Documents</button>
-      ` : ''}
+      
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:.8rem;font-weight:600;color:var(--tx2);margin-bottom:.5rem">📄 GIS Reports (${job.gisDocs ? job.gisDocs.length : 0} files)</div>
+        ${showExternalFiles(wo, 'gis_report')}
+      </div>
+      
+      <div>
+        <div style="font-size:.8rem;font-weight:600;color:var(--tx2);margin-bottom:.5rem">📋 GIS Certificates (${job.gisCerts ? job.gisCerts.length : 0} files)</div>
+        ${showExternalFiles(wo, 'gis_certificate')}
+      </div>
+      
+      <div style="margin-top:1rem;display:flex;gap:10px">
+        <button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','gis_report')">📎 Add GIS Reports</button>
+        <button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','gis_certificate')">📋 Add GIS Certificates</button>
+      </div>
     </div>
   `;
   document.getElementById('docModalFoot').innerHTML = `
