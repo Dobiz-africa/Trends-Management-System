@@ -1948,6 +1948,18 @@ function clearClaimBatchState(){
   selClaimJobs.clear();
   localStorage.removeItem('tes_claimBatch');
 }
+
+/**
+ * Complete the batch generation - ONLY clears selection when user is done
+ */
+function completeBatch(certNo){
+  if(confirm('Batch complete? Selection will be cleared and you\'ll return to Finance dashboard.')){
+    clearClaimBatchState();
+    closeModal('docModal');
+    renderClaims();
+    toast(`✅ Batch ${certNo} completed. Selection cleared. Ready for new batch.`);
+  }
+}
 function generateClaimDocs(){
   if(!selClaimJobs.size){toast('Select at least one job','am');return;}
   const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
@@ -1998,17 +2010,18 @@ function generateClaimDocs(){
   document.getElementById('docModalBody').innerHTML=docBatchSummary(batchJobs,certNo);
  document.getElementById('docModalFoot').innerHTML=`
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">Open document:</span>
+      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">View & Save documents:</span>
       <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','annexure')">Annexure</button>
       <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','payment_cert')">Payment Cert</button>
       <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','invoice')">Invoice</button>
       <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','list_of_jobs')">List of Jobs</button>
       <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','bpc_spreadsheet')">BPC Spreadsheet</button>
-      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
+      <div style="flex-grow:1"></div>
+      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal')">← Back (Keep Selected)</button>
+      <button class="btn btn-gn btn-sm" onclick="completeBatch('${certNo}')">✓ Complete Batch</button>
     </div>`;
   openModal('docModal');
-  selClaimJobs.clear();
-  toast(`Claim ${certNo} generated — ${batchJobs.length} jobs`);
+  toast(`Claim ${certNo} ready — View each document, then click "Complete Batch" when done`);
 }
 
 /**
@@ -2061,51 +2074,7 @@ function viewBatchDoc(certNo,docType){
 
 
 
-// Add this function to view batch docs
-function viewBatchDoc(certNo,docType){
-  const batch=DB.batchDocs?.[certNo];
-  const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
-  const firstJob=batchJobs[0];
-  const titles={
-    annexure:'Annexure to Payment Certificate',
-    payment_cert:'Payment Certificate',
-    invoice:'Tax Invoice',
-    list_of_jobs:'List of Jobs Done',
-    bpc_spreadsheet:'BPC Spreadsheet'
-  };
-  // Regenerate doc live so values are always current
-  let html='';
-  if(docType==='annexure')       html=docAnnexure(firstJob);
-  else if(docType==='payment_cert') html=docPaymentCert(firstJob);
-  else if(docType==='invoice')   html=docInvoice(firstJob);
-  else if(docType==='list_of_jobs') html=docListOfJobs(firstJob);
-  else if(docType==='bpc_spreadsheet') html=docBPCSpreadsheet(batchJobs,certNo);
-  else if(batch)                 html=batch[docType]||'';
-  if(!html){toast('Document not available','rd');return;}
-  document.getElementById('docModalTitle').textContent=`${titles[docType]||docType} — Cert ${certNo}`;
-  document.getElementById('docModalBody').innerHTML=html;
-  const docOrder=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
-  const currentIdx=docOrder.indexOf(docType);
-  const prevDoc=currentIdx>0?docOrder[currentIdx-1]:null;
-  const nextDoc=currentIdx<docOrder.length-1?docOrder[currentIdx+1]:null;
-  const docTitleShort={annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Spreadsheet'};
 
-  document.getElementById('docModalFoot').innerHTML=`
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%">
-      <div style="display:flex;gap:5px;align-items:center;flex:1">
-        ${prevDoc?`<button class="btn btn-gy btn-sm" onclick="viewBatchDoc('${certNo}','${prevDoc}')">← ${docTitleShort[prevDoc]}</button>`:'<span style="width:80px"></span>'}
-        <span style="font-size:.68rem;color:var(--tx3);margin:0 4px">${currentIdx+1} of ${docOrder.length}</span>
-        ${nextDoc?`<button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','${nextDoc}')">${docTitleShort[nextDoc]} →</button>`:'<span style="width:80px"></span>'}
-      </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>
-        ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Attach</button>`:''}
-        ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload / Replace<input type="file" accept="image/*,application/pdf" onchange="handleBatchScan('${certNo}','${docType}',this)" style="display:none"></label>`:''}
-        ${(DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType])?`<button class="btn btn-gn btn-sm" onclick="downloadBatchScan('${certNo}','${docType}')">⬇ Signed</button>`:''}
-        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
-      </div>
-    </div>`;
-}
 
 function openBatchDoc(docType,certNo){
   const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
@@ -2604,12 +2573,8 @@ function docGISCert(job){
 /* ── ANNEXURE TO PAYMENT CERTIFICATE ── */
 function docAnnexure(job){
   const certNo=job?.claimRef||'TES-001';
-  const claimJobs=(job
-    ?(certNo!=='TES-001'
-      ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
-      :[job])
-    :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete')
-  ).filter(j=>j&&j.vo1&&j.vo1.items);
+  // ONLY show jobs that match this batch's claimRef
+  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
   const totalFinal=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const inL=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none">`;
   const inR=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;text-align:right">`;
@@ -2708,9 +2673,8 @@ function recalcPC(){
 }
 function docPaymentCert(job){
   const certNo=job?.claimRef||'TES-001';
-  const claimJobs=job
-    ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
-    :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
+  // Only show jobs for this batch by claimRef
+  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
   const ef=(val,w,id)=>`<input class="ef ef-b" ${id?`id="${id}"`:''}  value="${val||''}" style="width:${w||'90%'}">`;
@@ -2778,9 +2742,8 @@ function docPaymentCert(job){
 /* ── INVOICE (exact match to CLAIM_10 INVOICE sheet) ── */
 function docInvoice(job){
   const certNo=job?.claimRef||'TES-001';
-  const claimJobs=job
-    ?Object.values(DB.jobs).filter(j=>j.claimRef===certNo)
-    :Object.values(DB.jobs).filter(j=>j.stage==='claim_docs_ready'||j.stage==='job_complete');
+  // Only show jobs for this batch by claimRef
+  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
   const phase=job?.phase||claimJobs[0]?.phase||'46';
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const vat=gross*.14;
