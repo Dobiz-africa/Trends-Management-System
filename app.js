@@ -1938,7 +1938,12 @@ function restoreClaimBatchState(){
   if(saved){
     try{
       const jobs=JSON.parse(saved);
-      selClaimJobs=new Set(jobs);
+      // Only restore jobs that are STILL eligible (not already processed with claimRef)
+      const eligible=jobs.filter(wo=>{
+        const job=DB.jobs[wo];
+        return job&&job.stage==='gis_complete'&&!job.claimRef;
+      });
+      selClaimJobs=new Set(eligible);
     }catch(e){
       console.error('Failed to restore claim batch:',e);
     }
@@ -2003,7 +2008,8 @@ function generateClaimDocs(){
   });
   saveDB();
   notify(['admin','md'],`Claim ${certNo} generated — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
-  renderClaims();renderInbox();renderDashboard();
+  renderInbox();renderDashboard();
+  // DON'T call renderClaims() here - keep jobs visible until user completes batch
   
   // Show batch doc modal
   document.getElementById('docModalTitle').textContent=`Claim Batch ${certNo} — ${batchJobs.length} Jobs`;
@@ -3503,9 +3509,16 @@ function nav(screen){
 }
 function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs();renderClaims();}
 
-/* ═══════════════════════════════════════
-   LOGIN / LOGOUT
-═══════════════════════════════════════ */
+function resetDatabase(){
+  if(confirm('⚠️ DELETE ALL DATA? This cannot be undone. You will lose all work orders, jobs, and batches.')){
+    if(confirm('Really? This is permanent.')){
+      localStorage.clear();
+      DB={jobs:{},certSeq:1,batchDocs:{},batchScans:{}};
+      toast('✅ Database cleared. Page reloading...');
+      setTimeout(()=>location.reload(),1000);
+    }
+  }
+}
 // Role cards set the hidden select, then defer to the original doLogin()
 function pickRole(role){
   document.getElementById('loginRole').value = role;
