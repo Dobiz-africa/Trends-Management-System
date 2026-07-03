@@ -3538,7 +3538,7 @@ function nav(screen){
   if(screen==='actlog'){renderActLog();}
   if(screen==='jobdetail'&&detailWO){renderJobDetail(detailWO);}
 }
-function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs();}
+function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs();renderClaims();}
 
 /* ═══════════════════════════════════════
    LOGIN / LOGOUT
