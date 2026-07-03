@@ -1942,7 +1942,7 @@ function generateClaimDocs(){
   
   if(!batchJobs.length){toast('Selected jobs are missing data — please re-add them','rd');return;}
 
-  // Set claimRef on ONLY the selected jobs
+  // Set claimRef on all selected jobs FIRST before generating docs
   batchJobs.forEach(job=>{
     job.claimRef=certNo;
     job.stage='claim_docs_ready';
@@ -1951,12 +1951,12 @@ function generateClaimDocs(){
   
   saveDB();
   
-  // Store batch documents
+  // Store batch documents — pass the first job with claimRef already set
   if(!DB.batchDocs)DB.batchDocs={};
   const firstJob=batchJobs[0];
-  const batchWOList=batchJobs.map(j=>j.wo);
+  const batchWOList=batchJobs.map(j=>j.wo); // Extract WO numbers for display
   DB.batchDocs[certNo]={
-    wos:batchWOList,
+    wos:batchWOList, // Store WO numbers for dashboard card
     jobs:batchJobs,
     annexure:docAnnexure(firstJob),
     paymentCert:docPaymentCert(firstJob),
@@ -1978,92 +1978,73 @@ function generateClaimDocs(){
   notify(['admin','md'],`Claim ${certNo} generated — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
   renderClaims();renderInbox();renderDashboard();
   
-  // Show batch doc modal - KEEP JOBS CHECKED until user clears
-  document.getElementById('docModalTitle').textContent=`Claim Batch ${certNo} — ${batchJobs.length} Job${batchJobs.length>1?'s':''}`;
+  // Show batch doc modal
+  document.getElementById('docModalTitle').textContent=`Claim Batch ${certNo} — ${batchJobs.length} Jobs`;
   document.getElementById('docModalBody').innerHTML=docBatchSummary(batchJobs,certNo);
-  document.getElementById('docModalFoot').innerHTML=`
+ document.getElementById('docModalFoot').innerHTML=`
     <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">View document:</span>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDocInModal('${certNo}','annexure')">Annexure</button>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDocInModal('${certNo}','payment_cert')">Payment Cert</button>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDocInModal('${certNo}','invoice')">Invoice</button>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDocInModal('${certNo}','list_of_jobs')">List of Jobs</button>
-      <button class="btn btn-am btn-sm" onclick="viewBatchDocInModal('${certNo}','bpc_spreadsheet')">BPC Spreadsheet</button>
-      <div style="flex-grow:1"></div>
-      <button class="btn btn-am btn-sm" onclick="printBatchDoc('${certNo}')">🖨️ Print All</button>
-      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal')">✕ Close (Keep Selected)</button>
+      <span style="font-size:.72rem;color:var(--tx2);font-weight:600">Open document:</span>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','annexure')">Annexure</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','payment_cert')">Payment Cert</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','invoice')">Invoice</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','list_of_jobs')">List of Jobs</button>
+      <button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','bpc_spreadsheet')">BPC Spreadsheet</button>
+      <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
     </div>`;
   openModal('docModal');
-  // DON'T clear selection - jobs stay checked in Finance dashboard
-  toast(`✅ Claim ${certNo} generated — ${batchJobs.length} job${batchJobs.length>1?'s':''} — View docs, then Clear Selection when done`);
+  selClaimJobs.clear();
+  toast(`Claim ${certNo} generated — ${batchJobs.length} jobs`);
 }
 
 /**
  * View batch document in modal (not print)
  */
-function viewBatchDocInModal(certNo,docType){
+function viewBatchDoc(certNo,docType){
   const batch=DB.batchDocs?.[certNo];
-  if(!batch)return;
-  
+  const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
+  const firstJob=batchJobs[0];
   const titles={
     annexure:'Annexure to Payment Certificate',
     payment_cert:'Payment Certificate',
-    invoice:'Invoice',
-    list_of_jobs:'List of Jobs',
+    invoice:'Tax Invoice',
+    list_of_jobs:'List of Jobs Done',
     bpc_spreadsheet:'BPC Spreadsheet'
   };
-  
-  const html=
-    docType==='annexure'?batch.annexure:
-    docType==='payment_cert'?batch.paymentCert:
-    docType==='invoice'?batch.invoice:
-    docType==='list_of_jobs'?batch.listOfJobs:
-    docType==='bpc_spreadsheet'?batch.bpcSpreadsheet:'';
-  
-  // Show in modal, not print window
-  document.getElementById('docModalTitle').textContent=titles[docType];
-  document.getElementById('docModalBody').innerHTML=`<div style="max-height:600px;overflow-y:auto;padding:1rem;font-size:.85rem;line-height:1.6">${html}</div>`;
+  // Regenerate doc live so values are always current
+  let html='';
+  if(docType==='annexure')       html=docAnnexure(firstJob);
+  else if(docType==='payment_cert') html=docPaymentCert(firstJob);
+  else if(docType==='invoice')   html=docInvoice(firstJob);
+  else if(docType==='list_of_jobs') html=docListOfJobs(firstJob);
+  else if(docType==='bpc_spreadsheet') html=docBPCSpreadsheet(batchJobs,certNo);
+  else if(batch)                 html=batch[docType]||'';
+  if(!html){toast('Document not available','rd');return;}
+  document.getElementById('docModalTitle').textContent=`${titles[docType]||docType} — Cert ${certNo}`;
+  document.getElementById('docModalBody').innerHTML=html;
+  const docOrder=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  const currentIdx=docOrder.indexOf(docType);
+  const prevDoc=currentIdx>0?docOrder[currentIdx-1]:null;
+  const nextDoc=currentIdx<docOrder.length-1?docOrder[currentIdx+1]:null;
+  const docTitleShort={annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Spreadsheet'};
+
   document.getElementById('docModalFoot').innerHTML=`
-    <button class="btn btn-am btn-sm" onclick="printBatchDoc('${certNo}','${docType}')">🖨️ Print This Document</button>
-    <button class="btn btn-gy btn-sm" onclick="viewBatchDocInModal('${certNo}','${docType}')" style="display:none"></button>
-    <button class="btn btn-gn btn-sm" onclick="closeModal('docModal')">✕ Close</button>
-  `;
-  openModal('docModal');
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%">
+      <div style="display:flex;gap:5px;align-items:center;flex:1">
+        ${prevDoc?`<button class="btn btn-gy btn-sm" onclick="viewBatchDoc('${certNo}','${prevDoc}')">← ${docTitleShort[prevDoc]}</button>`:'<span style="width:80px"></span>'}
+        <span style="font-size:.68rem;color:var(--tx3);margin:0 4px">${currentIdx+1} of ${docOrder.length}</span>
+        ${nextDoc?`<button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','${nextDoc}')">${docTitleShort[nextDoc]} →</button>`:'<span style="width:80px"></span>'}
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>
+        ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Attach</button>`:''}
+        ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload / Replace<input type="file" accept="image/*,application/pdf" onchange="handleBatchScan('${certNo}','${docType}',this)" style="display:none"></label>`:''}
+        ${(DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType])?`<button class="btn btn-gn btn-sm" onclick="downloadBatchScan('${certNo}','${docType}')">⬇ Signed</button>`:''}
+        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
+      </div>
+    </div>`;
 }
 
-/**
- * Print batch document (separate action)
- */
-function printBatchDoc(certNo, docType){
-  const batch=DB.batchDocs?.[certNo];
-  if(!batch)return;
-  
-  if(docType) {
-    // Print single document
-    const html=
-      docType==='annexure'?batch.annexure:
-      docType==='payment_cert'?batch.paymentCert:
-      docType==='invoice'?batch.invoice:
-      docType==='list_of_jobs'?batch.listOfJobs:
-      docType==='bpc_spreadsheet'?batch.bpcSpreadsheet:'';
-    openPrintWindow(html,'Document');
-  } else {
-    // Print all documents
-    const allHtml=`
-      <h2>Claim Batch ${certNo}</h2>
-      <h3>Annexure</h3>${batch.annexure}
-      <pagebreak />
-      <h3>Payment Certificate</h3>${batch.paymentCert}
-      <pagebreak />
-      <h3>Invoice</h3>${batch.invoice}
-      <pagebreak />
-      <h3>List of Jobs</h3>${batch.listOfJobs}
-      <pagebreak />
-      <h3>BPC Spreadsheet</h3>${batch.bpcSpreadsheet}
-    `;
-    openPrintWindow(allHtml,`Claim Batch ${certNo}`);
-  }
-}
+
 
 // Add this function to view batch docs
 function viewBatchDoc(certNo,docType){
