@@ -825,7 +825,7 @@ function renderMDDash(){
   const el=document.getElementById('dash-md');if(!el)return;
   el.style.display='block';
   const jobs=Object.values(DB.jobs);
-  const completed =jobs.filter(j=>j.stage==='job_complete'||j.stage==='claim_docs_ready');
+  const completed =jobs.filter(j=>j.stage==='job_complete');
   const claimReady=jobs.filter(j=>j.stage==='gis_complete'||j.stage==='claim_docs_ready');
   const inProgress=jobs.filter(j=>!['job_complete','gis_complete','claim_docs_ready'].includes(j.stage));
   const financeDocTypes=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
