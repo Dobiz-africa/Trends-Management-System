@@ -3567,6 +3567,9 @@ async function doLogin(){
     await syncFromSupabase();
   }
 
+  // Clear cached jobs before syncing from Supabase — ensures fresh data on role switch
+  DB.jobs = {};
+  
   addLog('','Signed in as '+RN[r]);
   // Always land on dashboard — never carry over a screen from another role
   nav('dashboard');
