@@ -363,6 +363,7 @@ async function syncFromSupabase(){
       j.phase = row.phase; j.stage = row.stage; j.claimRef = row.claim_ref||j.claimRef||'';
       jobs[row.wo] = j;
     });
+    console.log('syncFromSupabase: fetched', Object.keys(jobs).length, 'jobs from Supabase:', jobs);
     DB.jobs = jobs;
 
     (docsR.data||[]).forEach(d=>{
@@ -3565,11 +3566,11 @@ async function doLogin(){
   if(SB.enabled){
     const tbt=document.getElementById('tbt'); if(tbt) tbt.textContent='Loading…';
     await syncFromSupabase();
+    console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
+  }else{
+    console.log('SB not enabled. DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
   }
 
-  // Clear cached jobs before syncing from Supabase — ensures fresh data on role switch
-  DB.jobs = {};
-  
   addLog('','Signed in as '+RN[r]);
   // Always land on dashboard — never carry over a screen from another role
   nav('dashboard');
