@@ -3565,6 +3565,15 @@ async function doLogin(){
   // Pull the latest shared data from Supabase before rendering
   if(SB.enabled){
     const tbt=document.getElementById('tbt'); if(tbt) tbt.textContent='Loading…';
+    // Flush any pending push to Supabase before syncing
+    await new Promise(resolve=>{
+      if(_sbSaveTimer){
+        clearTimeout(_sbSaveTimer);
+        _pushNow().then(resolve).catch(resolve);
+      }else{
+        resolve();
+      }
+    });
     await syncFromSupabase();
     console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
   }else{
