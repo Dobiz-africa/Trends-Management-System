@@ -1521,7 +1521,8 @@ async function handleExternalUpload(wo, externalRole, files) {
   if (!job[config.stage]) job[config.stage] = [];
   if (!job.savedDocs) job.savedDocs = {};
   
-  let uploadedCount = 0;
+  let filesRead = 0;
+  const totalFiles = files.length;
   
   // Add each uploaded file
   Array.from(files).forEach(file => {
@@ -1555,56 +1556,70 @@ async function handleExternalUpload(wo, externalRole, files) {
       job.savedDocs[config.doc].html = `Multiple files uploaded: ${job[config.stage].length} files`;
       job.savedDocs[config.doc].savedAt = new Date().toISOString();
       
-      uploadedCount++;
+      filesRead++;
+      
+      // When ALL files are read, THEN save and show messages
+      if (filesRead === totalFiles) {
+        // Linesman: Auto-advance after upload
+        if (externalRole === 'linesman_findings') {
+          job.stage = 'field_received';
+          addLog(wo, `${job.linesmanDocs.length} linesman document(s) uploaded`);
+          toast(`✅ ${job.linesmanDocs.length} linesman document(s) uploaded successfully`);
+        } 
+        // GIS: Do NOT auto-advance - user must manually click "Mark GIS Complete"
+        else if (externalRole === 'gis_report') {
+          addLog(wo, `${job.gisDocs.length} GIS report(s) uploaded`);
+          toast(`✅ ${job.gisDocs.length} GIS report(s) uploaded successfully`);
+        } 
+        else if (externalRole === 'gis_certificate') {
+          addLog(wo, `${job.gisCerts.length} GIS certificate(s) uploaded`);
+          toast(`✅ ${job.gisCerts.length} GIS certificate(s) uploaded successfully`);
+        }
+        
+        // SAVE ONLY AFTER ALL FILES ARE READ
+        saveDB();
+        refreshDetail();
+        refreshAll();
+      }
     };
     reader.readAsDataURL(file);
   });
-  
-  // Save and advance stage based on role
-  setTimeout(() => {
-    // Linesman: Auto-advance after upload
-    if (externalRole === 'linesman_findings') {
-      job.stage = 'field_received';
-      addLog(wo, `${job.linesmanDocs.length} linesman document(s) uploaded`);
-      toast(`✅ ${job.linesmanDocs.length} linesman document(s) uploaded successfully`);
-    } 
-    // GIS: Do NOT auto-advance - user must manually click "Mark GIS Complete"
-    else if (externalRole === 'gis_report') {
-      addLog(wo, `${job.gisDocs.length} GIS report(s) uploaded`);
-      toast(`✅ ${job.gisDocs.length} GIS report(s) uploaded successfully`);
-    } 
-    else if (externalRole === 'gis_certificate') {
-      addLog(wo, `${job.gisCerts.length} GIS certificate(s) uploaded`);
-      toast(`✅ ${job.gisCerts.length} GIS certificate(s) uploaded successfully`);
-    }
-    
-    saveDB();
-    refreshDetail();
-    refreshAll();
-  }, 300);
 }
 
 /**
  * Manually mark GIS as complete after uploads are done
+ * Only requires GIS reports to be uploaded, certificate is optional
  */
 function markGISComplete(wo) {
   const job = DB.jobs[wo];
   if (!job) return;
   
+  // Only require GIS reports, not certificate
   if (!job.gisDocs || job.gisDocs.length === 0) {
     toast('Upload at least one GIS report first', 'am');
     return;
   }
   
+  // Advance to gis_complete stage
   job.stage = 'gis_complete';
   job.actions['gis_complete'] = { date: new Date().toISOString().slice(0, 10), notes: '', extra: '' };
   addLog(wo, 'GIS documents complete — ready for claim batch');
   notify(['finance', 'md'], `GIS documents complete for WO ${wo} — ${job.cust}. Ready for claim batch.`, wo);
-  toast('✅ GIS marked as complete. Ready for Finance to generate claims.');
+  
+  // Auto-save GIS report document for MD to see
+  if (!job.savedDocs) job.savedDocs = {};
+  job.savedDocs['gis_report'] = {
+    html: 'GIS report uploaded',
+    savedAt: new Date().toISOString(),
+    role: CU,
+    autoSaved: true
+  };
   
   saveDB();
   refreshDetail();
   refreshAll();
+  
+  toast('✅ GIS marked as complete. Work order ready for Finance to generate claims.');
 }
 
 /**
