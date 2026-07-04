@@ -1350,7 +1350,7 @@ function renderJobDetail(wo){
         <span class="badge ${statusBadge}">${statusText}</span>
       </div>
       <div class="doc-card-btns">
-        ${canView?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View / Print</button>`:''}
+        ${canView?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View</button>`:''}
         ${saved?`<button class="btn btn-bl btn-sm" onclick="downloadSavedDoc('${wo}','${d}')">⬇ Download</button>`:''}
         ${scan?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ Signed</button>`:''}
         ${CU!=='md'&&scan?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
@@ -1446,8 +1446,8 @@ function openDocForAction(wo,docType){
 function buildDocFoot(docType,job){
   const wo=job?job.wo:'';
   const isMDView=CU==='md';
-  // Print button — opens same clean popup
-  let btns=`<button class="btn btn-print btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>`;
+  // Download button — direct PDF download, no print dialog
+  let btns=`<button class="btn btn-bl btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download PDF</button>`;
 
   if(wo){
     if(job&&job.scans&&job.scans[docType]){
@@ -1554,7 +1554,17 @@ async function handleExternalUpload(wo, externalRole, files) {
       // Add to savedDocs files array
       if (!job.savedDocs[config.doc].files) job.savedDocs[config.doc].files = [];
       job.savedDocs[config.doc].files.push(fileData);
-      job.savedDocs[config.doc].html = `Multiple files uploaded: ${job[config.stage].length} files`;
+      // Build HTML showing actual files with download buttons
+      const filesList = job.savedDocs[config.doc].files.map((f, idx) => `
+        <div style="display:flex;gap:10px;padding:.75rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem">
+          <span style="flex:1">
+            <div style="font-weight:600;font-size:.9rem">${f.name}</div>
+            <div style="font-size:.75rem;color:var(--tx3)">${(f.size / 1024).toFixed(1)} KB · ${new Date(f.uploadedAt).toLocaleDateString()}</div>
+          </span>
+          <button class="btn btn-gn btn-sm" onclick="downloadExternalFileFromSavedDocs('${wo}','${config.doc}',${idx})">⬇ Download</button>
+        </div>
+      `).join('');
+      job.savedDocs[config.doc].html = filesList || 'No files';
       job.savedDocs[config.doc].savedAt = new Date().toISOString();
       
       filesRead++;
@@ -1644,6 +1654,27 @@ function downloadExternalFile(wo, externalRole, fileIndex) {
   link.href = file.data;
   link.download = file.name;
   link.click();
+}
+
+/**
+ * Download file from savedDocs array (GIS, Linesman documents)
+ */
+function downloadExternalFileFromSavedDocs(wo, docType, fileIndex) {
+  const job = DB.jobs[wo];
+  if (!job || !job.savedDocs || !job.savedDocs[docType]) return;
+  
+  const saved = job.savedDocs[docType];
+  if (!saved.files || !saved.files[fileIndex]) {
+    toast('File not found', 'am');
+    return;
+  }
+  
+  const file = saved.files[fileIndex];
+  const link = document.createElement('a');
+  link.href = file.data;
+  link.download = file.name;
+  link.click();
+  toast('⬇ Downloaded: ' + file.name, 'gn');
 }
 
 /**
@@ -3208,37 +3239,84 @@ ${innerHtml}
 </body></html>`;
 }
 
-/* MAIN PDF / Print function.
-   Opens the document in a clean popup and triggers print (Print → Save as PDF).
-   This is more reliable than any canvas-screenshot approach. */
-function openPrintWindow(innerHtml, title){
-  const html=buildPrintableHTML(innerHtml, title);
-  const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
-  if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
-  // Small delay lets images/fonts settle before print dialog opens
-  w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
-  // Fallback if onload already fired
-  setTimeout(()=>{ try{ if(!w.closed){ w.focus(); w.print(); } }catch(e){} },1200);
-  toast('Print window opened — choose "Save as PDF" in the print dialog','gn');
+/* DIRECT PDF DOWNLOAD - No print dialog */
+async function downloadDocumentAsPDF(innerHtml, title) {
+  try {
+    toast('⏳ Generating PDF...', 'bl');
+    
+    // Create a temporary container with the HTML
+    const container = document.createElement('div');
+    container.innerHTML = buildPrintableHTML(innerHtml, title);
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '-9999px';
+    container.style.width = '900px';
+    document.body.appendChild(container);
+    
+    // Wait for any images to load
+    await new Promise(r => setTimeout(r, 500));
+    
+    // Use html2canvas to capture as image
+    const canvas = await html2canvas(container, {
+      backgroundColor: '#fff',
+      scale: 2,
+      useCORS: true,
+      logging: false
+    });
+    
+    // Remove temporary container
+    document.body.removeChild(container);
+    
+    // Create PDF from canvas using jsPDF
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    const imgData = canvas.toDataURL('image/png');
+    const imgWidth = 210; // A4 width in mm
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+    
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= 297; // A4 height in mm
+    
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= 297;
+    }
+    
+    // Download the PDF
+    const filename = (title || 'document').replace(/[^a-zA-Z0-9-_ ]/g, '').trim() + '.pdf';
+    pdf.save(filename);
+    toast('✅ PDF downloaded: ' + filename, 'gn');
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+    toast('❌ PDF generation failed: ' + err.message, 'rd');
+  }
 }
 
-/* Download a saved doc — opens print window so user saves as PDF */
+/* Download a saved doc — direct PDF download, no print dialog */
 function downloadSavedDoc(wo, docType){
   const job=DB.jobs[wo];
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
   if(!saved){ toast('Not saved yet — click 💾 Save & Attach first','am'); return; }
   const title=(docType.replace(/_/g,' '))+' · WO '+wo;
-  openPrintWindow(saved.html, title);
+  downloadDocumentAsPDF(saved.html, title);
 }
 
-/* Download the currently-open modal document — opens print window */
+/* Download the currently-open modal document — direct PDF download */
 function downloadDocAsPDF(wo, docType){
   const body=document.getElementById('docModalBody');
   if(!body){ toast('No document open','am'); return; }
   const innerHtml=serializeToHTML(body);
   const title=document.getElementById('docModalTitle')?.textContent||docType;
-  openPrintWindow(innerHtml, title);
+  downloadDocumentAsPDF(innerHtml, title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -3468,13 +3546,13 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
 /* ═══════════════════════════════════════
    PRINT
 ═══════════════════════════════════════ */
-function printModal(){
-  // Delegate to the unified print/PDF function which uses the clean popup approach
+function downloadModal(){
+  // Direct PDF download — no print dialog
   const body=document.getElementById('docModalBody');
   if(!body) return;
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
-  openPrintWindow(innerHtml, title);
+  downloadDocumentAsPDF(innerHtml, title);
 }
 
 /* ═══════════════════════════════════════
