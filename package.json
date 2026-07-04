@@ -1,0 +1,16 @@
+{
+  "name": "claimdesk",
+  "version": "1.0.0",
+  "description": "ClaimDesk - BPC Electrical Claims Management System",
+  "main": "app.js",
+  "dependencies": {
+    "pdfkit": "^0.13.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": ["claims", "pdf", "bpc"],
+  "author": "Trends Engineering Services",
+  "license": "MIT"
+}
