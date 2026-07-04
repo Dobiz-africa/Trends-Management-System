@@ -1320,13 +1320,11 @@ function renderJobDetail(wo){
 
   // Documents panel - FILTERED BY ROLE
   const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_valuation','works_instruction','gis_report','gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
-  let visibleDocTypes = [...allDocTypes];
+  // External upload types should NOT appear as document cards - they use dedicated modals instead
+  const externalUploadTypes=['field_report','gis_report','gis_cert'];
+  let visibleDocTypes = allDocTypes.filter(d => !externalUploadTypes.includes(d));
   if(CU === 'finance') {
     visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
-  }
-  // MD sees everything
-  if(CU === 'md') {
-    visibleDocTypes = [...allDocTypes];
   }
   
   const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',field_report:'Linesman Field Findings',vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'GIS Geo-Analysis Report',gis_cert:'GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
