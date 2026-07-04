@@ -1348,7 +1348,7 @@ function renderJobDetail(wo){
         <span class="badge ${statusBadge}">${statusText}</span>
       </div>
       <div class="doc-card-btns">
-        ${canView?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View</button>`:''}
+        ${canView?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View / Print</button>`:''}
         ${saved?`<button class="btn btn-bl btn-sm" onclick="downloadSavedDoc('${wo}','${d}')">⬇ Download</button>`:''}
         ${scan?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ Signed</button>`:''}
         ${CU!=='md'&&scan?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
@@ -1444,7 +1444,7 @@ function openDocForAction(wo,docType){
 function buildDocFoot(docType,job){
   const wo=job?job.wo:'';
   const isMDView=CU==='md';
-  // Download button — direct PDF download, no print dialog
+  // Download button — server-side PDF generation
   let btns=`<button class="btn btn-bl btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download PDF</button>`;
 
   if(wo){
@@ -1552,7 +1552,7 @@ async function handleExternalUpload(wo, externalRole, files) {
       // Add to savedDocs files array
       if (!job.savedDocs[config.doc].files) job.savedDocs[config.doc].files = [];
       job.savedDocs[config.doc].files.push(fileData);
-      // Build HTML showing actual files with download buttons
+      // Build proper HTML showing actual files with download buttons
       const filesList = job.savedDocs[config.doc].files.map((f, idx) => `
         <div style="display:flex;gap:10px;padding:.75rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem">
           <span style="flex:1">
@@ -3237,84 +3237,58 @@ ${innerHtml}
 </body></html>`;
 }
 
-/* DIRECT PDF DOWNLOAD - No print dialog */
-async function downloadDocumentAsPDF(innerHtml, title) {
+/* Generate PDF server-side using Vercel API — no freezing, instant download */
+async function generatePDFFromServer(innerHtml, title) {
   try {
     toast('⏳ Generating PDF...', 'bl');
     
-    // Create a temporary container with the HTML
-    const container = document.createElement('div');
-    container.innerHTML = buildPrintableHTML(innerHtml, title);
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '-9999px';
-    container.style.width = '900px';
-    document.body.appendChild(container);
-    
-    // Wait for any images to load
-    await new Promise(r => setTimeout(r, 500));
-    
-    // Use html2canvas to capture as image
-    const canvas = await html2canvas(container, {
-      backgroundColor: '#fff',
-      scale: 2,
-      useCORS: true,
-      logging: false
+    const response = await fetch('/api/generatePdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        html: innerHtml, 
+        filename: title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim() 
+      })
     });
-    
-    // Remove temporary container
-    document.body.removeChild(container);
-    
-    // Create PDF from canvas using jsPDF
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
-    
-    const imgData = canvas.toDataURL('image/png');
-    const imgWidth = 210; // A4 width in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-    
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= 297; // A4 height in mm
-    
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= 297;
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    // Convert response to blob and download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf';
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
     
-    // Download the PDF
-    const filename = (title || 'document').replace(/[^a-zA-Z0-9-_ ]/g, '').trim() + '.pdf';
-    pdf.save(filename);
-    toast('✅ PDF downloaded: ' + filename, 'gn');
+    toast('✅ PDF downloaded: ' + link.download, 'gn');
   } catch (err) {
-    console.error('PDF generation failed:', err);
-    toast('❌ PDF generation failed: ' + err.message, 'rd');
+    console.error('PDF download failed:', err);
+    toast('❌ Download failed: ' + err.message, 'rd');
   }
 }
 
-/* Download a saved doc — direct PDF download, no print dialog */
+/* Download a saved doc — server-side PDF generation */
 function downloadSavedDoc(wo, docType){
   const job=DB.jobs[wo];
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
   if(!saved){ toast('Not saved yet — click 💾 Save & Attach first','am'); return; }
   const title=(docType.replace(/_/g,' '))+' · WO '+wo;
-  downloadDocumentAsPDF(saved.html, title);
+  generatePDFFromServer(saved.html, title);
 }
 
-/* Download the currently-open modal document — direct PDF download */
+/* Download the currently-open modal document — server-side PDF generation */
 function downloadDocAsPDF(wo, docType){
   const body=document.getElementById('docModalBody');
   if(!body){ toast('No document open','am'); return; }
   const innerHtml=serializeToHTML(body);
   const title=document.getElementById('docModalTitle')?.textContent||docType;
-  downloadDocumentAsPDF(innerHtml, title);
+  generatePDFFromServer(innerHtml, title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -3545,12 +3519,11 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
    PRINT
 ═══════════════════════════════════════ */
 function downloadModal(){
-  // Direct PDF download — no print dialog
   const body=document.getElementById('docModalBody');
   if(!body) return;
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
-  downloadDocumentAsPDF(innerHtml, title);
+  generatePDFFromServer(innerHtml, title);
 }
 
 /* ═══════════════════════════════════════
