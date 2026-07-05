@@ -3242,43 +3242,30 @@ async function generatePDFFromServer(innerHtml, title) {
   try {
     toast('⏳ Generating PDF...', 'bl');
     
-    // Create a temporary div with the content
-    const element = document.createElement('div');
-    element.innerHTML = innerHtml;
+    // Create a temporary wrapper with proper CSS and content
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <style>${DOC_PRINT_CSS}</style>
+      <div class="paper">${innerHtml}</div>
+    `;
     
-    // Set styles to ensure visibility
-    element.style.padding = '20px';
-    element.style.backgroundColor = '#fff';
-    element.style.fontFamily = 'Arial, sans-serif';
-    element.style.fontSize = '12px';
-    element.style.lineHeight = '1.6';
-    element.style.color = '#000';
-    element.style.position = 'static';
-    element.style.visibility = 'visible';
-    element.style.display = 'block';
+    // Set wrapper styles
+    wrapper.style.padding = '0';
+    wrapper.style.backgroundColor = '#fff';
+    wrapper.style.color = '#000';
+    wrapper.style.position = 'static';
+    wrapper.style.visibility = 'visible';
+    wrapper.style.display = 'block';
     
-    // Remove any problematic styles from child elements
-    const removeInlineStyles = (el) => {
-      Array.from(el.querySelectorAll('*')).forEach(child => {
-        if(child.style.position === 'fixed' || child.style.position === 'absolute') {
-          child.style.position = 'relative';
-        }
-        if(child.style.display === 'none') {
-          child.style.display = 'block';
-        }
-      });
-    };
-    removeInlineStyles(element);
-    
-    // Add to body temporarily (html2pdf needs it in DOM)
-    document.body.appendChild(element);
+    // Add to body temporarily
+    document.body.appendChild(wrapper);
     
     // Wait for rendering
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 800));
     
     // Use html2pdf to generate PDF
     const opt = {
-      margin: [10, 10, 15, 10],
+      margin: [8, 8, 10, 8],
       filename: (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf',
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
@@ -3291,17 +3278,19 @@ async function generatePDFFromServer(innerHtml, title) {
       jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
     };
     
-    await html2pdf().set(opt).from(element).save();
+    await html2pdf().set(opt).from(wrapper).save();
     
-    // Remove element from DOM
-    document.body.removeChild(element);
+    // Remove wrapper from DOM
+    document.body.removeChild(wrapper);
     
     toast('✅ PDF downloaded: ' + opt.filename, 'gn');
   } catch (err) {
     console.error('PDF generation failed:', err);
-    // Try to remove element if it still exists
-    const el = document.body.querySelector('[style*="padding: 20px"]');
-    if(el) try { document.body.removeChild(el); } catch(e){}
+    // Clean up
+    try {
+      const wrapper = document.body.querySelector('div[style*="position: static"]');
+      if(wrapper) document.body.removeChild(wrapper);
+    } catch(e){}
     toast('❌ PDF generation failed: ' + err.message, 'rd');
   }
 }
