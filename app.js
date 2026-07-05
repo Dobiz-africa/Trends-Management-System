@@ -2099,7 +2099,7 @@ function viewBatchDoc(certNo,docType){
         ${nextDoc?`<button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','${nextDoc}')">${docTitleShort[nextDoc]} →</button>`:'<span style="width:80px"></span>'}
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn btn-bl btn-sm" onclick="downloadModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download PDF</button>
+        <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>
         ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Attach</button>`:''}
         ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload / Replace<input type="file" accept="image/*,application/pdf" onchange="handleBatchScan('${certNo}','${docType}',this)" style="display:none"></label>`:''}
         ${(DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType])?`<button class="btn btn-gn btn-sm" onclick="downloadBatchScan('${certNo}','${docType}')">⬇ Signed</button>`:''}
@@ -3237,61 +3237,39 @@ ${innerHtml}
 </body></html>`;
 }
 
-/* Generate PDF using html2pdf — renders the document perfectly */
+/* Generate PDF server-side using Vercel API — no freezing, instant download */
 async function generatePDFFromServer(innerHtml, title) {
   try {
     toast('⏳ Generating PDF...', 'bl');
     
-    // Create a temporary wrapper with proper CSS and content
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `
-      <style>${DOC_PRINT_CSS}</style>
-      <div class="paper">${innerHtml}</div>
-    `;
+    const response = await fetch('/api/generatePdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        html: innerHtml, 
+        filename: title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim() 
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Convert response to blob and download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf';
+    document.body.appendChild(link);
+    link.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
     
-    // Set wrapper styles
-    wrapper.style.padding = '0';
-    wrapper.style.backgroundColor = '#fff';
-    wrapper.style.color = '#000';
-    wrapper.style.position = 'static';
-    wrapper.style.visibility = 'visible';
-    wrapper.style.display = 'block';
-    
-    // Add to body temporarily
-    document.body.appendChild(wrapper);
-    
-    // Wait for rendering
-    await new Promise(r => setTimeout(r, 800));
-    
-    // Use html2pdf to generate PDF
-    const opt = {
-      margin: [8, 8, 10, 8],
-      filename: (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false,
-        backgroundColor: '#fff',
-        allowTaint: true
-      },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-    };
-    
-    await html2pdf().set(opt).from(wrapper).save();
-    
-    // Remove wrapper from DOM
-    document.body.removeChild(wrapper);
-    
-    toast('✅ PDF downloaded: ' + opt.filename, 'gn');
+    toast('✅ PDF downloaded: ' + link.download, 'gn');
   } catch (err) {
-    console.error('PDF generation failed:', err);
-    // Clean up
-    try {
-      const wrapper = document.body.querySelector('div[style*="position: static"]');
-      if(wrapper) document.body.removeChild(wrapper);
-    } catch(e){}
-    toast('❌ PDF generation failed: ' + err.message, 'rd');
+    console.error('PDF download failed:', err);
+    toast('❌ Download failed: ' + err.message, 'rd');
   }
 }
 
