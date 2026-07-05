@@ -1320,11 +1320,13 @@ function renderJobDetail(wo){
 
   // Documents panel - FILTERED BY ROLE
   const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_valuation','works_instruction','gis_report','gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
-  // External upload types should NOT appear as document cards - they use dedicated modals instead
-  const externalUploadTypes=['field_report','gis_report','gis_cert'];
-  let visibleDocTypes = allDocTypes.filter(d => !externalUploadTypes.includes(d));
+  let visibleDocTypes = [...allDocTypes];
   if(CU === 'finance') {
     visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  }
+  // MD sees everything
+  if(CU === 'md') {
+    visibleDocTypes = [...allDocTypes];
   }
   
   const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',field_report:'Linesman Field Findings',vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'GIS Geo-Analysis Report',gis_cert:'GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
@@ -1444,8 +1446,8 @@ function openDocForAction(wo,docType){
 function buildDocFoot(docType,job){
   const wo=job?job.wo:'';
   const isMDView=CU==='md';
-  // Download button — server-side PDF generation
-  let btns=`<button class="btn btn-bl btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download PDF</button>`;
+  // Print button — opens same clean popup
+  let btns=`<button class="btn btn-print btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>`;
 
   if(wo){
     if(job&&job.scans&&job.scans[docType]){
@@ -1552,17 +1554,7 @@ async function handleExternalUpload(wo, externalRole, files) {
       // Add to savedDocs files array
       if (!job.savedDocs[config.doc].files) job.savedDocs[config.doc].files = [];
       job.savedDocs[config.doc].files.push(fileData);
-      // Build proper HTML showing actual files with download buttons
-      const filesList = job.savedDocs[config.doc].files.map((f, idx) => `
-        <div style="display:flex;gap:10px;padding:.75rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem">
-          <span style="flex:1">
-            <div style="font-weight:600;font-size:.9rem">${f.name}</div>
-            <div style="font-size:.75rem;color:var(--tx3)">${(f.size / 1024).toFixed(1)} KB · ${new Date(f.uploadedAt).toLocaleDateString()}</div>
-          </span>
-          <button class="btn btn-gn btn-sm" onclick="downloadExternalFileFromSavedDocs('${wo}','${config.doc}',${idx})">⬇ Download</button>
-        </div>
-      `).join('');
-      job.savedDocs[config.doc].html = filesList || 'No files';
+      job.savedDocs[config.doc].html = `Multiple files uploaded: ${job[config.stage].length} files`;
       job.savedDocs[config.doc].savedAt = new Date().toISOString();
       
       filesRead++;
@@ -1652,27 +1644,6 @@ function downloadExternalFile(wo, externalRole, fileIndex) {
   link.href = file.data;
   link.download = file.name;
   link.click();
-}
-
-/**
- * Download file from savedDocs array (GIS, Linesman documents)
- */
-function downloadExternalFileFromSavedDocs(wo, docType, fileIndex) {
-  const job = DB.jobs[wo];
-  if (!job || !job.savedDocs || !job.savedDocs[docType]) return;
-  
-  const saved = job.savedDocs[docType];
-  if (!saved.files || !saved.files[fileIndex]) {
-    toast('File not found', 'am');
-    return;
-  }
-  
-  const file = saved.files[fileIndex];
-  const link = document.createElement('a');
-  link.href = file.data;
-  link.download = file.name;
-  link.click();
-  toast('⬇ Downloaded: ' + file.name, 'gn');
 }
 
 /**
@@ -3237,60 +3208,37 @@ ${innerHtml}
 </body></html>`;
 }
 
-/* Generate PDF using html2pdf library — renders HTML correctly, instant download */
-async function generatePDFFromServer(innerHtml, title) {
-  try {
-    toast('⏳ Generating PDF...', 'bl');
-    
-    // Create temporary container with the HTML
-    const container = document.createElement('div');
-    container.innerHTML = innerHtml;
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '-9999px';
-    container.style.width = '900px';
-    container.style.backgroundColor = '#fff';
-    document.body.appendChild(container);
-    
-    // Wait for images to load
-    await new Promise(r => setTimeout(r, 300));
-    
-    // Use html2pdf to generate PDF
-    const opt = {
-      margin: 10,
-      filename: (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-    };
-    
-    await html2pdf().set(opt).from(container).save();
-    
-    // Clean up
-    document.body.removeChild(container);
-    toast('✅ PDF downloaded: ' + opt.filename, 'gn');
-  } catch (err) {
-    console.error('PDF generation failed:', err);
-    toast('❌ PDF generation failed: ' + err.message, 'rd');
-  }
+/* MAIN PDF / Print function.
+   Opens the document in a clean popup and triggers print (Print → Save as PDF).
+   This is more reliable than any canvas-screenshot approach. */
+function openPrintWindow(innerHtml, title){
+  const html=buildPrintableHTML(innerHtml, title);
+  const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
+  if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+  // Small delay lets images/fonts settle before print dialog opens
+  w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
+  // Fallback if onload already fired
+  setTimeout(()=>{ try{ if(!w.closed){ w.focus(); w.print(); } }catch(e){} },1200);
+  toast('Print window opened — choose "Save as PDF" in the print dialog','gn');
 }
 
-/* Download a saved doc — server-side PDF generation */
+/* Download a saved doc — opens print window so user saves as PDF */
 function downloadSavedDoc(wo, docType){
   const job=DB.jobs[wo];
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
   if(!saved){ toast('Not saved yet — click 💾 Save & Attach first','am'); return; }
   const title=(docType.replace(/_/g,' '))+' · WO '+wo;
-  generatePDFFromServer(saved.html, title);
+  openPrintWindow(saved.html, title);
 }
 
-/* Download the currently-open modal document — server-side PDF generation */
+/* Download the currently-open modal document — opens print window */
 function downloadDocAsPDF(wo, docType){
   const body=document.getElementById('docModalBody');
   if(!body){ toast('No document open','am'); return; }
   const innerHtml=serializeToHTML(body);
   const title=document.getElementById('docModalTitle')?.textContent||docType;
-  generatePDFFromServer(innerHtml, title);
+  openPrintWindow(innerHtml, title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -3520,12 +3468,13 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
 /* ═══════════════════════════════════════
    PRINT
 ═══════════════════════════════════════ */
-function downloadModal(){
+function printModal(){
+  // Delegate to the unified print/PDF function which uses the clean popup approach
   const body=document.getElementById('docModalBody');
   if(!body) return;
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
-  generatePDFFromServer(innerHtml, title);
+  openPrintWindow(innerHtml, title);
 }
 
 /* ═══════════════════════════════════════
