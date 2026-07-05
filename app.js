@@ -826,7 +826,7 @@ function renderMDDash(){
   el.style.display='block';
   const jobs=Object.values(DB.jobs);
   const completed =jobs.filter(j=>j.stage==='job_complete');
-  const claimReady=jobs.filter(j=>j.stage==='gis_complete'||j.stage==='claim_docs_ready');
+  const claimReady=jobs.filter(j=>j.claimRef);
   const inProgress=jobs.filter(j=>!['job_complete','gis_complete','claim_docs_ready'].includes(j.stage));
   const financeDocTypes=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   const batchDocCount=claimReady.reduce((total,j)=>total+financeDocTypes.filter(dt=>j.savedDocs&&j.savedDocs[dt]).length,0);
@@ -1350,8 +1350,7 @@ function renderJobDetail(wo){
         <span class="badge ${statusBadge}">${statusText}</span>
       </div>
       <div class="doc-card-btns">
-        ${canView?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View / Print</button>`:''}
-        ${saved?`<button class="btn btn-bl btn-sm" onclick="downloadSavedDoc('${wo}','${d}')">⬇ Download</button>`:''}
+        ${canView?`<button class="btn btn-bl btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View & Download</button>`:''}
         ${scan?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ Signed</button>`:''}
         ${CU!=='md'&&scan?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
         ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 ${scan?'Replace':'Upload'}<input type="file" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
@@ -1447,7 +1446,7 @@ function buildDocFoot(docType,job){
   const wo=job?job.wo:'';
   const isMDView=CU==='md';
   // Print button — opens same clean popup
-  let btns=`<button class="btn btn-gn btn-sm" onclick="downloadJobDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</button>`;
+  let btns=`<button class="btn btn-print btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>`;
 
   if(wo){
     if(job&&job.scans&&job.scans[docType]){
@@ -1554,7 +1553,7 @@ async function handleExternalUpload(wo, externalRole, files) {
       // Add to savedDocs files array
       if (!job.savedDocs[config.doc].files) job.savedDocs[config.doc].files = [];
       job.savedDocs[config.doc].files.push(fileData);
-      job.savedDocs[config.doc].html = `Files: ${job[config.stage].map(f => f.name).join(', ')}`;
+      job.savedDocs[config.doc].html = `Multiple files uploaded: ${job[config.stage].length} files`;
       job.savedDocs[config.doc].savedAt = new Date().toISOString();
       
       filesRead++;
@@ -2070,7 +2069,7 @@ function viewBatchDoc(certNo,docType){
         ${nextDoc?`<button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','${nextDoc}')">${docTitleShort[nextDoc]} →</button>`:'<span style="width:80px"></span>'}
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn btn-gn btn-sm" onclick="downloadBatchDocAsPDF('${certNo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</button>
+        <button class="btn btn-bl btn-sm" onclick="downloadModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download PDF</button>
         ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Attach</button>`:''}
         ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload / Replace<input type="file" accept="image/*,application/pdf" onchange="handleBatchScan('${certNo}','${docType}',this)" style="display:none"></label>`:''}
         ${(DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType])?`<button class="btn btn-gn btn-sm" onclick="downloadBatchScan('${certNo}','${docType}')">⬇ Signed</button>`:''}
@@ -3208,106 +3207,76 @@ ${innerHtml}
 </body></html>`;
 }
 
-/* MAIN PDF / Print function.
-   Opens the document in a clean popup and triggers print (Print → Save as PDF).
-   This is more reliable than any canvas-screenshot approach. */
-function openPrintWindow(innerHtml, title){
-  // Using html2pdf.js to generate and download PDF
-  const element = document.createElement('div');
-  element.innerHTML = innerHtml;
-  element.style.padding = '20px';
-  element.style.fontFamily = 'Arial, sans-serif';
-  element.style.fontSize = '12px';
-  element.style.lineHeight = '1.5';
-  
-  const opt = {
-    margin: 10,
-    filename: `${title.replace(/\s+/g,'_')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-  };
-  
-  html2pdf().set(opt).from(element).save();
-  toast('✅ PDF downloaded','gn');
+/* Generate PDF using html2pdf — use actual DOM element to preserve all CSS styling */
+async function generatePDFFromServer(innerHtml, title) {
+  try {
+    if(!innerHtml || !innerHtml.trim()){
+      toast('❌ Document content is empty','rd');
+      return;
+    }
+    
+    toast('⏳ Generating PDF...', 'bl');
+    
+    // Create temporary container with content
+    const container = document.createElement('div');
+    container.innerHTML = innerHtml;
+    container.style.position = 'fixed';
+    container.style.left = '-10000px';
+    container.style.top = '-10000px';
+    container.style.width = '900px';
+    container.style.zIndex = '-1';
+    document.body.appendChild(container);
+    
+    // Wait for rendering
+    await new Promise(r => setTimeout(r, 1000));
+    
+    // Use html2pdf on the actual element
+    const opt = {
+      margin: 5,
+      filename: (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false,
+        allowTaint: true
+      },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+    
+    await html2pdf().set(opt).from(container).save();
+    
+    // Remove container
+    document.body.removeChild(container);
+    
+    toast('✅ PDF downloaded: ' + opt.filename, 'gn');
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+    try {
+      const container = document.body.querySelector('div[style*="left: -10000px"]');
+      if(container) document.body.removeChild(container);
+    } catch(e){}
+    toast('❌ PDF generation failed: ' + err.message, 'rd');
+  }
 }
 
-/* Download a saved doc — downloads as HTML file */
+/* Download a saved doc — PDF generation with CSS styling */
 function downloadSavedDoc(wo, docType){
   const job=DB.jobs[wo];
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
   if(!saved){ toast('Not saved yet — click 💾 Save & Attach first','am'); return; }
   const title=(docType.replace(/_/g,' '))+' · WO '+wo;
-  
-  const element=document.createElement('div');
-  element.innerHTML=saved.html;
-  element.style.padding='20px';
-  element.style.fontFamily='Arial, sans-serif';
-  element.style.fontSize='12px';
-  element.style.lineHeight='1.5';
-  
-  const opt={
-    margin: 10,
-    filename: `${title.replace(/\s+/g,'_')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-  };
-  
-  html2pdf().set(opt).from(element).save();
-  toast('✅ PDF downloaded','gn');
+  generatePDFFromServer(saved.html, title);
 }
 
-/* Download the currently-open modal document — opens print window */
-function downloadJobDocAsPDF(wo, docType){
+/* Download the currently-open modal document — PDF generation with CSS */
+function downloadDocAsPDF(wo, docType){
   const body=document.getElementById('docModalBody');
-  if(!body){ toast('No document open','am'); return; }
+  if(!body||!body.innerHTML.trim()){ toast('Document empty — try opening it first','am'); return; }
+  const innerHtml=serializeToHTML(body);
+  if(!innerHtml.trim()){ toast('Could not capture document content','rd'); return; }
   const title=document.getElementById('docModalTitle')?.textContent||docType;
-  
-  const element=document.createElement('div');
-  element.innerHTML=body.innerHTML;
-  element.style.padding='20px';
-  element.style.fontFamily='Arial, sans-serif';
-  element.style.fontSize='12px';
-  element.style.lineHeight='1.5';
-  
-  const opt={
-    margin: 10,
-    filename: `${title.replace(/\s+/g,'_')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-  };
-  
-  html2pdf().set(opt).from(element).save();
-  toast('✅ PDF downloaded','gn');
-}
-
-/**
- * Download batch document as HTML file
- */
-function downloadBatchDocAsPDF(certNo, docType){
-  const body=document.getElementById('docModalBody');
-  if(!body){ toast('No document open','am'); return; }
-  const title=document.getElementById('docModalTitle')?.textContent||docType;
-  
-  const element=document.createElement('div');
-  element.innerHTML=body.innerHTML;
-  element.style.padding='20px';
-  element.style.fontFamily='Arial, sans-serif';
-  element.style.fontSize='12px';
-  element.style.lineHeight='1.5';
-  
-  const opt={
-    margin: 10,
-    filename: `${certNo}_${title.replace(/\s+/g,'_')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-  };
-  
-  html2pdf().set(opt).from(element).save();
-  toast('✅ PDF downloaded','gn');
+  generatePDFFromServer(innerHtml, title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -3537,7 +3506,14 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
 /* ═══════════════════════════════════════
    PRINT
 ═══════════════════════════════════════ */
-
+function downloadModal(){
+  const body=document.getElementById('docModalBody');
+  if(!body||!body.innerHTML.trim()){ toast('Document empty — try opening it first','am'); return; }
+  const title=document.getElementById('docModalTitle')?.textContent||'Document';
+  const innerHtml=serializeToHTML(body);
+  if(!innerHtml.trim()){ toast('Could not capture document content','rd'); return; }
+  generatePDFFromServer(innerHtml, title);
+}
 
 /* ═══════════════════════════════════════
    MODALS
