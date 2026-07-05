@@ -3207,7 +3207,7 @@ ${innerHtml}
 </body></html>`;
 }
 
-/* Generate PDF using html2pdf — use actual DOM element to preserve all CSS styling */
+/* Generate PDF using html2pdf on the actual modal content */
 async function generatePDFFromServer(innerHtml, title) {
   try {
     if(!innerHtml || !innerHtml.trim()){
@@ -3217,66 +3217,52 @@ async function generatePDFFromServer(innerHtml, title) {
     
     toast('⏳ Generating PDF...', 'bl');
     
-    // Create temporary container with content
+    // Create temporary element off-screen
     const container = document.createElement('div');
     container.innerHTML = innerHtml;
     container.style.position = 'fixed';
     container.style.left = '-10000px';
     container.style.top = '-10000px';
     container.style.width = '900px';
-    container.style.zIndex = '-1';
+    container.style.visibility = 'hidden';
     document.body.appendChild(container);
     
     // Wait for rendering
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1200));
     
-    // Use html2pdf on the actual element
+    // Generate PDF
     const opt = {
       margin: 5,
       filename: (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf',
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false,
-        allowTaint: true
-      },
+      html2canvas: { scale: 2, useCORS: true, logging: false, allowTaint: true },
       jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
     };
     
     await html2pdf().set(opt).from(container).save();
     
-    // Remove container
+    // Cleanup
     document.body.removeChild(container);
-    
     toast('✅ PDF downloaded: ' + opt.filename, 'gn');
   } catch (err) {
-    console.error('PDF generation failed:', err);
+    console.error('PDF error:', err);
     try {
-      const container = document.body.querySelector('div[style*="left: -10000px"]');
-      if(container) document.body.removeChild(container);
+      const c = document.body.querySelector('div[style*="left: -10000px"]');
+      if(c) document.body.removeChild(c);
     } catch(e){}
-    toast('❌ PDF generation failed: ' + err.message, 'rd');
+    toast('❌ Download failed: ' + err.message, 'rd');
   }
 }
 
-/* Download a saved doc — PDF generation with CSS styling */
+/* Download a saved doc — open modal to display then download */
 function downloadSavedDoc(wo, docType){
-  const job=DB.jobs[wo];
-  const saved=job&&job.savedDocs&&job.savedDocs[docType];
-  if(!saved){ toast('Not saved yet — click 💾 Save & Attach first','am'); return; }
-  const title=(docType.replace(/_/g,' '))+' · WO '+wo;
-  generatePDFFromServer(saved.html, title);
+  // Instead of downloading directly, open the modal which has the Download button
+  openDocForAction(wo, docType);
 }
 
-/* Download the currently-open modal document — PDF generation with CSS */
+/* Download document in modal — use downloadModal which works */
 function downloadDocAsPDF(wo, docType){
-  const body=document.getElementById('docModalBody');
-  if(!body||!body.innerHTML.trim()){ toast('Document empty — try opening it first','am'); return; }
-  const innerHtml=serializeToHTML(body);
-  if(!innerHtml.trim()){ toast('Could not capture document content','rd'); return; }
-  const title=document.getElementById('docModalTitle')?.textContent||docType;
-  generatePDFFromServer(innerHtml, title);
+  downloadModal();
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -3508,10 +3494,16 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
 ═══════════════════════════════════════ */
 function downloadModal(){
   const body=document.getElementById('docModalBody');
-  if(!body||!body.innerHTML.trim()){ toast('Document empty — try opening it first','am'); return; }
+  if(!body||!body.innerHTML.trim()){ 
+    toast('Document not loaded — please open it first','am'); 
+    return; 
+  }
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
-  if(!innerHtml.trim()){ toast('Could not capture document content','rd'); return; }
+  if(!innerHtml.trim()){ 
+    toast('Could not capture document','rd'); 
+    return; 
+  }
   generatePDFFromServer(innerHtml, title);
 }
 
