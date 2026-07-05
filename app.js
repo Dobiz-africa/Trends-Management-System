@@ -3242,19 +3242,34 @@ async function generatePDFFromServer(innerHtml, title) {
   try {
     toast('⏳ Generating PDF...', 'bl');
     
-    // Build the complete HTML document (same as print version)
-    const html = buildPrintableHTML(innerHtml, title);
+    // Create a temporary div with the content
+    const element = document.createElement('div');
+    element.innerHTML = innerHtml;
+    element.style.padding = '20px';
+    element.style.backgroundColor = '#fff';
+    element.style.fontFamily = 'Arial, sans-serif';
+    element.style.fontSize = '12px';
+    
+    // Add to body temporarily (html2pdf needs it in DOM)
+    document.body.appendChild(element);
+    
+    // Small delay to ensure rendering
+    await new Promise(r => setTimeout(r, 200));
     
     // Use html2pdf to generate PDF
     const opt = {
-      margin: 8,
+      margin: [10, 10, 15, 10], // top, left, bottom, right
       filename: (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
       jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
     };
     
-    await html2pdf().set(opt).from(html).save();
+    await html2pdf().set(opt).from(element).save();
+    
+    // Remove element from DOM
+    document.body.removeChild(element);
+    
     toast('✅ PDF downloaded: ' + opt.filename, 'gn');
   } catch (err) {
     console.error('PDF generation failed:', err);
