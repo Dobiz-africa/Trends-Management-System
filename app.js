@@ -3208,37 +3208,79 @@ ${innerHtml}
 </body></html>`;
 }
 
-/* MAIN PDF / Print function.
-   Opens the document in a clean popup and triggers print (Print → Save as PDF).
-   This is more reliable than any canvas-screenshot approach. */
-function openPrintWindow(innerHtml, title){
-  const html=buildPrintableHTML(innerHtml, title);
-  const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
-  if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
-  // Small delay lets images/fonts settle before print dialog opens
-  w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
-  // Fallback if onload already fired
-  setTimeout(()=>{ try{ if(!w.closed){ w.focus(); w.print(); } }catch(e){} },1200);
-  toast('Print window opened — choose "Save as PDF" in the print dialog','gn');
+/* Generate PDF using html2pdf with DOC_PRINT_CSS styling — renders perfectly */
+async function generatePDFFromServer(innerHtml, title) {
+  try {
+    toast('⏳ Generating PDF...', 'bl');
+    
+    // Create a wrapper with CSS and content
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <style>${DOC_PRINT_CSS}</style>
+      <div class="paper">${innerHtml}</div>
+    `;
+    
+    // Set wrapper styles
+    wrapper.style.padding = '0';
+    wrapper.style.backgroundColor = '#fff';
+    wrapper.style.color = '#000';
+    wrapper.style.position = 'static';
+    wrapper.style.visibility = 'visible';
+    wrapper.style.display = 'block';
+    
+    // Add to body temporarily
+    document.body.appendChild(wrapper);
+    
+    // Wait for rendering
+    await new Promise(r => setTimeout(r, 800));
+    
+    // Use html2pdf to generate PDF
+    const opt = {
+      margin: [8, 8, 10, 8],
+      filename: (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false,
+        backgroundColor: '#fff',
+        allowTaint: true
+      },
+      jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+    };
+    
+    await html2pdf().set(opt).from(wrapper).save();
+    
+    // Remove wrapper from DOM
+    document.body.removeChild(wrapper);
+    
+    toast('✅ PDF downloaded: ' + opt.filename, 'gn');
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+    try {
+      const wrapper = document.body.querySelector('div[style*="position: static"]');
+      if(wrapper) document.body.removeChild(wrapper);
+    } catch(e){}
+    toast('❌ PDF generation failed: ' + err.message, 'rd');
+  }
 }
 
-/* Download a saved doc — opens print window so user saves as PDF */
+/* Download a saved doc — PDF generation with CSS styling */
 function downloadSavedDoc(wo, docType){
   const job=DB.jobs[wo];
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
   if(!saved){ toast('Not saved yet — click 💾 Save & Attach first','am'); return; }
   const title=(docType.replace(/_/g,' '))+' · WO '+wo;
-  openPrintWindow(saved.html, title);
+  generatePDFFromServer(saved.html, title);
 }
 
-/* Download the currently-open modal document — opens print window */
+/* Download the currently-open modal document — PDF generation with CSS */
 function downloadDocAsPDF(wo, docType){
   const body=document.getElementById('docModalBody');
   if(!body){ toast('No document open','am'); return; }
   const innerHtml=serializeToHTML(body);
   const title=document.getElementById('docModalTitle')?.textContent||docType;
-  openPrintWindow(innerHtml, title);
+  generatePDFFromServer(innerHtml, title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -3468,13 +3510,12 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
 /* ═══════════════════════════════════════
    PRINT
 ═══════════════════════════════════════ */
-function printModal(){
-  // Delegate to the unified print/PDF function which uses the clean popup approach
+function downloadModal(){
   const body=document.getElementById('docModalBody');
   if(!body) return;
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
-  openPrintWindow(innerHtml, title);
+  generatePDFFromServer(innerHtml, title);
 }
 
 /* ═══════════════════════════════════════
