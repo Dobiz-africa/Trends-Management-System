@@ -3210,6 +3210,11 @@ ${innerHtml}
 /* Generate PDF using html2pdf with DOC_PRINT_CSS styling — renders perfectly */
 async function generatePDFFromServer(innerHtml, title) {
   try {
+    if(!innerHtml || !innerHtml.trim()){
+      toast('❌ Document content is empty','rd');
+      return;
+    }
+    
     toast('⏳ Generating PDF...', 'bl');
     
     // Create a wrapper with CSS and content
@@ -3276,8 +3281,9 @@ function downloadSavedDoc(wo, docType){
 /* Download the currently-open modal document — PDF generation with CSS */
 function downloadDocAsPDF(wo, docType){
   const body=document.getElementById('docModalBody');
-  if(!body){ toast('No document open','am'); return; }
+  if(!body||!body.innerHTML.trim()){ toast('Document empty — try opening it first','am'); return; }
   const innerHtml=serializeToHTML(body);
+  if(!innerHtml.trim()){ toast('Could not capture document content','rd'); return; }
   const title=document.getElementById('docModalTitle')?.textContent||docType;
   generatePDFFromServer(innerHtml, title);
 }
@@ -3511,9 +3517,10 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
 ═══════════════════════════════════════ */
 function downloadModal(){
   const body=document.getElementById('docModalBody');
-  if(!body) return;
+  if(!body||!body.innerHTML.trim()){ toast('Document empty — try opening it first','am'); return; }
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
+  if(!innerHtml.trim()){ toast('Could not capture document content','rd'); return; }
   generatePDFFromServer(innerHtml, title);
 }
 
