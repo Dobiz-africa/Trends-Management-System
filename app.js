@@ -2099,7 +2099,7 @@ function viewBatchDoc(certNo,docType){
         ${nextDoc?`<button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','${nextDoc}')">${docTitleShort[nextDoc]} →</button>`:'<span style="width:80px"></span>'}
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>
+        <button class="btn btn-bl btn-sm" onclick="downloadModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download PDF</button>
         ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Attach</button>`:''}
         ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload / Replace<input type="file" accept="image/*,application/pdf" onchange="handleBatchScan('${certNo}','${docType}',this)" style="display:none"></label>`:''}
         ${(DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType])?`<button class="btn btn-gn btn-sm" onclick="downloadBatchScan('${certNo}','${docType}')">⬇ Signed</button>`:''}
@@ -3245,23 +3245,49 @@ async function generatePDFFromServer(innerHtml, title) {
     // Create a temporary div with the content
     const element = document.createElement('div');
     element.innerHTML = innerHtml;
+    
+    // Set styles to ensure visibility
     element.style.padding = '20px';
     element.style.backgroundColor = '#fff';
     element.style.fontFamily = 'Arial, sans-serif';
     element.style.fontSize = '12px';
+    element.style.lineHeight = '1.6';
+    element.style.color = '#000';
+    element.style.position = 'static';
+    element.style.visibility = 'visible';
+    element.style.display = 'block';
+    
+    // Remove any problematic styles from child elements
+    const removeInlineStyles = (el) => {
+      Array.from(el.querySelectorAll('*')).forEach(child => {
+        if(child.style.position === 'fixed' || child.style.position === 'absolute') {
+          child.style.position = 'relative';
+        }
+        if(child.style.display === 'none') {
+          child.style.display = 'block';
+        }
+      });
+    };
+    removeInlineStyles(element);
     
     // Add to body temporarily (html2pdf needs it in DOM)
     document.body.appendChild(element);
     
-    // Small delay to ensure rendering
-    await new Promise(r => setTimeout(r, 200));
+    // Wait for rendering
+    await new Promise(r => setTimeout(r, 500));
     
     // Use html2pdf to generate PDF
     const opt = {
-      margin: [10, 10, 15, 10], // top, left, bottom, right
+      margin: [10, 10, 15, 10],
       filename: (title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim()) + '.pdf',
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false,
+        backgroundColor: '#fff',
+        allowTaint: true
+      },
       jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
     };
     
@@ -3273,6 +3299,9 @@ async function generatePDFFromServer(innerHtml, title) {
     toast('✅ PDF downloaded: ' + opt.filename, 'gn');
   } catch (err) {
     console.error('PDF generation failed:', err);
+    // Try to remove element if it still exists
+    const el = document.body.querySelector('[style*="padding: 20px"]');
+    if(el) try { document.body.removeChild(el); } catch(e){}
     toast('❌ PDF generation failed: ' + err.message, 'rd');
   }
 }
