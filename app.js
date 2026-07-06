@@ -1447,7 +1447,7 @@ function buildDocFoot(docType,job){
   const wo=job?job.wo:'';
   const isMDView=CU==='md';
   // Print button — opens same clean popup
-  let btns=`<button class="btn btn-gn btn-sm" onclick="downloadJobDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</button>`;
+  let btns=`<button class="btn btn-print btn-sm" onclick="downloadDocAsPDF('${wo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>`;
 
   if(wo){
     if(job&&job.scans&&job.scans[docType]){
@@ -1554,7 +1554,7 @@ async function handleExternalUpload(wo, externalRole, files) {
       // Add to savedDocs files array
       if (!job.savedDocs[config.doc].files) job.savedDocs[config.doc].files = [];
       job.savedDocs[config.doc].files.push(fileData);
-      job.savedDocs[config.doc].html = `Files: ${job[config.stage].map(f => f.name).join(', ')}`;
+      job.savedDocs[config.doc].html = `Multiple files uploaded: ${job[config.stage].length} files`;
       job.savedDocs[config.doc].savedAt = new Date().toISOString();
       
       filesRead++;
@@ -2070,7 +2070,7 @@ function viewBatchDoc(certNo,docType){
         ${nextDoc?`<button class="btn btn-am btn-sm" onclick="viewBatchDoc('${certNo}','${nextDoc}')">${docTitleShort[nextDoc]} →</button>`:'<span style="width:80px"></span>'}
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn btn-gn btn-sm" onclick="downloadBatchDocAsPDF('${certNo}','${docType}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</button>
+        <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>
         ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Attach</button>`:''}
         ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload / Replace<input type="file" accept="image/*,application/pdf" onchange="handleBatchScan('${certNo}','${docType}',this)" style="display:none"></label>`:''}
         ${(DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType])?`<button class="btn btn-gn btn-sm" onclick="downloadBatchScan('${certNo}','${docType}')">⬇ Signed</button>`:''}
@@ -3212,15 +3212,15 @@ ${innerHtml}
    Opens the document in a clean popup and triggers print (Print → Save as PDF).
    This is more reliable than any canvas-screenshot approach. */
 function openPrintWindow(innerHtml, title){
-  // Using html2pdf.js to generate and download PDF
-  const element = document.createElement('div');
-  element.innerHTML = innerHtml;
-  element.style.padding = '20px';
-  element.style.fontFamily = 'Arial, sans-serif';
-  element.style.fontSize = '12px';
-  element.style.lineHeight = '1.5';
+  // Use html2pdf.js to generate PDF directly
+  const element=document.createElement('div');
+  element.innerHTML=innerHtml;
+  element.style.padding='20px';
+  element.style.fontFamily='Arial, sans-serif';
+  element.style.fontSize='12px';
+  element.style.lineHeight='1.5';
   
-  const opt = {
+  const opt={
     margin: 10,
     filename: `${title.replace(/\s+/g,'_')}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
@@ -3232,29 +3232,22 @@ function openPrintWindow(innerHtml, title){
   toast('✅ PDF downloaded','gn');
 }
 
-/* Download a saved doc — downloads as HTML file */
+/* Download a saved doc — opens print window so user saves as PDF */
 function downloadSavedDoc(wo, docType){
   const job=DB.jobs[wo];
   if(!job){ toast('Job not found','rd'); return; }
   
-  let saved=job.savedDocs&&job.savedDocs[docType];
-  
-  // If saved exists but is empty, try to rebuild
-  if(!saved || !saved.html || saved.html.trim().length === 0){
-    // Try to rebuild from job data
-    const rebuiltHtml = buildDoc(docType, job);
-    if(rebuiltHtml && rebuiltHtml.trim().length > 0){
-      saved = { html: rebuiltHtml };
-    } else {
-      toast('Document is empty — cannot download','rd');
-      return;
-    }
+  // Don't use the placeholder HTML - regenerate the real document
+  const html=buildDoc(docType, job);
+  if(!html || html.trim().length === 0){
+    toast('Cannot generate document','rd');
+    return;
   }
   
   const title=(docType.replace(/_/g,' '))+' · WO '+wo;
   
   const element=document.createElement('div');
-  element.innerHTML=saved.html;
+  element.innerHTML=html;
   element.style.padding='20px';
   element.style.fontFamily='Arial, sans-serif';
   element.style.fontSize='12px';
@@ -3273,107 +3266,12 @@ function downloadSavedDoc(wo, docType){
 }
 
 /* Download the currently-open modal document — opens print window */
-function downloadJobDocAsPDF(wo, docType){
-  let html='';
-  
-  // Method 1: Try to get from docModalBody (Timeline section method)
+function downloadDocAsPDF(wo, docType){
   const body=document.getElementById('docModalBody');
-  if(body && body.innerHTML && body.innerHTML.trim().length > 0){
-    html = body.innerHTML;
-  } else {
-    // Method 2: Regenerate from job data (Documents section fallback)
-    const job = DB.jobs[wo];
-    if(!job){
-      toast('Job not found','rd');
-      return;
-    }
-    
-    // First try savedDocs
-    if(job.savedDocs && job.savedDocs[docType] && job.savedDocs[docType].html){
-      html = job.savedDocs[docType].html;
-    } else {
-      // Last resort: rebuild from scratch
-      html = buildDoc(docType, job);
-    }
-  }
-  
-  if(!html || html.trim().length === 0){
-    toast('Document is empty','rd');
-    return;
-  }
-  
-  const title = document.getElementById('docModalTitle')?.textContent || docType;
-  
-  const element=document.createElement('div');
-  element.innerHTML=html;
-  element.style.padding='20px';
-  element.style.fontFamily='Arial, sans-serif';
-  element.style.fontSize='12px';
-  element.style.lineHeight='1.5';
-  
-  const opt={
-    margin: 10,
-    filename: `${title.replace(/\s+/g,'_')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-  };
-  
-  html2pdf().set(opt).from(element).save();
-  toast('✅ PDF downloaded','gn');
-}
-
-/**
- * Download batch document as HTML file
- */
-function downloadBatchDocAsPDF(certNo, docType){
-  let html='';
-  
-  // Method 1: Try to get from docModalBody
-  const body=document.getElementById('docModalBody');
-  if(body && body.innerHTML && body.innerHTML.trim().length > 0){
-    html = body.innerHTML;
-  } else {
-    // Method 2: Regenerate from batch data
-    // Find any job in this batch that has the document saved
-    const batchJob = Object.values(DB.jobs).find(j => j.claimRef === certNo && j.savedDocs && j.savedDocs[docType] && j.savedDocs[docType].html);
-    
-    if(batchJob && batchJob.savedDocs[docType].html){
-      html = batchJob.savedDocs[docType].html;
-    } else if(DB.batchDocs && DB.batchDocs[certNo]){
-      // Try to get from batchDocs
-      const bmap = {annexure:'annexure', payment_cert:'paymentCert', invoice:'invoice', list_of_jobs:'listOfJobs', bpc_spreadsheet:'bpcSpreadsheet'};
-      const bkey = bmap[docType];
-      if(bkey && DB.batchDocs[certNo][bkey]){
-        html = DB.batchDocs[certNo][bkey];
-      }
-    }
-  }
-  
-  if(!html || html.trim().length === 0){
-    toast('Document is empty - please generate or save it first','rd');
-    return;
-  }
-  
+  if(!body){ toast('No document open','am'); return; }
+  const innerHtml=serializeToHTML(body);
   const title=document.getElementById('docModalTitle')?.textContent||docType;
-  
-  const element=document.createElement('div');
-  element.innerHTML=html;
-  element.style.padding='20px';
-  element.style.fontFamily='Arial, sans-serif';
-  element.style.fontSize='12px';
-  element.style.lineHeight='1.5';
-  
-  const opt={
-    margin: 10,
-    filename: `${certNo}_${title.replace(/\s+/g,'_')}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-  };
-  
-  html2pdf().set(opt).from(element).save();
-  toast('✅ PDF downloaded','gn');
+  openPrintWindow(innerHtml, title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -3603,7 +3501,14 @@ function acK(e,wo,dt,idx){if(e.key==='Escape')acC(`acd-${dt}-${wo}-${idx}`);}
 /* ═══════════════════════════════════════
    PRINT
 ═══════════════════════════════════════ */
-
+function printModal(){
+  // Delegate to the unified print/PDF function which uses the clean popup approach
+  const body=document.getElementById('docModalBody');
+  if(!body) return;
+  const title=document.getElementById('docModalTitle')?.textContent||'Document';
+  const innerHtml=serializeToHTML(body);
+  openPrintWindow(innerHtml, title);
+}
 
 /* ═══════════════════════════════════════
    MODALS
