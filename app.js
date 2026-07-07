@@ -64,7 +64,7 @@ const LINESMAN_DOCS = [
   { id: 'e22', label: 'LV ABC & Service Connection Inspection Checklist (E22)', short:'E22 Checklist', icon: '✓' },
   { id: 'e23', label: 'LV Cables Commissioning Test Sheet (E23)', short:'E23 Test Sheet', icon: '🔌' },
   { id: 'drawing', label: 'As Built Drawing', short:'As-Built Drawing', icon: '📐' },
-  { id: 'cert', label: 'Installation Inspection Certificate', short:'Inspection Certificate', icon: '🎓' }
+  { id: 'cert', label: 'Installation Inspection Certificate', short:'Inspection Certificate', icon: '✒' }
 ];
 // Derived helpers: each linesman document lives in job.scans under key 'ln_<id>',
 // reusing the exact same signed-scan storage/view/download mechanism used by
