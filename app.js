@@ -59,12 +59,12 @@ const CO = {
 const BPC_CO = { name:'BOTSWANA POWER CORPORATION', addr:'Motlakase House, Macheng Way', po:'P.O. Box 48', city:'GABORONE', tel:'3607000' };
 
 const LINESMAN_DOCS = [
-  { id: 'handover', label: 'Handover Form', short:'Handover Form' },
-  { id: 'e21', label: 'LV ABC & Service Connection Commissioning Test Sheet (E21)', short:'E21 Test Sheet' },
-  { id: 'e22', label: 'LV ABC & Service Connection Inspection Checklist (E22)', short:'E22 Checklist' },
-  { id: 'e23', label: 'LV Cables Commissioning Test Sheet (E23)', short:'E23 Test Sheet' },
-  { id: 'drawing', label: 'As Built Drawing', short:'As-Built Drawing' },
-  { id: 'cert', label: 'Installation Inspection Certificate', short:'Inspection Certificate' }
+  { id: 'handover', label: 'Handover Form', short:'Handover Form', icon: '📋' },
+  { id: 'e21', label: 'LV ABC & Service Connection Commissioning Test Sheet (E21)', short:'E21 Test Sheet', icon: '⚡' },
+  { id: 'e22', label: 'LV ABC & Service Connection Inspection Checklist (E22)', short:'E22 Checklist', icon: '✓' },
+  { id: 'e23', label: 'LV Cables Commissioning Test Sheet (E23)', short:'E23 Test Sheet', icon: '🔌' },
+  { id: 'drawing', label: 'As Built Drawing', short:'As-Built Drawing', icon: '📐' },
+  { id: 'cert', label: 'Installation Inspection Certificate', short:'Inspection Certificate', icon: '🎓' }
 ];
 // Derived helpers: each linesman document lives in job.scans under key 'ln_<id>',
 // reusing the exact same signed-scan storage/view/download mechanism used by
