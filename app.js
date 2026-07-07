@@ -59,12 +59,12 @@ const CO = {
 const BPC_CO = { name:'BOTSWANA POWER CORPORATION', addr:'Motlakase House, Macheng Way', po:'P.O. Box 48', city:'GABORONE', tel:'3607000' };
 
 const LINESMAN_DOCS = [
-  { id: 'handover_form', label: 'Handover Form', icon: '📋' },
-  { id: 'e21_commissioning', label: 'LV ABC & Service Connection Commissioning Test Sheet (E21)', icon: '⚡' },
-  { id: 'e22_inspection', label: 'LV ABC & Service Connection Inspection Checklist (E22)', icon: '✓' },
-  { id: 'e23_cables', label: 'LV Cables Commissioning Test Sheet (E23)', icon: '🔌' },
-  { id: 'as_built_drawing', label: 'As Built Drawing', icon: '📐' },
-  { id: 'installation_cert', label: 'Installation Inspection Certificate', icon: '🎓' },
+  { id: 'handover', label: 'Handover Form', icon: '📋' },
+  { id: 'e21', label: 'LV ABC & Service Connection Commissioning Test Sheet (E21)', icon: '⚡' },
+  { id: 'e22', label: 'LV ABC & Service Connection Inspection Checklist (E22)', icon: '✓' },
+  { id: 'e23', label: 'LV Cables Commissioning Test Sheet (E23)', icon: '🔌' },
+  { id: 'drawing', label: 'As Built Drawing', icon: '📐' },
+  { id: 'cert', label: 'Installation Inspection Certificate', icon: '🎓' }
 ];
 
 /* ═══════════════════════════════════════
@@ -1738,14 +1738,14 @@ function notifyExternalRole(wo, role) {
   if (role === 'linesman') {
     job.stage = 'linesman_notified';
     job.actions['linesman_notified'] = { date: new Date().toISOString().slice(0,10), notes: '', extra: '' };
-    addLog(wo, 'Linesman notified — awaiting field document uploads');
+    addLog(wo, 'Linesman notified — awaiting field documents');
     
-    // NOTIFY LINESMAN IN-SYSTEM with action button
-    notify('linesman', `📋 WO ${wo} (${job.cust}): Please upload the 6 required field documents. Click the action button below to begin.`, wo);
+    // CREATE NOTIFICATION FOR LINESMAN
+    notify('linesman', `📋 WO ${wo} (${job.cust}): Please upload the 6 required field documents.`, wo);
     
-    // NOTIFY ADMIN/MD
-    notify(['md'], `Linesman notified in-system for WO ${wo} — ${job.cust}. Awaiting document uploads.`, wo);
-    toast('✅ Linesman notified in-system. They will upload documents from their dashboard.');
+    // NOTIFY ADMIN
+    notify(['md'], `Linesman notified for WO ${wo} — ${job.cust}. Awaiting field documents.`, wo);
+    toast('✅ Linesman notified. They will upload documents from their dashboard.');
   } else if (role === 'gis') {
     job.stage = 'gis_notified';
     job.actions['gis_notified'] = { date: new Date().toISOString().slice(0,10), notes: '', extra: '' };
@@ -3446,216 +3446,92 @@ function changeVO2Phase(wo,phase){
   toast('VO2 phase updated to Phase '+phase);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   LINESMAN DASHBOARD & UPLOAD WORKFLOW
-═══════════════════════════════════════════════════════════════════════════ */
-
+/* ═══════════════════════════════════════
+   LINESMAN DASHBOARD
+═══════════════════════════════════════ */
 function renderLinesmanDash(){
   const el=document.getElementById('dash-linesman');
   if(!el)return;
   el.style.display='block';
   
-  // Show linesman's notifications (only linesman role)
+  const notifEl=document.getElementById('linesmanNotifications');
   const myNotifs=(DB.notifs?.linesman||[]);
-  const inboxEl=document.getElementById('linesman-inbox');
-  
-  if(!inboxEl)return;
   
   if(myNotifs.length===0){
-    inboxEl.innerHTML='<div style="color:var(--tx3);text-align:center;padding:2rem;font-size:.9rem">No tasks yet. Admin will notify you here when you need to upload documents.</div>';
+    notifEl.innerHTML='<div style="color:var(--tx3);text-align:center;padding:2rem">No notifications yet</div>';
     return;
   }
   
   let html='';
   myNotifs.forEach(n=>{
-    const unread=!n.read;
-    const wo=n.wo||'';
-    html+=`<div style="padding:1rem;border-radius:6px;margin-bottom:1rem;border:1px solid var(--bd);${unread?'background-color:rgba(240,165,0,0.1);border-left:4px solid var(--am)':''}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
-        <div style="flex:1">
-          <div style="font-weight:600;color:var(--tx1);margin-bottom:.5rem">${escapeHtml(n.msg)}</div>
-          <div style="font-size:.8rem;color:var(--tx3)">${fdt(n.ts)}</div>
-        </div>
-        ${wo?`<button class="btn btn-am btn-sm" onclick="openLinesmanUploadModal('${wo}')">📤 Upload Documents</button>`:''}
-      </div>
+    html+=`<div style="padding:1rem;border:1px solid var(--bd);border-radius:4px;margin-bottom:.75rem;${!n.read?'background:rgba(240,165,0,0.1)':''}">
+      <div style="font-weight:500;color:var(--tx1)">${escapeHtml(n.msg)}</div>
+      <div style="font-size:.8rem;color:var(--tx3);margin-top:.25rem">${fdt(n.ts)}</div>
     </div>`;
   });
-  inboxEl.innerHTML=html;
+  notifEl.innerHTML=html;
 }
 
-function openLinesmanUploadModal(wo){
-  const modal=document.getElementById('linesmanUploadModal');
-  if(!modal)return;
+function openLinesmanUploadModal(){
+  const btnEl=document.getElementById('linesmanUploadButtons');
+  if(!btnEl)return;
   
-  // Store WO in modal for reference
-  modal.dataset.wo=wo;
-  
-  // Reset progress
-  if(!modal.dataset.uploaded){
-    modal.dataset.uploaded='[]';
-  }
-  const uploaded=JSON.parse(modal.dataset.uploaded||'[]');
-  
-  // Update title
-  document.getElementById('linesmanModalTitle').textContent=`Upload Documents for WO ${wo}`;
-  document.getElementById('linesmanModalDesc').textContent=`Upload all 6 required field documents for Work Order ${wo}`;
-  
-  // Generate upload buttons
-  const btnContainer=document.getElementById('linesmanUploadBtns');
   let html='';
   LINESMAN_DOCS.forEach(doc=>{
-    const isUploaded=uploaded.includes(doc.id);
-    const btnClass=isUploaded?'btn-gn':'btn-am';
-    const btnText=isUploaded?`✓ ${doc.label}`:`📤 ${doc.label}`;
-    html+=`<button class="btn ${btnClass} btn-sm" onclick="startLinesmanUpload('${wo}','${doc.id}')" style="text-align:left;font-size:.85rem;${isUploaded?'cursor:default;opacity:0.7':''}">
-      <div style="font-size:1.2rem;margin-bottom:.25rem">${doc.icon}</div>
-      <div style="word-wrap:break-word">${btnText}</div>
+    html+=`<button class="btn btn-am" onclick="selectLinesmanFile('${doc.id}')">
+      <div style="font-size:1.5rem;margin-bottom:.5rem">${doc.icon}</div>
+      <div style="word-break:break-word;font-size:.85rem">${escapeHtml(doc.label)}</div>
     </button>`;
   });
-  btnContainer.innerHTML=html;
+  btnEl.innerHTML=html;
   
-  // Update progress bar
-  updateLinesmanProgress(wo);
-  
-  // Show modal
   openModal('linesmanUploadModal');
 }
 
-function updateLinesmanProgress(wo){
-  const modal=document.getElementById('linesmanUploadModal');
-  if(!modal)return;
-  
-  // Count uploaded docs for this WO
-  const job=DB.jobs[wo];
-  if(!job||!job.linesmanDocs)return;
-  
-  const count=Object.keys(job.linesmanDocs||{}).length;
-  const total=6;
-  const pct=(count/total)*100;
-  
-  document.getElementById('linesmanProgCount').textContent=count;
-  document.getElementById('linesmanProgBar').style.width=pct+'%';
-  
-  // Show success message if all uploaded
-  const statusEl=document.getElementById('linesmanUploadStatus');
-  if(count===total){
-    statusEl.style.display='block';
-    document.getElementById('linesmanModalClose').textContent='✓ Close & Finish';
-  }else{
-    statusEl.style.display='none';
-    document.getElementById('linesmanModalClose').textContent='Close';
-  }
-}
-
-function startLinesmanUpload(wo, docType){
+function selectLinesmanFile(docId){
   const input=document.createElement('input');
   input.type='file';
   input.accept='*';
   input.onchange=async(e)=>{
     if(!e.target.files[0])return;
     const file=e.target.files[0];
-    await uploadLinesmanDoc(wo, docType, file);
+    await uploadLinesmanDoc(docId, file);
   };
   input.click();
 }
 
-async function uploadLinesmanDoc(wo, docType, file){
+async function uploadLinesmanDoc(docId, file){
   try{
-    const job=DB.jobs[wo];
-    if(!job){
-      toast(`Work Order ${wo} not found`,'rd');
-      return;
-    }
-    
-    toast(`⬆️ Uploading ${file.name}...`,'am');
+    toast('Uploading...','am');
     
     if(SB?.client){
-      // Upload to Supabase storage
-      const path=`claimdesk-linesman/${wo}/${docType}/${Date.now()}-${file.name}`;
+      const path=`linesman-docs/${docId}/${Date.now()}-${file.name}`;
       const {data,error}=await SB.client.storage.from('claimdesk-scans').upload(path,file);
-      
       if(error)throw error;
       
       const {data:publicUrl}=SB.client.storage.from('claimdesk-scans').getPublicUrl(path);
       
-      // Save document metadata to Supabase
+      // Save to documents table
       await SB.client.from('documents').insert([{
-        wo, doc_type:`linesman_${docType}`, is_signed:false, storage_path:path, filename:file.name, uploaded_role:'linesman'
+        wo:null,
+        doc_type:`linesman_${docId}`,
+        is_signed:false,
+        storage_path:path,
+        filename:file.name,
+        uploaded_role:'linesman'
       }]);
       
-      // Save to local DB
-      if(!job.linesmanDocs)job.linesmanDocs={};
-      job.linesmanDocs[docType]={
-        storagePath:path,
-        url:publicUrl.publicUrl,
-        filename:file.name,
-        uploadedAt:new Date().toISOString()
-      };
-      
-      saveDB();
-      
-      const docLabel=LINESMAN_DOCS.find(d=>d.id===docType)?.label||docType;
-      toast(`✓ ${docLabel} uploaded`,'gn');
-      
-      // Update modal progress
-      updateLinesmanProgress(wo);
-      
-      // Check if all 6 documents are uploaded
-      if(Object.keys(job.linesmanDocs).length===6){
-        // Auto-trigger completion
-        completeLinesmanUpload(wo);
-      }
-      
+      toast(`✓ Uploaded: ${file.name}`,'gn');
     }else{
-      // Fallback: local storage
-      const reader=new FileReader();
-      reader.onload=(e)=>{
-        if(!job.linesmanDocs)job.linesmanDocs={};
-        job.linesmanDocs[docType]={
-          dataUrl:e.target.result,
-          filename:file.name,
-          uploadedAt:new Date().toISOString()
-        };
-        saveDB();
-        const docLabel=LINESMAN_DOCS.find(d=>d.id===docType)?.label||docType;
-        toast(`✓ ${docLabel} uploaded`,'gn');
-        updateLinesmanProgress(wo);
-        
-        if(Object.keys(job.linesmanDocs).length===6){
-          completeLinesmanUpload(wo);
-        }
-      };
-      reader.readAsDataURL(file);
+      // Local fallback
+      toast(`✓ ${file.name} saved locally`,'gn');
     }
+    
+    saveDB();
   }catch(err){
     console.error('Upload error:',err);
-    toast(`Upload failed: ${err.message}`,'rd');
+    toast(`Error: ${err.message}`,'rd');
   }
-}
-
-function completeLinesmanUpload(wo){
-  const job=DB.jobs[wo];
-  if(!job)return;
-  
-  // Auto-progress stage from linesman_notified to field_received
-  job.stage='field_received';
-  job.actions['field_received']={date:new Date().toISOString().slice(0,10),notes:'Linesman uploaded all documents',extra:''};
-  
-  // Log activity
-  addLog(wo,'Linesman uploaded all 6 required field documents');
-  
-  // NOTIFY ADMIN/MD that linesman is done
-  notify(['md','admin'],`✅ Linesman has uploaded all 6 documents for WO ${wo} (${job.cust}). Ready for VO2 creation.`,wo);
-  
-  // Save everything
-  saveDB();
-  refreshAll();
-  
-  // Auto-close modal after 2 seconds
-  setTimeout(()=>{
-    closeModal('linesmanUploadModal');
-    toast('✅ All documents uploaded! Admin will now create VO2.','gn');
-  },1500);
 }
 
 /* ═══════════════════════════════════════
