@@ -790,3 +790,33 @@ body,button,input,select,textarea{font-family:'Inter',system-ui,sans-serif;-webk
   h2{font-size:1.2rem}
   h3{font-size:1rem}
 }
+
+/* ═══════════════════════════════════════════
+   LINESMAN DASHBOARD (additions only)
+   ═══════════════════════════════════════════ */
+
+#linesman-upload-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+#linesman-upload-buttons button:hover {
+  box-shadow: 0 0 0 3px rgba(240, 165, 0, 0.1);
+}
+
+#linesman-upload-buttons button:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 768px) {
+  #linesman-upload-buttons {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  #linesman-upload-buttons {
+    grid-template-columns: 1fr;
+  }
+}
