@@ -2648,15 +2648,15 @@ function docAnnexure(job){
   const rows=claimJobs.map(j=>{
     const tVO1=jTotal(j,'vo1');
     const tVO2=(j.vo2&&j.vo2.items&&j.vo2.items.length)?jTotal(j,'vo2'):null;
-    const amt=tVO2?BWP(tVO2.total):BWP(tVO1.total);
+    const amt=tVO2?P(tVO2.total):P(tVO1.total);
     return`<tr>
-      <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.wo,'70px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.cust,'99%')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.meterNo||'','110px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px;text-align:right">${inR(amt,'100px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px;text-align:right">${inR('0.00','65px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px;text-align:right">${inR('0.00','80px')}</td>
-      <td style="border:1px solid #bbb;padding:3px 5px;text-align:right">${inR(amt,'100px')}</td>
+      <td style="padding:3px 5px">${inL(j.wo,'70px')}</td>
+      <td style="padding:3px 5px">${inL(j.cust,'99%')}</td>
+      <td style="padding:3px 5px">${inL(j.meterNo||'','110px')}</td>
+      <td style="padding:3px 5px;text-align:right">${inR(amt,'100px')}</td>
+      <td style="padding:3px 5px;text-align:right">${inR('P 0.00','65px')}</td>
+      <td style="padding:3px 5px;text-align:right">${inR('P 0.00','80px')}</td>
+      <td style="padding:3px 5px;text-align:right">${inR(amt,'100px')}</td>
     </tr>`;
   }).join('');
   return`<div class="paper">
@@ -2673,13 +2673,13 @@ function docAnnexure(job){
   <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8px">
     <tr>
       <td style="padding:2px 4px;width:170px;font-weight:bold">Payment Certificate:</td>
-      <td style="padding:2px 4px;width:180px">${inL(certNo,'130px')}</td>
-      <td style="padding:2px 4px;width:50px;font-weight:bold">Ref:</td>
-      <td style="padding:2px 4px">${inL(certNo,'110px')}</td>
+      <td colspan="3" style="padding:2px 4px">${inL(certNo,'130px')}</td>
     </tr>
     <tr>
       <td style="padding:2px 4px;font-weight:bold">Contract:</td>
-      <td colspan="3" style="padding:2px 4px">${inL('Free Connections Projects - North','98%')}</td>
+      <td style="padding:2px 4px">${inL('Free Connections Projects - North','98%')}</td>
+      <td style="padding:2px 4px;width:50px;font-weight:bold">Ref:</td>
+      <td style="padding:2px 4px">${inL(certNo,'110px')}</td>
     </tr>
     <tr>
       <td style="padding:2px 4px;font-weight:bold">Employer:</td>
@@ -2698,24 +2698,24 @@ function docAnnexure(job){
   </table>
   <table style="width:100%;border-collapse:collapse;font-size:8.5pt">
     <thead>
-      <tr style="background:#f0f0f0">
-        <th style="border:1px solid #bbb;padding:5px 6px;text-align:left;width:80px;font-weight:bold">BPC W/O No</th>
-        <th style="border:1px solid #bbb;padding:5px 6px;text-align:left;font-weight:bold">Project Title</th>
-        <th style="border:1px solid #bbb;padding:5px 6px;text-align:left;width:120px;font-weight:bold">Meter Number</th>
-        <th style="border:1px solid #bbb;padding:5px 6px;text-align:right;width:110px;font-weight:bold">Final Cost</th>
-        <th style="border:1px solid #bbb;padding:5px 6px;text-align:right;width:75px;font-weight:bold">Penalties</th>
-        <th style="border:1px solid #bbb;padding:5px 6px;text-align:right;width:90px;font-weight:bold">Interim Payments</th>
-        <th style="border:1px solid #bbb;padding:5px 6px;text-align:right;width:110px;font-weight:bold">Final Payment</th>
+      <tr>
+        <th style="border-bottom:1px solid #000;padding:5px 6px;text-align:left;width:80px;font-weight:bold">BPC W/O No</th>
+        <th style="border-bottom:1px solid #000;padding:5px 6px;text-align:left;font-weight:bold">Project Title</th>
+        <th style="border-bottom:1px solid #000;padding:5px 6px;text-align:left;width:120px;font-weight:bold">Meter Number</th>
+        <th style="border-bottom:1px solid #000;padding:5px 6px;text-align:right;width:110px;font-weight:bold">Final Cost</th>
+        <th style="border-bottom:1px solid #000;padding:5px 6px;text-align:right;width:75px;font-weight:bold">Penalties</th>
+        <th style="border-bottom:1px solid #000;padding:5px 6px;text-align:right;width:90px;font-weight:bold">Interim Payments</th>
+        <th style="border-bottom:1px solid #000;padding:5px 6px;text-align:right;width:110px;font-weight:bold">Final Payment</th>
       </tr>
     </thead>
     <tbody>
       ${rows}
-      <tr style="font-weight:bold;border-top:2px solid #aaa">
-        <td style="border:1px solid #bbb;padding:4px 6px" colspan="3"><strong>TOTAL</strong></td>
-        <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">${inR(BWP(totalFinal),'100px')}</td>
-        <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">0.00</td>
-        <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">0.00</td>
-        <td style="border:1px solid #bbb;padding:4px 6px;text-align:right">${inR(BWP(totalFinal),'100px')}</td>
+      <tr style="font-weight:bold;border-top:1.5px solid #000">
+        <td style="padding:4px 6px" colspan="3">TOTAL</td>
+        <td style="padding:4px 6px;text-align:right;border-top:1.5px solid #000;border-bottom:3px double #000">${inR(P(totalFinal),'100px')}</td>
+        <td style="padding:4px 6px;text-align:right;border-top:1.5px solid #000;border-bottom:3px double #000">P 0.00</td>
+        <td style="padding:4px 6px;text-align:right;border-top:1.5px solid #000;border-bottom:3px double #000">P 0.00</td>
+        <td style="padding:4px 6px;text-align:right;border-top:1.5px solid #000;border-bottom:3px double #000">${inR(P(totalFinal),'100px')}</td>
       </tr>
     </tbody>
   </table>
