@@ -1738,9 +1738,14 @@ function notifyExternalRole(wo, role) {
   if (role === 'linesman') {
     job.stage = 'linesman_notified';
     job.actions['linesman_notified'] = { date: new Date().toISOString().slice(0,10), notes: '', extra: '' };
-    addLog(wo, 'Linesman notified externally — awaiting field findings');
-    notify(['md'], `Linesman notified for WO ${wo} — ${job.cust}. Awaiting field findings.`, wo);
-    toast('✅ Linesman notified. Now upload their findings when ready.');
+    addLog(wo, 'Linesman notified — awaiting field document uploads');
+    
+    // NOTIFY LINESMAN IN-SYSTEM with action button
+    notify('linesman', `📋 WO ${wo} (${job.cust}): Please upload the 6 required field documents. Click the action button below to begin.`, wo);
+    
+    // NOTIFY ADMIN/MD
+    notify(['md'], `Linesman notified in-system for WO ${wo} — ${job.cust}. Awaiting document uploads.`, wo);
+    toast('✅ Linesman notified in-system. They will upload documents from their dashboard.');
   } else if (role === 'gis') {
     job.stage = 'gis_notified';
     job.actions['gis_notified'] = { date: new Date().toISOString().slice(0,10), notes: '', extra: '' };
@@ -3441,79 +3446,131 @@ function changeVO2Phase(wo,phase){
   toast('VO2 phase updated to Phase '+phase);
 }
 
-/* ═══════════════════════════════════════
-   LINESMAN DASHBOARD
-═══════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   LINESMAN DASHBOARD & UPLOAD WORKFLOW
+═══════════════════════════════════════════════════════════════════════════ */
+
 function renderLinesmanDash(){
   const el=document.getElementById('dash-linesman');
   if(!el)return;
   el.style.display='block';
   
-  // Render inbox with notifications
+  // Show linesman's notifications (only linesman role)
   const myNotifs=(DB.notifs?.linesman||[]);
   const inboxEl=document.getElementById('linesman-inbox');
-  if(inboxEl){
-    if(myNotifs.length===0){
-      inboxEl.innerHTML='<div style="color:var(--tx3);text-align:center;padding:2rem;font-size:.9rem">No instructions yet. Admin will send you tasks here.</div>';
-    }else{
-      let html='';
-      myNotifs.forEach(n=>{
-        const unread=!n.read;
-        html+=`<div style="padding:1rem;border-radius:4px;margin-bottom:.75rem;border:1px solid var(--bd);${unread?'background-color:rgba(240,165,0,0.1);border-left:3px solid var(--am)':''}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="flex:1">
-              <div style="font-weight:500;color:var(--tx1);margin-bottom:.25rem">${escapeHtml(n.msg)}</div>
-              <div style="font-size:.8rem;color:var(--tx3)">${fdt(n.ts)}</div>
-              ${n.wo?`<div style="font-size:.8rem;color:var(--am);margin-top:.5rem">Work Order: <strong>${escapeHtml(n.wo)}</strong></div>`:''}
-            </div>
-          </div>
-        </div>`;
-      });
-      inboxEl.innerHTML=html;
-    }
+  
+  if(!inboxEl)return;
+  
+  if(myNotifs.length===0){
+    inboxEl.innerHTML='<div style="color:var(--tx3);text-align:center;padding:2rem;font-size:.9rem">No tasks yet. Admin will notify you here when you need to upload documents.</div>';
+    return;
   }
   
-  // Render upload buttons
-  const buttonsEl=document.getElementById('linesman-upload-buttons');
-  if(buttonsEl){
-    let html='';
-    LINESMAN_DOCS.forEach(doc=>{
-      html+=`<button onclick="startLinesmanDocUpload('${doc.id}')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem 1rem;background:var(--bg2);border:2px dashed var(--bd);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:inherit;color:var(--tx1);font-size:0.95rem;font-weight:500;min-height:140px" onmouseover="this.style.borderColor='var(--am)';this.style.backgroundColor='var(--bg1);this.style.color='var(--am)'" onmouseout="this.style.borderColor='var(--bd)';this.style.backgroundColor='var(--bg2)';this.style.color='var(--tx1)'">
-        <div style="font-size:1.5rem;margin-bottom:.5rem">${doc.icon}</div>
-        <div style="font-weight:500;font-size:.9rem">${escapeHtml(doc.label)}</div>
-        <div style="font-size:.75rem;color:var(--tx3);margin-top:.25rem">Click to upload</div>
-      </button>`;
-    });
-    buttonsEl.innerHTML=html;
+  let html='';
+  myNotifs.forEach(n=>{
+    const unread=!n.read;
+    const wo=n.wo||'';
+    html+=`<div style="padding:1rem;border-radius:6px;margin-bottom:1rem;border:1px solid var(--bd);${unread?'background-color:rgba(240,165,0,0.1);border-left:4px solid var(--am)':''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+        <div style="flex:1">
+          <div style="font-weight:600;color:var(--tx1);margin-bottom:.5rem">${escapeHtml(n.msg)}</div>
+          <div style="font-size:.8rem;color:var(--tx3)">${fdt(n.ts)}</div>
+        </div>
+        ${wo?`<button class="btn btn-am btn-sm" onclick="openLinesmanUploadModal('${wo}')">📤 Upload Documents</button>`:''}
+      </div>
+    </div>`;
+  });
+  inboxEl.innerHTML=html;
+}
+
+function openLinesmanUploadModal(wo){
+  const modal=document.getElementById('linesmanUploadModal');
+  if(!modal)return;
+  
+  // Store WO in modal for reference
+  modal.dataset.wo=wo;
+  
+  // Reset progress
+  if(!modal.dataset.uploaded){
+    modal.dataset.uploaded='[]';
+  }
+  const uploaded=JSON.parse(modal.dataset.uploaded||'[]');
+  
+  // Update title
+  document.getElementById('linesmanModalTitle').textContent=`Upload Documents for WO ${wo}`;
+  document.getElementById('linesmanModalDesc').textContent=`Upload all 6 required field documents for Work Order ${wo}`;
+  
+  // Generate upload buttons
+  const btnContainer=document.getElementById('linesmanUploadBtns');
+  let html='';
+  LINESMAN_DOCS.forEach(doc=>{
+    const isUploaded=uploaded.includes(doc.id);
+    const btnClass=isUploaded?'btn-gn':'btn-am';
+    const btnText=isUploaded?`✓ ${doc.label}`:`📤 ${doc.label}`;
+    html+=`<button class="btn ${btnClass} btn-sm" onclick="startLinesmanUpload('${wo}','${doc.id}')" style="text-align:left;font-size:.85rem;${isUploaded?'cursor:default;opacity:0.7':''}">
+      <div style="font-size:1.2rem;margin-bottom:.25rem">${doc.icon}</div>
+      <div style="word-wrap:break-word">${btnText}</div>
+    </button>`;
+  });
+  btnContainer.innerHTML=html;
+  
+  // Update progress bar
+  updateLinesmanProgress(wo);
+  
+  // Show modal
+  openModal('linesmanUploadModal');
+}
+
+function updateLinesmanProgress(wo){
+  const modal=document.getElementById('linesmanUploadModal');
+  if(!modal)return;
+  
+  // Count uploaded docs for this WO
+  const job=DB.jobs[wo];
+  if(!job||!job.linesmanDocs)return;
+  
+  const count=Object.keys(job.linesmanDocs||{}).length;
+  const total=6;
+  const pct=(count/total)*100;
+  
+  document.getElementById('linesmanProgCount').textContent=count;
+  document.getElementById('linesmanProgBar').style.width=pct+'%';
+  
+  // Show success message if all uploaded
+  const statusEl=document.getElementById('linesmanUploadStatus');
+  if(count===total){
+    statusEl.style.display='block';
+    document.getElementById('linesmanModalClose').textContent='✓ Close & Finish';
+  }else{
+    statusEl.style.display='none';
+    document.getElementById('linesmanModalClose').textContent='Close';
   }
 }
 
-function startLinesmanDocUpload(docType){
-  const docLabel=LINESMAN_DOCS.find(d=>d.id===docType)?.label||docType;
+function startLinesmanUpload(wo, docType){
   const input=document.createElement('input');
   input.type='file';
   input.accept='*';
   input.onchange=async(e)=>{
     if(!e.target.files[0])return;
     const file=e.target.files[0];
-    const wo=prompt('Enter Work Order number:','');
-    if(!wo){
-      toast('Work Order number is required','rd');
-      return;
-    }
-    await uploadLinesmanDocument(wo, docType, docLabel, file);
+    await uploadLinesmanDoc(wo, docType, file);
   };
   input.click();
 }
 
-async function uploadLinesmanDocument(wo, docType, docLabel, file){
+async function uploadLinesmanDoc(wo, docType, file){
   try{
-    if(!DB.jobs[wo]){
+    const job=DB.jobs[wo];
+    if(!job){
       toast(`Work Order ${wo} not found`,'rd');
       return;
     }
     
+    toast(`⬆️ Uploading ${file.name}...`,'am');
+    
     if(SB?.client){
+      // Upload to Supabase storage
       const path=`claimdesk-linesman/${wo}/${docType}/${Date.now()}-${file.name}`;
       const {data,error}=await SB.client.storage.from('claimdesk-scans').upload(path,file);
       
@@ -3521,40 +3578,84 @@ async function uploadLinesmanDocument(wo, docType, docLabel, file){
       
       const {data:publicUrl}=SB.client.storage.from('claimdesk-scans').getPublicUrl(path);
       
-      // Save to documents table
-      const {data:docData,error:docError}=await SB.client.from('documents').insert([{
+      // Save document metadata to Supabase
+      await SB.client.from('documents').insert([{
         wo, doc_type:`linesman_${docType}`, is_signed:false, storage_path:path, filename:file.name, uploaded_role:'linesman'
       }]);
-      if(docError)throw docError;
       
       // Save to local DB
-      if(!DB.jobs[wo].scans)DB.jobs[wo].scans={};
-      DB.jobs[wo].scans[`linesman_${docType}`]={
-        storagePath:path, url:publicUrl.publicUrl, filename:file.name, uploadedAt:new Date().toISOString(), role:'linesman'
+      if(!job.linesmanDocs)job.linesmanDocs={};
+      job.linesmanDocs[docType]={
+        storagePath:path,
+        url:publicUrl.publicUrl,
+        filename:file.name,
+        uploadedAt:new Date().toISOString()
       };
-      addLog(wo, `Linesman uploaded ${docLabel}`);
+      
       saveDB();
-      toast(`✓ ${docLabel} uploaded`,  'gn');
-      renderLinesmanDash();
+      
+      const docLabel=LINESMAN_DOCS.find(d=>d.id===docType)?.label||docType;
+      toast(`✓ ${docLabel} uploaded`,'gn');
+      
+      // Update modal progress
+      updateLinesmanProgress(wo);
+      
+      // Check if all 6 documents are uploaded
+      if(Object.keys(job.linesmanDocs).length===6){
+        // Auto-trigger completion
+        completeLinesmanUpload(wo);
+      }
+      
     }else{
       // Fallback: local storage
       const reader=new FileReader();
       reader.onload=(e)=>{
-        if(!DB.jobs[wo].scans)DB.jobs[wo].scans={};
-        DB.jobs[wo].scans[`linesman_${docType}`]={
-          dataUrl:e.target.result, filename:file.name, uploadedAt:new Date().toISOString(), role:'linesman'
+        if(!job.linesmanDocs)job.linesmanDocs={};
+        job.linesmanDocs[docType]={
+          dataUrl:e.target.result,
+          filename:file.name,
+          uploadedAt:new Date().toISOString()
         };
-        addLog(wo, `Linesman uploaded ${docLabel}`);
         saveDB();
-        toast(`✓ ${docLabel} uploaded`, 'gn');
-        renderLinesmanDash();
+        const docLabel=LINESMAN_DOCS.find(d=>d.id===docType)?.label||docType;
+        toast(`✓ ${docLabel} uploaded`,'gn');
+        updateLinesmanProgress(wo);
+        
+        if(Object.keys(job.linesmanDocs).length===6){
+          completeLinesmanUpload(wo);
+        }
       };
       reader.readAsDataURL(file);
     }
   }catch(err){
     console.error('Upload error:',err);
-    toast(`Error uploading ${docLabel}: ${err.message}`,'rd');
+    toast(`Upload failed: ${err.message}`,'rd');
   }
+}
+
+function completeLinesmanUpload(wo){
+  const job=DB.jobs[wo];
+  if(!job)return;
+  
+  // Auto-progress stage from linesman_notified to field_received
+  job.stage='field_received';
+  job.actions['field_received']={date:new Date().toISOString().slice(0,10),notes:'Linesman uploaded all documents',extra:''};
+  
+  // Log activity
+  addLog(wo,'Linesman uploaded all 6 required field documents');
+  
+  // NOTIFY ADMIN/MD that linesman is done
+  notify(['md','admin'],`✅ Linesman has uploaded all 6 documents for WO ${wo} (${job.cust}). Ready for VO2 creation.`,wo);
+  
+  // Save everything
+  saveDB();
+  refreshAll();
+  
+  // Auto-close modal after 2 seconds
+  setTimeout(()=>{
+    closeModal('linesmanUploadModal');
+    toast('✅ All documents uploaded! Admin will now create VO2.','gn');
+  },1500);
 }
 
 /* ═══════════════════════════════════════
