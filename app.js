@@ -3465,7 +3465,7 @@ function renderLinesmanDash(){
   let html='';
   myNotifs.forEach(n=>{
     html+=`<div style="padding:1rem;border:1px solid var(--bd);border-radius:4px;margin-bottom:.75rem;${!n.read?'background:rgba(240,165,0,0.1)':''}">
-      <div style="font-weight:500;color:var(--tx1)">${escapeHtml(n.msg)}</div>
+      <div style="font-weight:500;color:var(--tx1)">${n.msg}</div>
       <div style="font-size:.8rem;color:var(--tx3);margin-top:.25rem">${fdt(n.ts)}</div>
     </div>`;
   });
@@ -3480,7 +3480,7 @@ function openLinesmanUploadModal(){
   LINESMAN_DOCS.forEach(doc=>{
     html+=`<button class="btn btn-am" onclick="selectLinesmanFile('${doc.id}')">
       <div style="font-size:1.5rem;margin-bottom:.5rem">${doc.icon}</div>
-      <div style="word-break:break-word;font-size:.85rem">${escapeHtml(doc.label)}</div>
+      <div style="word-break:break-word;font-size:.85rem">${doc.label}</div>
     </button>`;
   });
   btnEl.innerHTML=html;
