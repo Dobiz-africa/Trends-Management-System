@@ -59,13 +59,25 @@ const CO = {
 const BPC_CO = { name:'BOTSWANA POWER CORPORATION', addr:'Motlakase House, Macheng Way', po:'P.O. Box 48', city:'GABORONE', tel:'3607000' };
 
 const LINESMAN_DOCS = [
-  { id: 'handover', label: 'Handover Form', icon: '📋' },
-  { id: 'e21', label: 'LV ABC & Service Connection Commissioning Test Sheet (E21)', icon: '⚡' },
-  { id: 'e22', label: 'LV ABC & Service Connection Inspection Checklist (E22)', icon: '✓' },
-  { id: 'e23', label: 'LV Cables Commissioning Test Sheet (E23)', icon: '🔌' },
-  { id: 'drawing', label: 'As Built Drawing', icon: '📐' },
-  { id: 'cert', label: 'Installation Inspection Certificate', icon: '🎓' }
+  { id: 'handover', label: 'Handover Form', short:'Handover Form', icon: '📋' },
+  { id: 'e21', label: 'LV ABC & Service Connection Commissioning Test Sheet (E21)', short:'E21 Test Sheet', icon: '⚡' },
+  { id: 'e22', label: 'LV ABC & Service Connection Inspection Checklist (E22)', short:'E22 Checklist', icon: '✓' },
+  { id: 'e23', label: 'LV Cables Commissioning Test Sheet (E23)', short:'E23 Test Sheet', icon: '🔌' },
+  { id: 'drawing', label: 'As Built Drawing', short:'As-Built Drawing', icon: '📐' },
+  { id: 'cert', label: 'Installation Inspection Certificate', short:'Inspection Certificate', icon: '🎓' }
 ];
+// Derived helpers: each linesman document lives in job.scans under key 'ln_<id>',
+// reusing the exact same signed-scan storage/view/download mechanism used by
+// every other document in the system (job.scans[key] = {dataUrl,filename,uploadedAt,role}).
+const LN_DOC_KEYS = LINESMAN_DOCS.map(d => 'ln_' + d.id);
+const LN_DOC_LABELS = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.label]));
+const LN_DOC_SHORT = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.short]));
+function linesmanDocsUploadedCount(job){
+  return LINESMAN_DOCS.filter(d => job && job.scans && job.scans['ln_' + d.id]).length;
+}
+function linesmanDocsAllUploaded(job){
+  return linesmanDocsUploadedCount(job) === LINESMAN_DOCS.length;
+}
 
 /* ═══════════════════════════════════════
    PDF PARSER (Claude API)
@@ -292,7 +304,7 @@ function stageBadge(id){
 }
 
 const STAGE_DOCS = {
-  wo_received:'bpc_wo', vo1_created:'vo1', linesman_notified:null, field_received:'field_report',
+  wo_received:'bpc_wo', vo1_created:'vo1', linesman_notified:null, field_received:null,
   vo2_created:'vo2', works_valuation_created:'works_valuation', work_instruction_ready:'works_instruction', 
   teams_notified:null, work_complete:null,
   gis_notified:'gis_report', gis_complete:'gis_report', 
@@ -564,6 +576,7 @@ let recordCb=null;
 let hasUnsavedChanges=false; // Track if user has unsaved edits in modals
 let jobsSearchQuery=''; // Search query for jobs
 let jobsFilterStage=''; // Filter by stage (empty = all)
+let currentLinesmanWO=null; // WO the linesman is currently uploading field documents for
 
 const RN={admin:'Admin',finance:'Finance',md:'Manager',linesman:'Linesman'};
 
@@ -601,6 +614,7 @@ function clickNotif(id,wo){
   (DB.notifs[CU]||[]).forEach(n=>{if(n.id===id)n.read=true;});
   saveDB();document.getElementById('npanel').classList.remove('open');renderNotifs();
   if(!wo||!DB.jobs[wo])return;
+  if(CU==='linesman'){openLinesmanUploadModal(wo);return;}
   openJobDetail(wo);
 }
 function markAllRead(){(DB.notifs[CU]||[]).forEach(n=>n.read=true);saveDB();renderNotifs();}
@@ -701,6 +715,23 @@ function downloadScan(wo,docType){
     document.body.removeChild(a);
   }catch(e){toast('Download failed: '+e.message,'rd');}
 }
+function viewScanFile(wo,docType){
+  const s=DB.jobs[wo]?.scans?.[docType];
+  if(!s){toast('No file to view','am');return;}
+  const src=s.url||s.dataUrl;
+  const isPdf=(s.filename||'').toLowerCase().endsWith('.pdf')||/^data:application\/pdf/.test(s.dataUrl||'');
+  const isImg=/\.(png|jpe?g|gif|webp)$/i.test(s.filename||'')||/^data:image\//.test(s.dataUrl||'');
+  const win=window.open('','_blank');
+  if(!win){toast('Please allow popups to view the file','am');return;}
+  win.document.title=s.filename||docType;
+  if(isPdf){
+    win.document.write(`<iframe src="${src}" style="border:0;width:100%;height:100vh"></iframe>`);
+  }else if(isImg){
+    win.document.write(`<body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${src}" style="max-width:100%;max-height:100vh"></body>`);
+  }else{
+    win.document.write(`<body style="font-family:sans-serif;padding:2rem">This file type can't be previewed here. <a href="${src}" download="${s.filename||''}">Click to download it instead.</a></body>`);
+  }
+}
 function scanWidget(wo,docType,editable){
   const s=DB.jobs[wo]?.scans?.[docType];
   if(s){
@@ -755,7 +786,7 @@ function renderAdminDash(){
   document.getElementById('a-val').textContent=P(val);
 
   const taskIcons={wo_received:'📋',vo1_created:'📤',field_received:'📝',vo2_created:'👷',work_instruction_ready:'📄',work_complete:'📍',gis_notified:'📋',claim_docs_ready:'✅'};
-  const taskLabels={wo_received:'Create VO1 — Review uploaded WO',vo1_created:'Notify Linesman (external) — Record in system',field_received:'Upload Linesman Findings, then Create VO2',vo2_created:'Prepare Works Instruction document',work_instruction_ready:'Send Works Instruction to Teams (external) — Record',work_complete:'Notify GIS Consultant (external)',claim_docs_ready:'Review Finance Docs — Record Job as Complete'};
+  const taskLabels={wo_received:'Create VO1 — Review uploaded WO',vo1_created:'Notify Linesman (external) — Record in system',field_received:'Create VO2 — field documents received from Linesman',vo2_created:'Prepare Works Instruction document',work_instruction_ready:'Send Works Instruction to Teams (external) — Record',work_complete:'Notify GIS Consultant (external)',claim_docs_ready:'Review Finance Docs — Record Job as Complete'};
   const taskBadges={wo_received:'b-rd',vo1_created:'b-am',field_received:'b-am',vo2_created:'b-am',work_instruction_ready:'b-am',work_complete:'b-am',gis_notified:'b-am',claim_docs_ready:'b-gn'};
   const tasksEl=document.getElementById('a-tasks');
   if(!needsAction.length){tasksEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--gn);font-size:.82rem">✓ No pending actions right now</div>';}
@@ -1151,7 +1182,7 @@ function renderInbox(){
   if(CU==='admin'){
     jobs.filter(j=>j.stage==='wo_received').forEach(j=>tasks.push({wo:j.wo,icon:'📋',name:'Create VO1 — Review BPC Work Order · WO '+j.wo,desc:j.cust+' · '+j.loc,badge:'Action Required',bc:'b-am'}));
     jobs.filter(j=>j.stage==='vo1_created').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Notify Linesman Externally — Record in System · WO '+j.wo,desc:j.cust,badge:'Next Step',bc:'b-gy'}));
-    jobs.filter(j=>j.stage==='linesman_notified').forEach(j=>tasks.push({wo:j.wo,icon:'📥',name:'Upload Linesman Findings — WO '+j.wo,desc:j.cust+' · awaiting linesman field report',badge:'Waiting',bc:'b-bl'}));
+    jobs.filter(j=>j.stage==='linesman_notified').forEach(j=>{const ct=linesmanDocsUploadedCount(j);tasks.push({wo:j.wo,icon:'👷',name:'Awaiting Linesman Field Documents — WO '+j.wo,desc:j.cust+` · ${ct} of ${LINESMAN_DOCS.length} documents uploaded so far`,badge:'Waiting',bc:'b-bl'});});
     jobs.filter(j=>j.stage==='field_received').forEach(j=>tasks.push({wo:j.wo,icon:'📝',name:'Create VO2 from Field Findings — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
     jobs.filter(j=>j.stage==='vo2_created').forEach(j=>tasks.push({wo:j.wo,icon:'📄',name:'Prepare Works Instruction — WO '+j.wo,desc:j.cust+' · ready to instruct teams',badge:'Action Required',bc:'b-am'}));
     jobs.filter(j=>j.stage==='work_instruction_ready').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Send WI to Teams (External) — Record in System · WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
@@ -1282,8 +1313,10 @@ function renderJobDetail(wo){
         if(st.id==='wo_received') actBtns+=`<button class="btn btn-am" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
         if(st.id==='vo1_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-am btn-sm" onclick="notifyExternalRole('${wo}','linesman')">🔔 Notify Linesman (External)</button>`;
         if(st.id==='linesman_notified') {
-          const hasFiles=(job.linesmanDocs&&job.linesmanDocs.length)?true:false;
-          actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','linesman_findings')">📎 Upload Linesman Findings (${hasFiles?job.linesmanDocs.length+' files':''} files)</button>`;
+          const ct=linesmanDocsUploadedCount(job);
+          actBtns+=`<div class="na-action-sub" style="margin:.25rem 0">👷 Waiting on Linesman — ${ct} of ${LINESMAN_DOCS.length} field documents uploaded so far</div>`;
+          if(ct>0) actBtns+=`<button class="btn btn-gy btn-sm" onclick="showLinesmanDocumentsModal('${wo}')">📄 View Uploaded So Far</button>`;
+          actBtns+=`<button class="btn btn-gy btn-sm" onclick="notifyExternalRole('${wo}','linesman')">🔔 Remind Linesman</button>`;
         }
         if(st.id==='field_received') {
           actBtns+=`<button class="btn btn-am btn-sm" onclick="showLinesmanDocumentsModal('${wo}')">📄 View Linesman Documents</button>`;
@@ -1309,8 +1342,8 @@ function renderJobDetail(wo){
       if(CU==='finance'&&st.id==='gis_complete') actBtns+=`<button class="btn btn-am" onclick="nav('claims')">Go to Claim Batch</button>`;
       if((canEdit||CU==='finance')&&docKey) docKey.split(',').forEach(dk=>{actBtns+=`<span style="margin-left:2px">${scanWidget(wo,dk.trim(),true)}</span>`;});
     }
-    const mdStepDocs={vo1_created:['vo1'],field_received:['field_report'],vo2_created:['vo2'],works_valuation_created:['works_valuation'],work_complete:['works_instruction'],gis_complete:['gis_report','gis_cert'],claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']};
-    const docLabelMap={vo1:'VO1',vo2:'VO2',field_report:'Field Report',works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'GIS Report',gis_cert:'GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
+    const mdStepDocs={vo1_created:['vo1'],field_received:[...LN_DOC_KEYS],vo2_created:['vo2'],works_valuation_created:['works_valuation'],work_complete:['works_instruction'],gis_complete:['gis_report','gis_cert'],claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']};
+    const docLabelMap={vo1:'VO1',vo2:'VO2',...LN_DOC_SHORT,works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'GIS Report',gis_cert:'GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
     const isDone=job.stage==='job_complete';
     const nextCard=isDone
       ?`<div class="na-done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><polyline points="20 6 9 17 4 12"/></svg><div class="na-done-txt">This job is complete</div></div>`
@@ -1329,7 +1362,7 @@ function renderJobDetail(wo){
   })();
 
   // Documents panel - FILTERED BY ROLE
-  const allDocTypes=['bpc_wo','vo1','field_report','vo2','works_valuation','works_instruction','gis_report','gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  const allDocTypes=['bpc_wo','vo1',...LN_DOC_KEYS,'vo2','works_valuation','works_instruction','gis_report','gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   let visibleDocTypes = [...allDocTypes];
   if(CU === 'finance') {
     visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
@@ -1339,17 +1372,18 @@ function renderJobDetail(wo){
     visibleDocTypes = [...allDocTypes];
   }
   
-  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',field_report:'Linesman Field Findings',vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'GIS Geo-Analysis Report',gis_cert:'GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
+  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',...LN_DOC_LABELS,vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'GIS Geo-Analysis Report',gis_cert:'GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
   const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]||(job.savedDocs&&job.savedDocs[d])).length;
   document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} ready`;
   document.getElementById('jdDocsList').innerHTML=visibleDocTypes.map(d=>{
+    const isLinesmanDoc=LN_DOC_KEYS.includes(d);
     const scan=job.scans[d];
     const saved=job.savedDocs&&job.savedDocs[d];
-    const hasGenerated=['vo1','vo2','field_report','works_valuation','works_instruction','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(d);
+    const hasGenerated=['vo1','vo2','works_valuation','works_instruction','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(d);
     const isMultiJob=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(d);
     const isReady=!!(scan||saved);
     const statusBadge=scan?'b-gn':saved?'b-bl':'b-gy';
-    const statusText=scan?'Signed Copy':saved?'Soft Copy':'Pending';
+    const statusText=isLinesmanDoc?(scan?'Uploaded':'Pending'):(scan?'Signed Copy':saved?'Soft Copy':'Pending');
     const iconClass=scan?'uploaded':saved?'generated':'pending';
     // MD and everyone can view if saved or scan exists, or if generated doc type
     const canView=hasGenerated&&(!isMultiJob||job.claimRef);
@@ -1361,11 +1395,13 @@ function renderJobDetail(wo){
       </div>
       <div class="doc-card-btns">
         ${canView?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View / Print</button>`:''}
+        ${isLinesmanDoc&&scan?`<button class="btn btn-gy btn-sm" onclick="viewScanFile('${wo}','${d}')">👁 View</button>`:''}
         ${saved?`<button class="btn btn-bl btn-sm" onclick="downloadSavedDoc('${wo}','${d}')">⬇ Download</button>`:''}
-        ${scan?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ Signed</button>`:''}
-        ${CU!=='md'&&scan?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
-        ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 ${scan?'Replace':'Upload'}<input type="file" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
-        ${!isReady&&!canView&&CU==='md'?`<span style="font-size:.72rem;color:var(--tx3)">Not yet available</span>`:''}
+        ${scan?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ ${isLinesmanDoc?'Download':'Signed'}</button>`:''}
+        ${CU!=='md'&&scan&&!isLinesmanDoc?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
+        ${CU!=='md'&&!isLinesmanDoc?`<label class="scan-upload-label" style="font-size:.72rem">📎 ${scan?'Replace':'Upload'}<input type="file" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
+        ${isLinesmanDoc&&!scan?`<span style="font-size:.72rem;color:var(--tx3)">Awaiting Linesman upload</span>`:''}
+        ${!isReady&&!canView&&CU==='md'&&!isLinesmanDoc?`<span style="font-size:.72rem;color:var(--tx3)">Not yet available</span>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1472,8 +1508,6 @@ function buildDocFoot(docType,job){
   if(!isMDView&&CU==='admin'&&job){
     if(docType==='vo1'&&job.stage==='wo_received')
       btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','vo1_created')">✓ Mark VO1 Complete</button>`;
-    if(docType==='field_report'&&(job.stage==='linesman_notified'||job.stage==='field_received'))
-      btns+=`<button class="btn btn-am" onclick="advanceStage('${wo}','field_received')">✓ Save Field Findings</button>`;
     if(docType==='vo2'&&(job.stage==='field_received'||job.stage==='vo2_created'))
       btns+=`<button class="btn btn-am" onclick="saveVO2('${wo}')">✓ Save VO2</button>`;
     if(docType==='works_instruction'&&(job.stage==='vo2_created'||job.stage==='work_instruction_ready'))
@@ -1765,17 +1799,28 @@ function notifyExternalRole(wo, role) {
 function showLinesmanDocumentsModal(wo) {
   const job = DB.jobs[wo];
   if (!job) return;
-  
-  document.getElementById('docModalTitle').textContent = `📋 Linesman Documents — WO ${wo}`;
+
+  const ct = linesmanDocsUploadedCount(job);
+  document.getElementById('docModalTitle').textContent = `📋 Linesman Field Documents — WO ${wo}`;
   document.getElementById('docModalBody').innerHTML = `
     <div style="padding:1rem">
       <div style="margin-bottom:1rem;font-size:.9rem;color:var(--tx2)">
-        Linesman documents uploaded by field team:
+        ${ct} of ${LINESMAN_DOCS.length} documents uploaded by the Linesman:
       </div>
-      ${showExternalFiles(wo, 'linesman_findings')}
-      ${job.linesmanDocs && job.linesmanDocs.length > 0 ? `
-        <button class="btn btn-am" style="margin-top:1rem" onclick="openExternalUpload('${wo}','linesman_findings')">📎 Add More Documents</button>
-      ` : ''}
+      ${LINESMAN_DOCS.map(d=>{
+        const key='ln_'+d.id;
+        const s=job.scans && job.scans[key];
+        return `<div style="display:flex;gap:10px;padding:.75rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem">
+          <span style="font-size:1.3rem">${d.icon}</span>
+          <span style="flex:1">
+            <div style="font-weight:600;font-size:.88rem">${d.label}</div>
+            ${s?`<div style="font-size:.75rem;color:var(--tx3)">${s.filename} · ${fd(s.uploadedAt)}</div>`:`<div style="font-size:.75rem;color:var(--tx3)">Not yet uploaded</div>`}
+          </span>
+          ${s?`<button class="btn btn-gy btn-sm" onclick="viewScanFile('${wo}','${key}')">👁 View</button>
+               <button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${key}')">⬇ Download</button>`
+             :`<span class="badge b-gy">Pending</span>`}
+        </div>`;
+      }).join('')}
     </div>
   `;
   document.getElementById('docModalFoot').innerHTML = `
@@ -3453,85 +3498,130 @@ function renderLinesmanDash(){
   const el=document.getElementById('dash-linesman');
   if(!el)return;
   el.style.display='block';
-  
+
+  // Notifications feed
   const notifEl=document.getElementById('linesmanNotifications');
-  const myNotifs=(DB.notifs?.linesman||[]);
-  
-  if(myNotifs.length===0){
-    notifEl.innerHTML='<div style="color:var(--tx3);text-align:center;padding:2rem">No notifications yet</div>';
-    return;
+  if(notifEl){
+    const myNotifs=(DB.notifs?.linesman||[]);
+    notifEl.innerHTML = myNotifs.length
+      ? myNotifs.slice(0,15).map(n=>`<div style="padding:1rem;border:1px solid var(--bd);border-radius:4px;margin-bottom:.75rem;${!n.read?'background:rgba(240,165,0,0.1)':''};cursor:${n.wo?'pointer':'default'}" ${n.wo?`onclick="clickNotif('${n.id}','${n.wo}')"`:''}>
+          <div style="font-weight:500;color:var(--tx1)">${n.msg}</div>
+          <div style="font-size:.8rem;color:var(--tx3);margin-top:.25rem">${fdt(n.ts)}</div>
+        </div>`).join('')
+      : '<div style="color:var(--tx3);text-align:center;padding:2rem">No notifications yet</div>';
   }
-  
-  let html='';
-  myNotifs.forEach(n=>{
-    html+=`<div style="padding:1rem;border:1px solid var(--bd);border-radius:4px;margin-bottom:.75rem;${!n.read?'background:rgba(240,165,0,0.1)':''}">
-      <div style="font-weight:500;color:var(--tx1)">${n.msg}</div>
-      <div style="font-size:.8rem;color:var(--tx3);margin-top:.25rem">${fdt(n.ts)}</div>
-    </div>`;
-  });
-  notifEl.innerHTML=html;
+
+  // Work orders currently awaiting the linesman's 6 field documents
+  const jobsEl=document.getElementById('linesmanPendingJobs');
+  if(jobsEl){
+    const pending=Object.values(DB.jobs).filter(j=>j.stage==='linesman_notified');
+    jobsEl.innerHTML = pending.length ? pending.map(j=>{
+      const ct=linesmanDocsUploadedCount(j);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1rem;border:1px solid var(--bd);border-radius:4px;margin-bottom:.75rem;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:600;color:var(--tx1)">WO ${j.wo} — ${j.cust}</div>
+          <div style="font-size:.78rem;color:var(--tx3);margin-top:2px">${j.loc||''} · ${ct} of ${LINESMAN_DOCS.length} documents uploaded</div>
+        </div>
+        <button class="btn btn-am" onclick="openLinesmanUploadModal('${j.wo}')">📤 Upload Field Documents</button>
+      </div>`;
+    }).join('') : '<div style="color:var(--tx3);text-align:center;padding:1.5rem">No work orders awaiting your documents right now.</div>';
+  }
 }
 
-function openLinesmanUploadModal(){
-  const btnEl=document.getElementById('linesmanUploadButtons');
-  if(!btnEl)return;
-  
-  let html='';
-  LINESMAN_DOCS.forEach(doc=>{
-    html+=`<button class="btn btn-am" onclick="selectLinesmanFile('${doc.id}')">
-      <div style="font-size:1.5rem;margin-bottom:.5rem">${doc.icon}</div>
-      <div style="word-break:break-word;font-size:.85rem">${doc.label}</div>
-    </button>`;
-  });
-  btnEl.innerHTML=html;
-  
+function openLinesmanUploadModal(wo){
+  const job = wo ? DB.jobs[wo] : (currentLinesmanWO && DB.jobs[currentLinesmanWO]);
+  if(!job){ toast('No work order selected','am'); return; }
+  currentLinesmanWO = job.wo;
+  renderLinesmanUploadModalContent();
   openModal('linesmanUploadModal');
 }
 
-function selectLinesmanFile(docId){
+function renderLinesmanUploadModalContent(){
+  const wo=currentLinesmanWO;
+  const job=DB.jobs[wo];
+  if(!job)return;
+
+  const subEl=document.getElementById('linesmanUploadModalSub');
+  if(subEl) subEl.textContent = `WO ${wo} — ${job.cust}`;
+
+  const btnEl=document.getElementById('linesmanUploadButtons');
+  if(btnEl){
+    btnEl.innerHTML = LINESMAN_DOCS.map(doc=>{
+      const key='ln_'+doc.id;
+      const s=job.scans && job.scans[key];
+      if(s){
+        return `<div class="btn btn-gn" style="flex-direction:column;align-items:flex-start;text-align:left;cursor:default;gap:2px">
+          <div style="font-size:1.3rem">${doc.icon} ✓</div>
+          <div style="font-size:.83rem;font-weight:600;word-break:break-word">${doc.label}</div>
+          <div style="font-size:.7rem;opacity:.85;word-break:break-all">${s.filename}</div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <button class="btn btn-gy btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${key}')">⬇ Download</button>
+            <button class="btn btn-am btn-sm" onclick="event.stopPropagation();selectLinesmanFile('${wo}','${key}')">↻ Replace</button>
+          </div>
+        </div>`;
+      }
+      return `<button class="btn btn-am" style="flex-direction:column" onclick="selectLinesmanFile('${wo}','${key}')">
+        <div style="font-size:1.5rem;margin-bottom:.5rem">${doc.icon}</div>
+        <div style="word-break:break-word;font-size:.85rem">${doc.label}</div>
+      </button>`;
+    }).join('');
+  }
+
+  const ct=linesmanDocsUploadedCount(job);
+  const progEl=document.getElementById('linesmanUploadProgress');
+  if(progEl) progEl.textContent = `${ct} of ${LINESMAN_DOCS.length} documents uploaded`;
+  const completeBtn=document.getElementById('linesmanCompleteBtn');
+  if(completeBtn) completeBtn.disabled = ct < LINESMAN_DOCS.length;
+}
+
+function selectLinesmanFile(wo,key){
   const input=document.createElement('input');
   input.type='file';
-  input.accept='*';
-  input.onchange=async(e)=>{
+  input.accept='image/*,application/pdf';
+  input.onchange=(e)=>{
     if(!e.target.files[0])return;
-    const file=e.target.files[0];
-    await uploadLinesmanDoc(docId, file);
+    uploadLinesmanScan(wo,key,e.target.files[0]);
   };
   input.click();
 }
 
-async function uploadLinesmanDoc(docId, file){
-  try{
-    toast('Uploading...','am');
-    
-    if(SB?.client){
-      const path=`linesman-docs/${docId}/${Date.now()}-${file.name}`;
-      const {data,error}=await SB.client.storage.from('claimdesk-scans').upload(path,file);
-      if(error)throw error;
-      
-      const {data:publicUrl}=SB.client.storage.from('claimdesk-scans').getPublicUrl(path);
-      
-      // Save to documents table
-      await SB.client.from('documents').insert([{
-        wo:null,
-        doc_type:`linesman_${docId}`,
-        is_signed:false,
-        storage_path:path,
-        filename:file.name,
-        uploaded_role:'linesman'
-      }]);
-      
-      toast(`✓ Uploaded: ${file.name}`,'gn');
-    }else{
-      // Local fallback
-      toast(`✓ ${file.name} saved locally`,'gn');
-    }
-    
+function uploadLinesmanScan(wo,key,file){
+  if(file.size>10*1024*1024){toast('File too large — max 10MB','am');return;}
+  const job=DB.jobs[wo];
+  if(!job)return;
+  const docMeta=LINESMAN_DOCS.find(d=>('ln_'+d.id)===key);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    if(!job.scans)job.scans={};
+    job.scans[key]={dataUrl:e.target.result,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
+    addLog(wo,`Field document uploaded by Linesman: ${docMeta?docMeta.label:key} (${file.name})`);
     saveDB();
-  }catch(err){
-    console.error('Upload error:',err);
-    toast(`Error: ${err.message}`,'rd');
+    toast(`✓ Uploaded: ${file.name}`);
+    renderLinesmanUploadModalContent();
+    renderLinesmanDash();
+  };
+  reader.onerror=()=>toast('Upload failed — please try again','rd');
+  reader.readAsDataURL(file);
+}
+
+function markLinesmanDocsComplete(){
+  const wo=currentLinesmanWO;
+  const job=DB.jobs[wo];
+  if(!job)return;
+  const ct=linesmanDocsUploadedCount(job);
+  if(ct<LINESMAN_DOCS.length){
+    toast(`Please upload all ${LINESMAN_DOCS.length} documents first (${ct}/${LINESMAN_DOCS.length} so far)`,'am');
+    return;
   }
+  job.stage='field_received';
+  job.actions['field_received']={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
+  addLog(wo,'All 6 field documents uploaded by Linesman — marked complete');
+  notify(['admin','md'],`✅ Linesman completed all field documents for WO ${wo} — ${job.cust}. Ready to create VO2.`,wo);
+  saveDB();
+  closeModal('linesmanUploadModal');
+  renderLinesmanDash();
+  refreshAll();
+  toast('✅ All documents submitted — Admin has been notified');
 }
 
 /* ═══════════════════════════════════════
