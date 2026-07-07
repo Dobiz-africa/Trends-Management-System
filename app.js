@@ -1372,7 +1372,7 @@ function renderJobDetail(wo){
     visibleDocTypes = [...allDocTypes];
   }
   
-  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',...LN_DOC_LABELS,vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'GIS Geo-Analysis Report',gis_cert:'GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
+  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',...LN_DOC_LABELS,vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'GIS Map',gis_cert:'GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
   const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]||(job.savedDocs&&job.savedDocs[d])).length;
   document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} ready`;
   document.getElementById('jdDocsList').innerHTML=visibleDocTypes.map(d=>{
@@ -1446,7 +1446,7 @@ function viewFinanceDoc(wo,docType){
 }
 function openDocForAction(wo,docType){
   const job=wo?DB.jobs[wo]:null;
-  const titles={vo1:'Works Valuation (VO1)'+(wo?' · WO '+wo:''),vo2:'Variation Order (VO2)'+(wo?' · WO '+wo:''),works_valuation:'Works Valuation Document'+(wo?' · WO '+wo:''),field_report:'Linesman Field Findings'+(wo?' · WO '+wo:''),works_instruction:'Works Instruction'+(wo?' · WO '+wo:''),gis_report:'GIS Geo-Analysis Report'+(wo?' · WO '+wo:''),bpc_wo:'BPC Work Order'+(wo?' · WO '+wo:''),annexure:'Annexure to Payment Certificate'+(wo?' · WO '+wo:''),payment_cert:'Payment Certificate'+(wo?' · WO '+wo:''),invoice:'Tax Invoice'+(wo?' · WO '+wo:''),list_of_jobs:'List of Jobs Done — Trends Engineering Services',bpc_spreadsheet:'BPC Spreadsheet — Batch Claim Document'};
+  const titles={vo1:'Works Valuation (VO1)'+(wo?' · WO '+wo:''),vo2:'Variation Order (VO2)'+(wo?' · WO '+wo:''),works_valuation:'Works Valuation Document'+(wo?' · WO '+wo:''),field_report:'Linesman Field Findings'+(wo?' · WO '+wo:''),works_instruction:'Works Instruction'+(wo?' · WO '+wo:''),gis_report:'GIS Map'+(wo?' · WO '+wo:''),bpc_wo:'BPC Work Order'+(wo?' · WO '+wo:''),annexure:'Annexure to Payment Certificate'+(wo?' · WO '+wo:''),payment_cert:'Payment Certificate'+(wo?' · WO '+wo:''),invoice:'Tax Invoice'+(wo?' · WO '+wo:''),list_of_jobs:'List of Jobs Done — Trends Engineering Services',bpc_spreadsheet:'BPC Spreadsheet — Batch Claim Document'};
   document.getElementById('docModalTitle').textContent=titles[docType]||docType;
 
   // For claim docs, try to find the Finance-saved version first
@@ -2582,7 +2582,7 @@ function docGISReport(job){
   const ef=(id,val,ph)=>canEdit?`<input class="ef ef-b" id="${id}" value="${val||''}" placeholder="${ph}" style="width:98%">`:val||'—';
   const ta=(id,val,ph)=>canEdit?`<textarea class="ef ef-b" id="${id}" placeholder="${ph}" style="width:98%;min-height:50px">${val||''}</textarea>`:val||'—';
   return`<div class="paper">
-  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">GIS GEO-ANALYSIS REPORT</div>
+  <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">GIS Map</div>
   <table class="hdt">
     <tr><td class="lbl">BPC W/O No. :</td><td><strong>${job.wo}</strong></td><td class="lbl">Phase :</td><td>${job.phase}</td></tr>
     <tr><td class="lbl">Customer :</td><td>${job.cust}</td><td class="lbl">Survey Date :</td><td>${ef('g_date',g.date,'YYYY-MM-DD')}</td></tr>
