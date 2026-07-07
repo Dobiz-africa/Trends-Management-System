@@ -249,6 +249,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 
 /* BUTTONS */
 .btn{padding:.45rem .9rem;border:1px solid var(--bd2);border-radius:var(--rs);font-family:var(--font-body);font-size:.77rem;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;letter-spacing:.02em}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
 .btn svg{width:13px;height:13px;flex-shrink:0}
 .btn-am{background:var(--am);border-color:var(--am);color:#000}.btn-am:hover{background:#e09500}
 .btn-gy{background:transparent;color:var(--tx2);border-color:var(--bd2)}.btn-gy:hover{background:var(--sf2);color:var(--tx)}
