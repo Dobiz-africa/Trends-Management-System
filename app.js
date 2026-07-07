@@ -58,6 +58,15 @@ const CO = {
 };
 const BPC_CO = { name:'BOTSWANA POWER CORPORATION', addr:'Motlakase House, Macheng Way', po:'P.O. Box 48', city:'GABORONE', tel:'3607000' };
 
+const LINESMAN_DOCS = [
+  { id: 'handover_form', label: 'Handover Form', icon: '📋' },
+  { id: 'e21_commissioning', label: 'LV ABC & Service Connection Commissioning Test Sheet (E21)', icon: '⚡' },
+  { id: 'e22_inspection', label: 'LV ABC & Service Connection Inspection Checklist (E22)', icon: '✓' },
+  { id: 'e23_cables', label: 'LV Cables Commissioning Test Sheet (E23)', icon: '🔌' },
+  { id: 'as_built_drawing', label: 'As Built Drawing', icon: '📐' },
+  { id: 'installation_cert', label: 'Installation Inspection Certificate', icon: '🎓' },
+];
+
 /* ═══════════════════════════════════════
    PDF PARSER (Claude API)
 ═══════════════════════════════════════ */
@@ -556,7 +565,7 @@ let hasUnsavedChanges=false; // Track if user has unsaved edits in modals
 let jobsSearchQuery=''; // Search query for jobs
 let jobsFilterStage=''; // Filter by stage (empty = all)
 
-const RN={admin:'Admin',finance:'Finance',md:'Manager'};
+const RN={admin:'Admin',finance:'Finance',md:'Manager',linesman:'Linesman'};
 
 /* ═══════════════════════════════════════
    NOTIFICATIONS + LOG
@@ -717,12 +726,13 @@ function scanWidget(wo,docType,editable){
 ══════════════════════════════════════════ */
 function renderDashboard(){
   // Hide all panels, show only the one for CU
-  ['dash-admin','dash-finance','dash-gis','dash-md'].forEach(id=>{
+  ['dash-admin','dash-finance','dash-gis','dash-md','dash-linesman'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='none';
   });
   if(CU==='admin')   renderAdminDash();
   if(CU==='finance') renderFinanceDash();
   if(CU==='md')      renderMDDash();
+  if(CU==='linesman') renderLinesmanDash();
 }
 
 /* ── ADMIN ── */
@@ -3432,6 +3442,122 @@ function changeVO2Phase(wo,phase){
 }
 
 /* ═══════════════════════════════════════
+   LINESMAN DASHBOARD
+═══════════════════════════════════════ */
+function renderLinesmanDash(){
+  const el=document.getElementById('dash-linesman');
+  if(!el)return;
+  el.style.display='block';
+  
+  // Render inbox with notifications
+  const myNotifs=(DB.notifs?.linesman||[]);
+  const inboxEl=document.getElementById('linesman-inbox');
+  if(inboxEl){
+    if(myNotifs.length===0){
+      inboxEl.innerHTML='<div style="color:var(--tx3);text-align:center;padding:2rem;font-size:.9rem">No instructions yet. Admin will send you tasks here.</div>';
+    }else{
+      let html='';
+      myNotifs.forEach(n=>{
+        const unread=!n.read;
+        html+=`<div style="padding:1rem;border-radius:4px;margin-bottom:.75rem;border:1px solid var(--bd);${unread?'background-color:rgba(240,165,0,0.1);border-left:3px solid var(--am)':''}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1">
+              <div style="font-weight:500;color:var(--tx1);margin-bottom:.25rem">${escapeHtml(n.msg)}</div>
+              <div style="font-size:.8rem;color:var(--tx3)">${fdt(n.ts)}</div>
+              ${n.wo?`<div style="font-size:.8rem;color:var(--am);margin-top:.5rem">Work Order: <strong>${escapeHtml(n.wo)}</strong></div>`:''}
+            </div>
+          </div>
+        </div>`;
+      });
+      inboxEl.innerHTML=html;
+    }
+  }
+  
+  // Render upload buttons
+  const buttonsEl=document.getElementById('linesman-upload-buttons');
+  if(buttonsEl){
+    let html='';
+    LINESMAN_DOCS.forEach(doc=>{
+      html+=`<button onclick="startLinesmanDocUpload('${doc.id}')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem 1rem;background:var(--bg2);border:2px dashed var(--bd);border-radius:8px;cursor:pointer;transition:all 0.2s;font-family:inherit;color:var(--tx1);font-size:0.95rem;font-weight:500;min-height:140px" onmouseover="this.style.borderColor='var(--am)';this.style.backgroundColor='var(--bg1);this.style.color='var(--am)'" onmouseout="this.style.borderColor='var(--bd)';this.style.backgroundColor='var(--bg2)';this.style.color='var(--tx1)'">
+        <div style="font-size:1.5rem;margin-bottom:.5rem">${doc.icon}</div>
+        <div style="font-weight:500;font-size:.9rem">${escapeHtml(doc.label)}</div>
+        <div style="font-size:.75rem;color:var(--tx3);margin-top:.25rem">Click to upload</div>
+      </button>`;
+    });
+    buttonsEl.innerHTML=html;
+  }
+}
+
+function startLinesmanDocUpload(docType){
+  const docLabel=LINESMAN_DOCS.find(d=>d.id===docType)?.label||docType;
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='*';
+  input.onchange=async(e)=>{
+    if(!e.target.files[0])return;
+    const file=e.target.files[0];
+    const wo=prompt('Enter Work Order number:','');
+    if(!wo){
+      toast('Work Order number is required','rd');
+      return;
+    }
+    await uploadLinesmanDocument(wo, docType, docLabel, file);
+  };
+  input.click();
+}
+
+async function uploadLinesmanDocument(wo, docType, docLabel, file){
+  try{
+    if(!DB.jobs[wo]){
+      toast(`Work Order ${wo} not found`,'rd');
+      return;
+    }
+    
+    if(SB?.client){
+      const path=`claimdesk-linesman/${wo}/${docType}/${Date.now()}-${file.name}`;
+      const {data,error}=await SB.client.storage.from('claimdesk-scans').upload(path,file);
+      
+      if(error)throw error;
+      
+      const {data:publicUrl}=SB.client.storage.from('claimdesk-scans').getPublicUrl(path);
+      
+      // Save to documents table
+      const {data:docData,error:docError}=await SB.client.from('documents').insert([{
+        wo, doc_type:`linesman_${docType}`, is_signed:false, storage_path:path, filename:file.name, uploaded_role:'linesman'
+      }]);
+      if(docError)throw docError;
+      
+      // Save to local DB
+      if(!DB.jobs[wo].scans)DB.jobs[wo].scans={};
+      DB.jobs[wo].scans[`linesman_${docType}`]={
+        storagePath:path, url:publicUrl.publicUrl, filename:file.name, uploadedAt:new Date().toISOString(), role:'linesman'
+      };
+      addLog(wo, `Linesman uploaded ${docLabel}`);
+      saveDB();
+      toast(`✓ ${docLabel} uploaded`,  'gn');
+      renderLinesmanDash();
+    }else{
+      // Fallback: local storage
+      const reader=new FileReader();
+      reader.onload=(e)=>{
+        if(!DB.jobs[wo].scans)DB.jobs[wo].scans={};
+        DB.jobs[wo].scans[`linesman_${docType}`]={
+          dataUrl:e.target.result, filename:file.name, uploadedAt:new Date().toISOString(), role:'linesman'
+        };
+        addLog(wo, `Linesman uploaded ${docLabel}`);
+        saveDB();
+        toast(`✓ ${docLabel} uploaded`, 'gn');
+        renderLinesmanDash();
+      };
+      reader.readAsDataURL(file);
+    }
+  }catch(err){
+    console.error('Upload error:',err);
+    toast(`Error uploading ${docLabel}: ${err.message}`,'rd');
+  }
+}
+
+/* ═══════════════════════════════════════
    AUTOCOMPLETE
 ═══════════════════════════════════════ */
 function acInput(wo,dt,idx){
@@ -3561,6 +3687,7 @@ async function doLogin(){
   if(r==='admin'){show('n-inbox');show('n-rates');show('n-actlog');}
   if(r==='finance'){show('n-inbox');show('n-claims');}
   if(r==='md'){show('n-actlog');show('n-jobs');show('n-claims');}
+  if(r==='linesman'){show('n-inbox');}
 
   // Pull the latest shared data from Supabase before rendering
   if(SB.enabled){
