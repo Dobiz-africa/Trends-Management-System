@@ -3645,18 +3645,63 @@ function serializeToHTML(container){
 }
 
 /* Build a complete, standalone HTML document string for the paper document */
-function buildPrintableHTML(innerHtml, title){
-  const now=new Date();
-  const timestamp=now.toLocaleDateString('en-BW',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-BW',{hour:'2-digit',minute:'2-digit'});
-  const role=RN[CU]||CU;
+/**
+ * 🔴 REAL FIX: Updated buildPrintableHTML & openPrintWindow
+ * 
+ * The problem was:
+ * 1. buildPrintableHTML was adding @page { margin: 1cm; } 
+ *    which OVERRODE the @page rules in your PDF functions
+ * 2. openPrintWindow had window size of 900x700, forcing horizontal scrolling
+ * 
+ * The solution:
+ * 1. Remove conflicting @page rule from buildPrintableHTML
+ * 2. Increase print window size to accommodate landscape documents
+ * 3. Let the @page rules from your PDF functions take effect
+ */
+
+/* Build a complete, standalone HTML document string for the paper document */
+function buildPrintableHTML(innerHtml, title) {
+  const now = new Date();
+  const timestamp = now.toLocaleDateString('en-BW', {day:'2-digit', month:'short', year:'numeric'}) + ' ' + now.toLocaleTimeString('en-BW', {hour:'2-digit', minute:'2-digit'});
+  const role = RN[CU] || CU;
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8">
-<title>${title||'ClaimDesk Document'}</title>
-<style>${DOC_PRINT_CSS}
-@page { margin: 1cm; }
-body { position: relative; }
-.pdf-footer { position: fixed; bottom: 0.5cm; left: 0; right: 0; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title || 'ClaimDesk Document'}</title>
+<style>
+${DOC_PRINT_CSS}
+/* ⚠️ REMOVED: @page { margin: 1cm; } — let PDF functions control page settings */
+html, body { 
+  margin: 0; 
+  padding: 0; 
+  width: 100%; 
+  height: 100%;
+  box-sizing: border-box;
+}
+body { 
+  position: relative; 
+  font-family: Arial, Helvetica, sans-serif;
+}
+.pdf-footer { 
+  position: fixed; 
+  bottom: 0.5cm; 
+  left: 0; 
+  right: 0; 
+  font-size: 10px; 
+  color: #888; 
+  text-align: center; 
+  border-top: 1px solid #ddd; 
+  padding-top: 4px; 
+}
+/* Hide footer during screen view, only show in print */
+@media screen {
+  .pdf-footer { display: none; }
+}
+@media print {
+  .pdf-footer { display: block; }
+  body { margin: 0; padding: 0; }
+}
 </style>
 </head><body>
 ${innerHtml}
@@ -3667,16 +3712,150 @@ ${innerHtml}
 /* MAIN PDF / Print function.
    Opens the document in a clean popup and triggers print (Print → Save as PDF).
    This is more reliable than any canvas-screenshot approach. */
-function openPrintWindow(innerHtml, title){
-  const html=buildPrintableHTML(innerHtml, title);
-  const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
-  if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
+function openPrintWindow(innerHtml, title) {
+  const html = buildPrintableHTML(innerHtml, title);
+  
+  // ⚠️ FIXED: Increased window size to accommodate landscape documents
+  // Old: width=900,height=700 (forced horizontal scrolling)
+  // New: width=1400,height=900 (gives enough room for landscape + margins)
+  const w = window.open('', '_blank', 'width=1400,height=900,menubar=yes,toolbar=yes,scrollbars=yes');
+  
+  if (!w) { 
+    toast('Pop-up blocked — allow pop-ups for this site then try again', 'rd'); 
+    return; 
+  }
+  
+  w.document.open(); 
+  w.document.write(html); 
+  w.document.close();
+  
   // Small delay lets images/fonts settle before print dialog opens
-  w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
+  w.onload = () => { 
+    setTimeout(() => { 
+      w.focus(); 
+      w.print(); 
+    }, 600); 
+  };
+  
   // Fallback if onload already fired
-  setTimeout(()=>{ try{ if(!w.closed){ w.focus(); w.print(); } }catch(e){} },1200);
-  toast('Print window opened — choose "Save as PDF" in the print dialog','gn');
+  setTimeout(() => { 
+    try { 
+      if (!w.closed) { 
+        w.focus(); 
+        w.print(); 
+      } 
+    } catch(e) {} 
+  }, 1200);
+  
+  toast('Print window opened — choose "Save as PDF" in the print dialog', 'gn');
+}
+
+/* MAIN PDF / Print function.
+   Opens the document in a clean popup and triggers print (Print → Save as PDF).
+   This is more reliable than any canvas-screenshot approach. */
+/**
+ * 🔴 REAL FIX: Updated buildPrintableHTML & openPrintWindow
+ * 
+ * The problem was:
+ * 1. buildPrintableHTML was adding @page { margin: 1cm; } 
+ *    which OVERRODE the @page rules in your PDF functions
+ * 2. openPrintWindow had window size of 900x700, forcing horizontal scrolling
+ * 
+ * The solution:
+ * 1. Remove conflicting @page rule from buildPrintableHTML
+ * 2. Increase print window size to accommodate landscape documents
+ * 3. Let the @page rules from your PDF functions take effect
+ */
+
+/* Build a complete, standalone HTML document string for the paper document */
+function buildPrintableHTML(innerHtml, title) {
+  const now = new Date();
+  const timestamp = now.toLocaleDateString('en-BW', {day:'2-digit', month:'short', year:'numeric'}) + ' ' + now.toLocaleTimeString('en-BW', {hour:'2-digit', minute:'2-digit'});
+  const role = RN[CU] || CU;
+  return `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title || 'ClaimDesk Document'}</title>
+<style>
+${DOC_PRINT_CSS}
+/* ⚠️ REMOVED: @page { margin: 1cm; } — let PDF functions control page settings */
+html, body { 
+  margin: 0; 
+  padding: 0; 
+  width: 100%; 
+  height: 100%;
+  box-sizing: border-box;
+}
+body { 
+  position: relative; 
+  font-family: Arial, Helvetica, sans-serif;
+}
+.pdf-footer { 
+  position: fixed; 
+  bottom: 0.5cm; 
+  left: 0; 
+  right: 0; 
+  font-size: 10px; 
+  color: #888; 
+  text-align: center; 
+  border-top: 1px solid #ddd; 
+  padding-top: 4px; 
+}
+/* Hide footer during screen view, only show in print */
+@media screen {
+  .pdf-footer { display: none; }
+}
+@media print {
+  .pdf-footer { display: block; }
+  body { margin: 0; padding: 0; }
+}
+</style>
+</head><body>
+${innerHtml}
+<div class="pdf-footer">Generated by ${role} on ${timestamp} · ClaimDesk</div>
+</body></html>`;
+}
+
+/* MAIN PDF / Print function.
+   Opens the document in a clean popup and triggers print (Print → Save as PDF).
+   This is more reliable than any canvas-screenshot approach. */
+function openPrintWindow(innerHtml, title) {
+  const html = buildPrintableHTML(innerHtml, title);
+  
+  // ⚠️ FIXED: Increased window size to accommodate landscape documents
+  // Old: width=900,height=700 (forced horizontal scrolling)
+  // New: width=1400,height=900 (gives enough room for landscape + margins)
+  const w = window.open('', '_blank', 'width=1400,height=900,menubar=yes,toolbar=yes,scrollbars=yes');
+  
+  if (!w) { 
+    toast('Pop-up blocked — allow pop-ups for this site then try again', 'rd'); 
+    return; 
+  }
+  
+  w.document.open(); 
+  w.document.write(html); 
+  w.document.close();
+  
+  // Small delay lets images/fonts settle before print dialog opens
+  w.onload = () => { 
+    setTimeout(() => { 
+      w.focus(); 
+      w.print(); 
+    }, 600); 
+  };
+  
+  // Fallback if onload already fired
+  setTimeout(() => { 
+    try { 
+      if (!w.closed) { 
+        w.focus(); 
+        w.print(); 
+      } 
+    } catch(e) {} 
+  }, 1200);
+  
+  toast('Print window opened — choose "Save as PDF" in the print dialog', 'gn');
 }
 
 /* Download a saved doc — opens print window so user saves as PDF */
