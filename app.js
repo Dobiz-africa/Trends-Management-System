@@ -3881,19 +3881,8 @@ function downloadSavedDoc(wo, docType){
  */
 
 /* Download the currently-open modal document — opens print window with CLEAN PDF HTML */
-function downloadDocAsPDF(wo, docType) {
-  const job = DB.jobs[wo];
-  if (!job) { toast('Job not found', 'am'); return; }
-  
-  // 🔑 KEY FIX: Use buildDocForPDF() instead of grabbing modal body
-  const cleanPdfHtml = buildDocForPDF(docType, job);
-  
-  if (!cleanPdfHtml) { toast('No PDF renderer for this document type', 'am'); return; }
-  
-  const title = (docType.replace(/_/g, ' ')) + ' · WO ' + wo;
-  
-  // Pass clean HTML to print window (NO form inputs, clean styling)
-  openPrintWindow(cleanPdfHtml, title);
+function downloadDocAsPDF(wo, docType){
+  showPrintSettingsDialog(wo, docType);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -4386,3 +4375,271 @@ function doLogout(){
 
 /* Auto-restore user session on page load */
 window.addEventListener('DOMContentLoaded',restoreSession);
+
+/**
+ * PRINT SETTINGS DIALOG
+ * 
+ * Before opening the print window, show a dialog where user can:
+ * 1. Choose orientation (Portrait/Landscape)
+ * 2. Set page size (A4, Letter)
+ * 3. Set margins (0.75")
+ * 4. Then print with those settings
+ * 
+ * Each document type has DEFAULT settings (from your settings PDF)
+ */
+
+/* Document-specific print settings (from your DOCUMENTS_SETTINGS.pdf) */
+const DOC_PRINT_SETTINGS = {
+  'annexure': {
+    name: 'Annexure to Payment Certificate',
+    orientation: 'portrait',
+    pageSize: 'A4',
+    margins: '0.75"',
+    collation: '1,2,3'
+  },
+  'list_of_jobs': {
+    name: 'List of Jobs Done',
+    orientation: 'landscape',  // THIS IS THE KEY SETTING
+    pageSize: 'A4',
+    margins: '0.75"',
+    collation: '1,2,3'
+  },
+  'payment_cert': {
+    name: 'Payment Certificate',
+    orientation: 'portrait',
+    pageSize: 'A4',
+    margins: '0.75"',
+    collation: '1,2,3'
+  },
+  'works_valuation': {
+    name: 'Works Valuation',
+    orientation: 'portrait',
+    pageSize: 'A4',
+    margins: '0.75"',
+    collation: '1,2,3'
+  },
+  'works_instruction': {
+    name: 'Works Instruction',
+    orientation: 'portrait',
+    pageSize: 'A4',
+    margins: '0.75"',
+    collation: '1,2,3'
+  },
+  'bpc_spreadsheet': {
+    name: 'BPC Spreadsheet',
+    orientation: 'landscape',
+    pageSize: 'A4',
+    margins: '0.75"',
+    collation: '1,2,3'
+  },
+  'invoice': {
+    name: 'Invoice',
+    orientation: 'portrait',
+    pageSize: 'Letter',
+    margins: '0.75"',
+    collation: '1,2,3'
+  }
+};
+
+/* Show print settings dialog */
+function showPrintSettingsDialog(wo, docType) {
+  const settings = DOC_PRINT_SETTINGS[docType] || {
+    name: docType.replace(/_/g, ' '),
+    orientation: 'portrait',
+    pageSize: 'A4',
+    margins: '0.75"',
+    collation: '1,2,3'
+  };
+
+  const orientationOptions = `
+    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
+      <input type="radio" name="orientation" value="portrait" ${settings.orientation==='portrait'?'checked':''} style="margin-right:8px">
+      <span>Portrait (Taller than wide)</span>
+    </label>
+    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
+      <input type="radio" name="orientation" value="landscape" ${settings.orientation==='landscape'?'checked':''} style="margin-right:8px">
+      <span>Landscape (Wider than tall)</span>
+    </label>
+  `;
+
+  const pageSizeOptions = `
+    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
+      <input type="radio" name="pageSize" value="A4" ${settings.pageSize==='A4'?'checked':''} style="margin-right:8px">
+      <span>A4 (8.27" × 11.69")</span>
+    </label>
+    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
+      <input type="radio" name="pageSize" value="Letter" ${settings.pageSize==='Letter'?'checked':''} style="margin-right:8px">
+      <span>Letter (8.5" × 11")</span>
+    </label>
+  `;
+
+  const marginOptions = `
+    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
+      <input type="radio" name="margins" value="0.5" style="margin-right:8px">
+      <span>0.5 inches</span>
+    </label>
+    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
+      <input type="radio" name="margins" value="0.75" checked style="margin-right:8px">
+      <span>0.75 inches (Recommended)</span>
+    </label>
+    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
+      <input type="radio" name="margins" value="1" style="margin-right:8px">
+      <span>1 inch</span>
+    </label>
+  `;
+
+  const html = `
+    <div style="padding:20px;font-family:Arial,sans-serif;max-width:500px">
+      <h2 style="margin-top:0;color:#333">Print Settings: ${settings.name}</h2>
+      
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-weight:bold;margin-bottom:10px;color:#333">Orientation:</label>
+        <div style="margin-left:10px">
+          ${orientationOptions}
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-weight:bold;margin-bottom:10px;color:#333">Page Size:</label>
+        <div style="margin-left:10px">
+          ${pageSizeOptions}
+        </div>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-weight:bold;margin-bottom:10px;color:#333">Margins:</label>
+        <div style="margin-left:10px">
+          ${marginOptions}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:30px">
+        <button onclick="closePrintSettingsDialog()" style="padding:10px 20px;background:#999;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px">
+          Cancel
+        </button>
+        <button onclick="confirmPrintSettings('${wo}','${docType}')" style="padding:10px 20px;background:#27ae60;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px">
+          Print with These Settings
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Show the dialog
+  document.getElementById('printSettingsModal').innerHTML = html;
+  document.getElementById('printSettingsModal').style.display = 'flex';
+}
+
+/* Close print settings dialog */
+function closePrintSettingsDialog() {
+  document.getElementById('printSettingsModal').style.display = 'none';
+}
+
+/* Confirm and apply print settings */
+function confirmPrintSettings(wo, docType) {
+  const orientation = document.querySelector('input[name="orientation"]:checked').value;
+  const pageSize = document.querySelector('input[name="pageSize"]:checked').value;
+  const margins = document.querySelector('input[name="margins"]:checked').value;
+
+  closePrintSettingsDialog();
+
+  // Get the document HTML
+  const job = DB.jobs[wo];
+  if (!job) { toast('Job not found', 'am'); return; }
+
+  const cleanPdfHtml = buildDocForPDF(docType, job);
+  if (!cleanPdfHtml) { toast('No PDF renderer for this document type', 'am'); return; }
+
+  // Open print window WITH the selected settings
+  openPrintWindowWithSettings(cleanPdfHtml, docType, orientation, pageSize, margins);
+}
+
+/* Open print window with custom settings */
+function openPrintWindowWithSettings(innerHtml, docType, orientation, pageSize, marginInches) {
+  const title = docType.replace(/_/g, ' ') + ' · ' + orientation.toUpperCase();
+  
+  // Convert margin to mm (0.75" = 19.05mm)
+  const marginMm = parseFloat(marginInches) * 25.4;
+  
+  // Page size in mm
+  const pageSizes = {
+    'A4': { width: 210, height: 297 },
+    'Letter': { width: 215.9, height: 279.4 }
+  };
+  
+  const ps = pageSizes[pageSize] || pageSizes['A4'];
+  
+  // Calculate orientation dimensions
+  const isLandscape = orientation === 'landscape';
+  const pageWidth = isLandscape ? ps.height : ps.width;
+  const pageHeight = isLandscape ? ps.width : ps.height;
+  
+  // Build print CSS
+  const printCss = `
+    @page {
+      size: ${pageWidth}mm ${pageHeight}mm;
+      margin: ${marginMm}mm;
+    }
+    @media print {
+      body { margin: 0; padding: 0; }
+      .paper { margin: 0; padding: 0; }
+    }
+  `;
+
+  const html = `<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<style>
+${printCss}
+html, body { 
+  margin: 0; 
+  padding: 0; 
+  width: 100%; 
+  height: 100%;
+}
+body { 
+  font-family: Arial, Helvetica, sans-serif;
+}
+</style>
+</head><body>
+${innerHtml}
+</body></html>`;
+
+  // Print window size based on orientation
+  const winWidth = isLandscape ? 1400 : 1000;
+  const winHeight = isLandscape ? 900 : 1100;
+
+  const w = window.open('', '_blank', `width=${winWidth},height=${winHeight},menubar=yes,toolbar=yes,scrollbars=yes`);
+
+  if (!w) { 
+    toast('Pop-up blocked — allow pop-ups for this site then try again', 'rd'); 
+    return; 
+  }
+
+  w.document.open(); 
+  w.document.write(html); 
+  w.document.close();
+
+  // Open print dialog
+  w.onload = () => { 
+    setTimeout(() => { 
+      w.focus(); 
+      w.print(); 
+    }, 600); 
+  };
+
+  setTimeout(() => { 
+    try { 
+      if (!w.closed) { 
+        w.focus(); 
+        w.print(); 
+      } 
+    } catch(e) {} 
+  }, 1200);
+
+  toast('Print window opened — your settings will be applied', 'gn');
+}
+
+/* Add HTML for the modal to index.html (add this after the docModal div) */
+// <div id="printSettingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:101;align-items:center;justify-content:center"></div>
