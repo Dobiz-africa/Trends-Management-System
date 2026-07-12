@@ -201,7 +201,7 @@
 
 <!-- VIEW DOCUMENT MODAL (paper doc viewer) -->
 <div id="docModal" class="overlay" onclick="if(event.target===this){closeModal('docModal');refreshDetail();}">
-  <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;width:min(860px,95vw);max-height:90vh;display:flex;flex-direction:column">
+  <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;width:min(1200px,98vw);max-height:95vh;display:flex;flex-direction:column;overflow:hidden">
     <div style="padding:.8rem 1.25rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <span style="font-size:.9rem;font-weight:600;color:var(--tx)" id="docModalTitle">Document</span>
       <div style="display:flex;gap:7px;align-items:center">
@@ -211,7 +211,7 @@
         <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');refreshDetail()">✕ Close</button>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:1.25rem" id="docModalBody"></div>
+    <div style="flex:1;overflow-y:auto;padding:1.25rem;width:100%;box-sizing:border-box" id="docModalBody"></div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--bd);background:var(--sf2);display:flex;gap:7px;flex-wrap:wrap" id="docModalFoot"></div>
   </div>
 </div>
