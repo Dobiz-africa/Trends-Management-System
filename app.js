@@ -419,7 +419,6 @@ async function syncFromSupabase(){
     if(seq && seq.value!=null) DB.certSeq = Number(seq.value)||DB.certSeq;
 
     SB.ready = true;
-    try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(_){}
   }catch(e){
     console.error('ClaimDesk: load from Supabase failed, using local cache.', e);
     SB.ready = true;
@@ -4345,6 +4344,7 @@ async function doLogin(){
     });
     await syncFromSupabase();
     console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
+    if(tbt) tbt.textContent = 'Trends Engineering Services (PTY) Ltd';
   }else{
     console.log('SB not enabled. DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
   }
