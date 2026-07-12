@@ -4655,6 +4655,13 @@ let _syncTimer = null;
 function startAutoSync(){
   if(_syncTimer) clearInterval(_syncTimer);
   _syncTimer = setInterval(async ()=>{
+    // Don't sync if user is actively editing a document
+    const modalOpen = document.getElementById('docModal')?.classList.contains('open');
+    if(modalOpen){
+      console.log('Skipping auto-sync: user is editing a document');
+      return;
+    }
+    
     console.log('Auto-syncing data from Supabase...');
     try{
       await syncFromSupabase();
