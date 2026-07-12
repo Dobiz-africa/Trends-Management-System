@@ -6,11 +6,11 @@ function toggleTheme(){
   document.documentElement.setAttribute('data-theme',isLight?'dark':'light');
   document.getElementById('themeIcon').textContent=isLight?'🌙':'☀️';
   document.getElementById('themeLabel').textContent=isLight?'Dark':'Light';
-  localStorage.setItem('tes_theme',isLight?'dark':'light');
+  //localStorage.setItem('tes_theme',isLight?'dark':'light');
 }
 // Apply saved theme on load
 (function(){
-  const saved=localStorage.getItem('tes_theme');
+  const saved=null;
   if(saved==='light'){
     document.documentElement.setAttribute('data-theme','light');
     // Icons updated after DOM loads
@@ -474,20 +474,11 @@ async function pushLogRow(entry){
 const DB_KEY = 'tes_v3';
 let DB;
 function loadDB(){
-  try{
-    const raw = localStorage.getItem(DB_KEY);
-    if(raw){ const parsed = JSON.parse(raw); if(parsed && parsed.version) return parsed; }
-  }catch(e){ console.warn('Could not load saved data:', e); }
+  // Don't load from localStorage — Supabase is source of truth
   return null;
 }
 function saveDB(){
-  try{
-    localStorage.setItem(DB_KEY, JSON.stringify(DB));
-  }catch(e){
-    console.error('Local save failed:', e);
-    if(typeof toast === 'function') toast('Local storage full — server copy still saved','am');
-  }
-  pushToSupabase();   // background push (no-op if offline)
+  pushToSupabase();   // Only push to Supabase, no localStorage
 }
 
 const WO_SEED = [
@@ -1992,10 +1983,10 @@ function updateClaimSummary(){
     </div>`:'';
 }
 function saveClaimBatchState(){
-  localStorage.setItem('tes_claimBatch',JSON.stringify(Array.from(selClaimJobs)));
+  //localStorage.setItem('tes_claimBatch',JSON.stringify(Array.from(selClaimJobs)));
 }
 function restoreClaimBatchState(){
-  const saved=localStorage.getItem('tes_claimBatch');
+  const saved=null;
   if(saved){
     try{
       const jobs=JSON.parse(saved);
@@ -2012,7 +2003,7 @@ function restoreClaimBatchState(){
 }
 function clearClaimBatchState(){
   selClaimJobs.clear();
-  localStorage.removeItem('tes_claimBatch');
+  //localStorage.removeItem('tes_claimBatch');
 }
 
 /**
@@ -4290,7 +4281,7 @@ function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs(
 function resetDatabase(){
   if(confirm('⚠️ DELETE ALL DATA? This cannot be undone. You will lose all work orders, jobs, and batches.')){
     if(confirm('Really? This is permanent.')){
-      localStorage.clear();
+      DB = {version:3,jobs:{},notifs:{},actLog:[],rates:[...RATES_SEED],certSeq:1,batchScans:{},batchSaved:{}};
       DB={jobs:{},certSeq:1,batchDocs:{},batchScans:{}};
       toast('✅ Database cleared. Page reloading...');
       setTimeout(()=>location.reload(),1000);
@@ -4304,7 +4295,7 @@ function pickRole(role){
 }
 /* Auto-restore session if user was previously logged in */
 async function restoreSession(){
-  const saved=localStorage.getItem('tes_currentRole');
+  const saved=null
   if(!saved)return;// No saved session
   try{
     // Silently restore the role and log in
@@ -4313,7 +4304,7 @@ async function restoreSession(){
   }catch(e){
     console.error('Session restore failed:',e);
     // Clear broken session
-    localStorage.removeItem('tes_currentRole');
+    //localStorage.removeItem('tes_currentRole');
   }
 }
 async function doLogin(){
@@ -4321,7 +4312,7 @@ async function doLogin(){
   if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
   CU=r;
   // Persist session to localStorage so user stays logged in after page reload
-  localStorage.setItem('tes_currentRole',r);
+  //localStorage.setItem('tes_currentRole',r);
   // Reset all screens — clear any stale job detail from a previous role session
   detailWO=null;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
@@ -4367,7 +4358,7 @@ function doLogout(){
   addLog('','Signed out');saveDB();
   CU='';detailWO=null;
   // Clear session from localStorage
-  localStorage.removeItem('tes_currentRole');
+  //localStorage.removeItem('tes_currentRole');
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginRole').value='';
