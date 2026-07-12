@@ -369,9 +369,9 @@ async function syncFromSupabase(){
   try{
     const c = SB.client;
     const [jobsR, docsR, batchR, logR, notifR, metaR] = await Promise.all([
-      c.from('jobs').select('*'),
-      c.from('documents').select('*'),
-      c.from('claim_batches').select('*'),
+      c.from('jobs').select('*').order('updated_at', {ascending:false}),
+      c.from('documents').select('*').order('created_at', {ascending:false}),
+      c.from('claim_batches').select('*').order('created_at', {ascending:false}),
       c.from('activity_log').select('*').order('ts',{ascending:false}).limit(500),
       c.from('notifications').select('*').order('ts',{ascending:false}).limit(300),
       c.from('app_meta').select('*'),
@@ -4310,6 +4310,7 @@ async function doLogin(){
   const r=document.getElementById('loginRole').value;
   if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
   CU=r;
+  startAutoSync();  // Start refreshing data every 30 seconds
   // Persist session to localStorage so user stays logged in after page reload
   localStorage.setItem('tes_currentRole',r);
   // Reset all screens — clear any stale job detail from a previous role session
@@ -4373,6 +4374,7 @@ async function doLogin(){
 function doLogout(){
   addLog('','Signed out');saveDB();
   CU='';detailWO=null;
+  stopAutoSync();  // Stop auto-refresh when logging out
   // Clear session from localStorage
   localStorage.removeItem('tes_currentRole');
   document.getElementById('loginScreen').style.display='flex';
@@ -4648,5 +4650,28 @@ ${innerHtml}
   toast('Print window opened — your settings will be applied', 'gn');
 }
 
-/* Add HTML for the modal to index.html (add this after the docModal div) */
-// <div id="printSettingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:101;align-items:center;justify-content:center"></div>
+let _syncTimer = null;
+
+function startAutoSync(){
+  if(_syncTimer) clearInterval(_syncTimer);
+  _syncTimer = setInterval(async ()=>{
+    console.log('Auto-syncing data from Supabase...');
+    try{
+      await syncFromSupabase();
+      console.log('Auto-sync complete. DB.jobs now has', Object.keys(DB.jobs).length, 'jobs');
+      if(CU && document.querySelector('.workspace')){
+        if(typeof renderDashboard === 'function') renderDashboard();
+        if(typeof renderWorkOrders === 'function' && document.getElementById('workOrdersSection')?.style.display !== 'none') renderWorkOrders();
+      }
+    }catch(e){
+      console.warn('Auto-sync failed:', e);
+    }
+  }, 30000);
+}
+
+function stopAutoSync(){
+  if(_syncTimer){
+    clearInterval(_syncTimer);
+    _syncTimer = null;
+  }
+}
