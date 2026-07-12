@@ -4294,7 +4294,7 @@ function pickRole(role){
 }
 /* Auto-restore session if user was previously logged in */
 async function restoreSession(){
-  const saved=null
+  const saved=localStorage.getItem('tes_currentRole');
   if(!saved)return;// No saved session
   try{
     // Silently restore the role and log in
@@ -4303,7 +4303,7 @@ async function restoreSession(){
   }catch(e){
     console.error('Session restore failed:',e);
     // Clear broken session
-    //localStorage.removeItem('tes_currentRole');
+    localStorage.removeItem('tes_currentRole');
   }
 }
 async function doLogin(){
@@ -4311,7 +4311,7 @@ async function doLogin(){
   if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
   CU=r;
   // Persist session to localStorage so user stays logged in after page reload
-  //localStorage.setItem('tes_currentRole',r);
+  localStorage.setItem('tes_currentRole',r);
   // Reset all screens — clear any stale job detail from a previous role session
   detailWO=null;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
@@ -4333,6 +4333,15 @@ async function doLogin(){
   // Pull the latest shared data from Supabase before rendering
   if(SB.enabled){
     const tbt=document.getElementById('tbt'); if(tbt) tbt.textContent='Loading…';
+    
+    // Set a timeout so if Supabase is slow, we still show the dashboard
+    const timeoutId = setTimeout(()=>{
+      if(tbt && tbt.textContent==='Loading…'){
+        tbt.textContent = 'Trends Engineering Services (PTY) Ltd';
+        console.warn('Supabase sync timeout - showing dashboard with cached data');
+      }
+    }, 5000);  // 5 second timeout
+    
     // Flush any pending push to Supabase before syncing
     await new Promise(resolve=>{
       if(_sbSaveTimer){
@@ -4342,8 +4351,15 @@ async function doLogin(){
         resolve();
       }
     });
-    await syncFromSupabase();
-    console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
+    
+    try{
+      await syncFromSupabase();
+      console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
+    }catch(e){
+      console.error('Supabase sync error:', e);
+    }
+    
+    clearTimeout(timeoutId);  // Clear the timeout since sync is done
     if(tbt) tbt.textContent = 'Trends Engineering Services (PTY) Ltd';
   }else{
     console.log('SB not enabled. DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
@@ -4358,7 +4374,7 @@ function doLogout(){
   addLog('','Signed out');saveDB();
   CU='';detailWO=null;
   // Clear session from localStorage
-  //localStorage.removeItem('tes_currentRole');
+  localStorage.removeItem('tes_currentRole');
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginRole').value='';
