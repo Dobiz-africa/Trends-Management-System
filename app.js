@@ -4267,13 +4267,27 @@ function nav(screen){
   const titles={dashboard:'Dashboard',jobs:'Work Orders',inbox:'Inbox',claims:'Claim Batch',rates:'Rates Sheet',actlog:'Activity Log',jobdetail:'Job Detail'};
   document.getElementById('tbt').textContent=titles[screen]||screen;
   document.getElementById('n-'+screen)?.classList.add('act');
-  if(screen==='dashboard'){renderDashboard();}
-  if(screen==='jobs'){renderJobs();}
-  if(screen==='inbox'){renderInbox();}
-  if(screen==='claims'){renderClaims();}
-  if(screen==='rates'){renderRates();}
-  if(screen==='actlog'){renderActLog();}
-  if(screen==='jobdetail'&&detailWO){renderJobDetail(detailWO);}
+  if(screen==='dashboard'){
+  syncFromSupabase().then(()=>renderDashboard()).catch(e=>console.error('Sync failed:',e));
+}
+ if(screen==='jobs'){
+  syncFromSupabase().then(()=>renderJobs()).catch(e=>console.error('Sync failed:',e));
+}
+if(screen==='inbox'){
+  syncFromSupabase().then(()=>renderInbox()).catch(e=>console.error('Sync failed:',e));
+}
+if(screen==='claims'){
+  syncFromSupabase().then(()=>renderClaims()).catch(e=>console.error('Sync failed:',e));
+}
+ if(screen==='rates'){
+  syncFromSupabase().then(()=>renderRates()).catch(e=>console.error('Sync failed:',e));
+}
+if(screen==='actlog'){
+  syncFromSupabase().then(()=>renderActLog()).catch(e=>console.error('Sync failed:',e));
+}
+if(screen==='jobdetail'&&detailWO){
+  syncFromSupabase().then(()=>renderJobDetail(detailWO)).catch(e=>console.error('Sync failed:',e));
+}
 }
 function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs();renderClaims();}
 
@@ -4653,27 +4667,23 @@ ${innerHtml}
 let _syncTimer = null;
 
 function startAutoSync(){
-  if(_syncTimer) clearInterval(_syncTimer);
-  _syncTimer = setInterval(async ()=>{
-    // Don't sync if user is actively editing a document
-    const modalOpen = document.getElementById('docModal')?.classList.contains('open');
-    if(modalOpen){
-      console.log('Skipping auto-sync: user is editing a document');
-      return;
+  // Auto-sync disabled - was causing conflicts with user edits
+  // Data now syncs only when user clicks navigation buttons
+  console.log('Sync-on-demand enabled. Data refreshes when you navigate.');
+}
+
+async function refreshDataAndRender(renderFunction){
+  try{
+    console.log('Syncing latest data from Supabase...');
+    await syncFromSupabase();
+    console.log('Sync complete. Now rendering view...');
+    if(renderFunction && typeof renderFunction === 'function'){
+      renderFunction();
     }
-    
-    console.log('Auto-syncing data from Supabase...');
-    try{
-      await syncFromSupabase();
-      console.log('Auto-sync complete. DB.jobs now has', Object.keys(DB.jobs).length, 'jobs');
-      if(CU && document.querySelector('.workspace')){
-        if(typeof renderDashboard === 'function') renderDashboard();
-        if(typeof renderWorkOrders === 'function' && document.getElementById('workOrdersSection')?.style.display !== 'none') renderWorkOrders();
-      }
-    }catch(e){
-      console.warn('Auto-sync failed:', e);
-    }
-  }, 30000);
+  }catch(e){
+    console.error('Failed to refresh data:', e);
+    if(typeof toast === 'function') toast('Could not refresh data','rd');
+  }
 }
 
 function stopAutoSync(){
