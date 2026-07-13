@@ -4375,7 +4375,7 @@ async function doLogin(){
         tbt.textContent = 'Trends Engineering Services (PTY) Ltd';
         console.warn('Supabase sync timeout - showing dashboard with cached data');
       }
-    }, 30000);  // 30 second timeout
+    }, 15000);  // 15 second timeout
     
     // Flush any pending push to Supabase before syncing
     await new Promise(resolve=>{
