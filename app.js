@@ -368,14 +368,34 @@ async function syncFromSupabase(){
   if(!SB.enabled){ SB.ready = true; return; }
   try{
     const c = SB.client;
+    // Calculate date 3 months ago for filtering
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const threeMonthsAgoISO = threeMonthsAgo.toISOString();
+    
+    console.log('Syncing data from Supabase (optimized)...');
+    
     const [jobsR, docsR, batchR, logR, notifR, metaR] = await Promise.all([
-      c.from('jobs').select('*').order('updated_at', {ascending:false}),
-      c.from('documents').select('*').order('created_at', {ascending:false}),
-      c.from('claim_batches').select('*').order('created_at', {ascending:false}),
-      c.from('activity_log').select('*').order('ts',{ascending:false}).limit(500),
+      // Only fetch active jobs from last 3 months
+      c.from('jobs').select('*').gte('created_at', threeMonthsAgoISO).order('updated_at', {ascending:false}),
+      
+      // Only fetch recent documents
+      c.from('documents').select('*').gte('created_at', threeMonthsAgoISO).order('created_at', {ascending:false}).limit(200),
+      
+      // Only recent batches
+      c.from('claim_batches').select('*').gte('created_at', threeMonthsAgoISO).order('created_at', {ascending:false}),
+      
+      // Reduced from 500 to 200 for faster load
+      c.from('activity_log').select('*').order('ts',{ascending:false}).limit(200),
+      
+      // Keep notifications same
       c.from('notifications').select('*').order('ts',{ascending:false}).limit(300),
+      
+      // Get metadata
       c.from('app_meta').select('*'),
     ]);
+    
+    console.log('Query complete. Processing data...');
 
     const jobs = {};
     (jobsR.data||[]).forEach(row=>{
