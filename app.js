@@ -6,11 +6,11 @@ function toggleTheme(){
   document.documentElement.setAttribute('data-theme',isLight?'dark':'light');
   document.getElementById('themeIcon').textContent=isLight?'🌙':'☀️';
   document.getElementById('themeLabel').textContent=isLight?'Dark':'Light';
-  //localStorage.setItem('tes_theme',isLight?'dark':'light');
+  localStorage.setItem('tes_theme',isLight?'dark':'light');
 }
 // Apply saved theme on load
 (function(){
-  const saved=null;
+  const saved=localStorage.getItem('tes_theme');
   if(saved==='light'){
     document.documentElement.setAttribute('data-theme','light');
     // Icons updated after DOM loads
@@ -363,53 +363,19 @@ async function initSupabase(){
   await initSupabase();
 })();
 
-let _syncInFlight = null;
-let _lastSyncAt = 0;
-
-/* Pull all shared data from Supabase into the in-memory DB (called on login).
-   force=true always hits the network. Otherwise, if a sync already ran in
-   the last 8 seconds, or one is already running right now, this reuses
-   that instead of firing a brand new round of queries — this is what was
-   causing 2-3 identical "Syncing data from Supabase" calls to fire at once
-   and slow each other down. */
-async function syncFromSupabase(force=false){
+/* Pull all shared data from Supabase into the in-memory DB (called on login). */
+async function syncFromSupabase(){
   if(!SB.enabled){ SB.ready = true; return; }
-  if(_syncInFlight) return _syncInFlight;
-  if(!force && Date.now()-_lastSyncAt < 8000) return Promise.resolve();
-  _syncInFlight = _syncFromSupabaseNow().finally(()=>{ _syncInFlight=null; _lastSyncAt=Date.now(); });
-  return _syncInFlight;
-}
-async function _syncFromSupabaseNow(){
   try{
     const c = SB.client;
-    // Calculate date 3 months ago for filtering
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    const threeMonthsAgoISO = threeMonthsAgo.toISOString();
-    
-    console.log('Syncing data from Supabase (optimized)...');
-    
     const [jobsR, docsR, batchR, logR, notifR, metaR] = await Promise.all([
-      // Only fetch active jobs from last 3 months
-      c.from('jobs').select('*').gte('created_at', threeMonthsAgoISO).order('updated_at', {ascending:false}),
-      
-      // Only fetch recent documents
-      c.from('documents').select('*').gte('created_at', threeMonthsAgoISO).order('created_at', {ascending:false}).limit(200),
-      
-      // Only recent batches
-      c.from('claim_batches').select('*').gte('created_at', threeMonthsAgoISO).order('created_at', {ascending:false}),
-      
-      // Reduced from 500 to 200 for faster load
-      c.from('activity_log').select('*').order('ts',{ascending:false}).limit(200),
-      
-      // Keep notifications same
+      c.from('jobs').select('*'),
+      c.from('documents').select('*'),
+      c.from('claim_batches').select('*'),
+      c.from('activity_log').select('*').order('ts',{ascending:false}).limit(500),
       c.from('notifications').select('*').order('ts',{ascending:false}).limit(300),
-      
-      // Get metadata
       c.from('app_meta').select('*'),
     ]);
-    
-    console.log('Query complete. Processing data...');
 
     const jobs = {};
     (jobsR.data||[]).forEach(row=>{
@@ -454,13 +420,15 @@ async function _syncFromSupabaseNow(){
 
     SB.ready = true;
   }catch(e){
-    console.error('ClaimDesk: load from Supabase failed, using local cache.', e);
+    console.error('ClaimDesk: load from Supabase failed.', e);
     SB.ready = true;
     if(typeof toast==='function') toast('Could not reach the server — showing last saved data','am');
   }
 }
 
 /* Push current DB state to Supabase (debounced; called by saveDB). */
+const _dirtyJobs = new Set();
+function markJobDirty(wo){ _dirtyJobs.add(wo); }
 let _sbSaveTimer = null;
 function pushToSupabase(){
   if(!SB.enabled) return;
@@ -471,11 +439,13 @@ async function _pushNow(){
   if(!SB.enabled) return;
   const c = SB.client;
   try{
-    const jobRows = Object.values(DB.jobs||{}).map(j=>({
-      wo:j.wo, cust:j.cust, loc:j.loc, phase:j.phase, stage:j.stage,
-      claim_ref:j.claimRef||null, data:j,
-    }));
+    const wosToPush = _dirtyJobs.size ? [..._dirtyJobs] : Object.keys(DB.jobs||{});
+    const jobRows = wosToPush.filter(wo=>DB.jobs[wo]).map(wo=>{
+      const j = DB.jobs[wo];
+      return { wo:j.wo, cust:j.cust, loc:j.loc, phase:j.phase, stage:j.stage, claim_ref:j.claimRef||null, data:j };
+    });
     if(jobRows.length) await c.from('jobs').upsert(jobRows, {onConflict:'wo'});
+    _dirtyJobs.clear();
 
     const notifRows=[];
     Object.entries(DB.notifs||{}).forEach(([role,list])=>{
@@ -501,17 +471,30 @@ async function pushLogRow(entry){
   catch(e){ /* non-fatal */ }
 }
 
-/* ═══════════════════════════════════════
-   LOCAL DB  (in-memory + localStorage cache + Supabase sync)
-═══════════════════════════════════════ */
-const DB_KEY = 'tes_v3';
-let DB;
-function loadDB(){
-  // Don't load from localStorage — Supabase is source of truth
-  return null;
+let _rtChannel = null;
+function subscribeRealtime(){
+  if(!SB.enabled || _rtChannel) return;
+  _rtChannel = SB.client.channel('claimdesk-live')
+    .on('postgres_changes', {event:'*', schema:'public', table:'jobs'}, payload=>{
+      const row = payload.new || payload.old;
+      if(!row) return;
+      if(payload.eventType==='DELETE'){ delete DB.jobs[row.wo]; }
+      else{
+        const j = (row.data && typeof row.data==='object') ? row.data : {};
+        j.wo=row.wo; j.cust=row.cust; j.loc=row.loc; j.phase=row.phase; j.stage=row.stage; j.claimRef=row.claim_ref||j.claimRef||'';
+        DB.jobs[row.wo] = j;
+      }
+      refreshAll();
+    })
+    .subscribe();
 }
+
+/* ═══════════════════════════════════════
+   LOCAL DB  (in-memory, synced with Supabase)
+═══════════════════════════════════════ */
+let DB = {version:3, jobs:{}, notifs:{admin:[],finance:[],md:[]}, actLog:[], rates:[...RATES_SEED], certSeq:1, batchScans:{}, batchSaved:{}};
 function saveDB(){
-  pushToSupabase();   // Only push to Supabase, no localStorage
+  pushToSupabase();
 }
 
 const WO_SEED = [
@@ -522,23 +505,6 @@ const WO_SEED = [
   {wo:'449501',cust:'Diatsha Mbwedze',   loc:'Sepopa',           type:'OHL 400V', phase:'46'},
   {wo:'449502',cust:'Samarambo Mayira',  loc:'Ngarange',         type:'OHL 400V', phase:'46'},
 ];
-
-function initDB(){
-  const saved = loadDB();
-  if(saved){
-    DB = saved;
-    // Forward-compatible defaults + ensure full rates are present
-    DB.notifs = DB.notifs || {};
-    DB.actLog = DB.actLog || [];
-    DB.batchScans = DB.batchScans || {};
-    DB.batchSaved = DB.batchSaved || {};
-    if(!DB.rates || !DB.rates.length) DB.rates = [...RATES_SEED];
-  }else{
-    DB={version:3,jobs:{},notifs:{},actLog:[],rates:[...RATES_SEED],certSeq:1,batchScans:{},batchSaved:{}};
-    saveDB();
-  }
-}
-initDB();
 
 function newJob(data){
   return {
@@ -1909,6 +1875,7 @@ function advanceStageWV(wo){
   job.actions['work_instruction_ready']={date:new Date().toISOString().slice(0,10),notes:'Works Valuation saved',extra:''};
   addLog(wo,'Works Valuation saved — ready to notify teams');
   notify(['md'],`Works Valuation completed for WO ${wo} — ${job.cust}. Admin will now notify teams.`,wo);
+  markJobDirty(wo);
   saveDB();closeModal('docModal');refreshDetail();refreshAll();
   toast('Works Valuation saved — now notify teams to start work');
   setTimeout(()=>openRecord(wo,'teams_notified','Record: Notify Teams to Start Work','Send the job details to your field teams externally (WhatsApp/email), then record here when done.','Team(s) assigned (e.g. Shakawe Team A)'),400);
@@ -1918,6 +1885,7 @@ function advanceStageWI(wo){
   job.stage='work_instruction_ready';
   job.actions['work_instruction_ready']={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
   addLog(wo,'Works Instruction prepared — stage advanced');
+  markJobDirty(wo);
   saveDB();closeModal('docModal');
   // Immediately prompt to record teams notified
   setTimeout(()=>openRecord(wo,'teams_notified','Record: Works Instruction Sent to Teams','Send the Works Instruction to the team externally (WhatsApp/email) with this doc, then record here.','Team(s) assigned (e.g. Shakawe Team A)'),200);
@@ -1952,6 +1920,7 @@ function advanceStage(wo,newStage){
   if(newStage==='vo1_created')notify(['md'],`VO1 created &amp; attached for WO ${wo} — ${job.cust}. Click to view.`,wo);
   if(newStage==='field_received')notify(['md'],`Linesman findings recorded &amp; attached for WO ${wo}`,wo);
   if(newStage==='gis_complete')notify(['md'],`GIS report attached for WO ${wo} — ${job.cust}. Finance can now generate claim docs.`,wo);
+  markJobDirty(wo);
   saveDB();closeModal('docModal');refreshDetail();refreshAll();
   toast(stageLabel(newStage)+' ✓ — document auto-attached for MD');
 }
@@ -1981,6 +1950,7 @@ function saveVO2(wo){
   let msg=diff>0?`VO2 exceeds VO1 by ${P(diff)} (${pctDiff.toFixed(1)}%). Review before creating Works Valuation.`:`VO2 saved within VO1 budget. Next: Create Works Valuation Document.`;
   addLog(wo,'VO2 (Variation Order) created');
   notify(['md'],`VO2 created for WO ${wo} — ${job.cust}. Next: Works Valuation Document.`,wo);
+  markJobDirty(wo);
   saveDB();closeModal('docModal');refreshDetail();refreshAll();
   toast('VO2 saved — next step: create Works Valuation');
   setTimeout(()=>toast(msg,diff>0?'am':'gn'),400);
@@ -2016,27 +1986,13 @@ function updateClaimSummary(){
     </div>`:'';
 }
 function saveClaimBatchState(){
-  //localStorage.setItem('tes_claimBatch',JSON.stringify(Array.from(selClaimJobs)));
+  // Selection is a temporary UI choice, not saved data — nothing to persist.
 }
 function restoreClaimBatchState(){
-  const saved=null;
-  if(saved){
-    try{
-      const jobs=JSON.parse(saved);
-      // Only restore jobs that are STILL eligible (not already processed with claimRef)
-      const eligible=jobs.filter(wo=>{
-        const job=DB.jobs[wo];
-        return job&&job.stage==='gis_complete'&&!job.claimRef;
-      });
-      selClaimJobs=new Set(eligible);
-    }catch(e){
-      console.error('Failed to restore claim batch:',e);
-    }
-  }
+  // Nothing to restore — selection resets each time this screen is opened.
 }
 function clearClaimBatchState(){
   selClaimJobs.clear();
-  //localStorage.removeItem('tes_claimBatch');
 }
 
 /**
@@ -2303,20 +2259,6 @@ function buildDoc(docType,job){
   }
 }
 
-/**
- * buildDocForPDF(docType, job)
- * Returns PDF-optimized HTML (no inputs, clean styling)
- * Used ONLY when exporting to PDF, NOT for modal display
- */
-function buildDocForPDF(docType, job) {
-  switch(docType) {
-    case 'annexure': return docAnnexureForPDF(job);
-    case 'list_of_jobs': return docListOfJobsForPDF(job);
-    // For other documents, fall back to regular render
-    default: return buildDoc(docType, job);
-  }
-}
-
 /* ── WORKS VALUATION VO1 ── */
 function docVO1(job){
   const t=jTotal(job,'vo1');
@@ -2345,19 +2287,19 @@ function docVO1(job){
     </tr>
   </table>
   <hr>
-  <div style="margin-bottom:6px"><span style="font-weight:bold;font-size:9pt">BPC &nbsp; W/O No. :</span> &nbsp; <input class="ef ef-b" value="${job.wo}" style="width:80px" onchange="DB.jobs['${job.wo}'].wo=this.value;saveDB()"></div>
+  <div style="margin-bottom:6px"><span style="font-weight:bold;font-size:9pt">BPC &nbsp; W/O No. :</span> &nbsp; <input class="ef ef-b" value="${job.wo}" style="width:80px" onchange="DB.jobs['${job.wo}'].wo=this.value"></div>
   <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Project Details</div>
   <table class="hdt">
-    <tr><td class="lbl">Contract :</td><td colspan="3"><input class="ef ef-b" value="FREE CONNECTIONS PHASE ${job.phase} PROJECT" style="width:235px" onchange="DB.jobs['${job.wo}'].contractDesc=this.value;saveDB()"> &nbsp; BPC Project No.: <input class="ef ef-b" value="${job.bpcProjNo||job.wo}" style="width:90px" onchange="DB.jobs['${job.wo}'].bpcProjNo=this.value;saveDB()"></td></tr>
+    <tr><td class="lbl">Contract :</td><td colspan="3"><input class="ef ef-b" value="FREE CONNECTIONS PHASE ${job.phase} PROJECT" style="width:235px" onchange="DB.jobs['${job.wo}'].contractDesc=this.value"> &nbsp; BPC Project No.: <input class="ef ef-b" value="${job.bpcProjNo||job.wo}" style="width:90px" onchange="DB.jobs['${job.wo}'].bpcProjNo=this.value"></td></tr>
     <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
-    <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" onchange="DB.jobs['${job.wo}'].cust=this.value;saveDB()" style="width:98%"></td>
+    <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" onchange="DB.jobs['${job.wo}'].cust=this.value" style="width:98%"></td>
       <td class="lbl" style="white-space:nowrap">Location Factor :</td><td><input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo1.lf=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td></tr>
-    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${job.loc}" onchange="DB.jobs['${job.wo}'].loc=this.value;saveDB()" style="width:98%"></td>
+    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${job.loc}" onchange="DB.jobs['${job.wo}'].loc=this.value" style="width:98%"></td>
       <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td><input class="ef ef-b" type="date" value="${custPayDate}" style="width:110px"></td></tr>
     <tr><td class="lbl">Wayleave Approval :</td><td>BPC</td><td class="lbl">Date Wayleave Available :</td><td><input class="ef ef-b" value="Not Required" style="width:98%"></td></tr>
   </table><hr>
   <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Details of BPC &nbsp; W/O No. : &nbsp; ${job.wo}</div>
-  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1 — Phase <select id="vo1phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt" onchange="DB.jobs['${job.wo}'].vo1.phase=this.value;saveDB();toast('VO1 Phase updated to '+this.value)"><option value="46" ${(job.vo1.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo1.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option></select></div>
+  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1 — Phase <select id="vo1phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt" onchange="DB.jobs['${job.wo}'].vo1.phase=this.value;toast('VO1 Phase updated to '+this.value)"><option value="46" ${(job.vo1.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo1.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option></select></div>
   <table class="boq">
     <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
     <tbody id="vo1rows${job.wo}">${rows}</tbody>
@@ -2486,7 +2428,7 @@ function docVO2(job){
       <td class="lbl">Location Factor:</td><td><input class="ef ef-b" value="${job.vo2.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.lf=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td></tr>
     <tr><td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||''}" placeholder="0" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td><td></td><td></td></tr>
   </table><hr>
-  <span class="p-grey">VO2 — Actual Quantities After Field Inspection — Phase <select id="vo2phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt;background:#d9d9d9;border:none" onchange="DB.jobs['${job.wo}'].vo2.phase=this.value;saveDB();toast('VO2 Phase updated to '+this.value)"><option value="46" ${(job.vo2.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo2.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option></select></span>
+  <span class="p-grey">VO2 — Actual Quantities After Field Inspection — Phase <select id="vo2phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt;background:#d9d9d9;border:none" onchange="DB.jobs['${job.wo}'].vo2.phase=this.value;toast('VO2 Phase updated to '+this.value)"><option value="46" ${(job.vo2.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo2.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option></select></span>
   <table class="boq">
     <thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:46px">QTY</th><th class="r" style="width:78px">UNIT COST</th><th class="r" style="width:90px">TOTAL (BWP)</th></tr></thead>
     <tbody>${rows}</tbody>
@@ -2757,187 +2699,6 @@ function docAnnexure(job){
       </tr>
     </tbody>
   </table>
-  </div>`;
-}
-
-/* ── ANNEXURE FOR PDF (CLEAN, NO INPUTS) ── */
-/**
- * DOC_ANNEXURE_FOR_PDF.JS
- * ------------------------------------------------------------------
- * Clean, static (no <input>) HTML render of the Annexure to Payment
- * Certificate, built to visually match the original Excel-exported
- * PDF (see annexure-SYSTEM.pdf reference).
- *
- * This does NOT replace docAnnexure() — that stays as-is for the
- * editable modal view. This is the PDF-only render.
- *
- * DEPENDENCIES (must be in scope / imported before this runs):
- *   - BWP(n)         from doc-helpers.js   (currency, no "P" prefix)
- *   - bestTotal(job)  from doc-helpers.js   (not used directly here,
- *                      kept for parity with docAnnexure — totals are
- *                      computed per-row via jTotal below)
- *   - jTotal(job, which) from doc-helpers.js
- *   - DB.jobs         global jobs database
- *
- * USAGE:
- *   const html = docAnnexureForPDF(job);
- *   // feed `html` straight into your jsPDF HTML renderer, same as
- *   // you currently do with docAnnexure(job)
- * ------------------------------------------------------------------
- */
-
-/**
- * UPDATED DOC_ANNEXURE_FOR_PDF.JS (WITH PRINT SETTINGS)
- * 
- * Changes from original:
- * - Added explicit @page CSS for A4 Portrait (0.75" margins)
- * - Better font sizing control
- * - Removed horizontal scrollbars
- * 
- * DEPENDENCIES:
- *   - BWP(n), jTotal(job, which) from doc-helpers.js
- *   - DB.jobs global
- */
-
-function docAnnexureForPDF(job) {
-  const certNo = job?.claimRef || 'TES-001';
-  const claimJobs = Object.values(DB.jobs).filter(
-    j => j.claimRef === certNo && j.vo1 && j.vo1.items
-  );
-
-  const rowsData = claimJobs.map(j => {
-    const tVO2 = (j.vo2 && j.vo2.items && j.vo2.items.length) ? jTotal(j, 'vo2') : null;
-    const tVO1 = jTotal(j, 'vo1');
-    const amt = tVO2 ? tVO2.total : tVO1.total;
-    return { j, amt };
-  });
-
-  const totalFinal = rowsData.reduce((s, r) => s + r.amt, 0);
-
-  const FONT = 'Arial, Helvetica, sans-serif';
-  const BORDER = '1px solid #999';
-  const HEADER_BG = '#d9d9d9';
-  const TOTAL_BG = '#eeeeee';
-
-  const cell = (content, align = 'left', extra = '') => `
-    <td style="border:${BORDER};padding:3px 6px;font-size:8.5pt;font-family:${FONT};
-                text-align:${align};white-space:nowrap;${extra}">${content}</td>`;
-
-  const rows = rowsData.map(({ j, amt }) => `
-    <tr>
-      ${cell(j.wo || '')}
-      ${cell(j.cust || '', 'left', 'white-space:normal')}
-      ${cell(j.meterNo || '')}
-      ${cell(BWP(amt), 'right')}
-      ${cell('0.00', 'right')}
-      ${cell('0.00', 'right')}
-      ${cell(BWP(amt), 'right')}
-    </tr>`).join('');
-
-  const now = new Date();
-  const generatedStamp = now.toLocaleString('en-BW', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  });
-
-  // ⚠️ KEY: This HTML includes a <style> tag that buildPrintableHTML will pick up
-  // The CSS controls the page size, orientation, and margins
-  return `
-  <style>
-    @page { 
-      size: A4 portrait; 
-      margin: 19.05mm;  /* 0.75" = 19.05mm */
-    }
-    body {
-      width: 100%;
-      max-width: 8.27in;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
-  </style>
-  
-  <div class="paper" style="width:100%;font-family:${FONT};color:#000;box-sizing:border-box;padding:0;">
-
-    <!-- ── HEADER ───────────────────────────────────────────────── -->
-    <table style="width:100%;border-collapse:collapse;margin-bottom:0">
-      <tr>
-        <td style="width:55%;vertical-align:top">
-          <div style="font-size:16pt;font-weight:bold;color:#1a3d6d;letter-spacing:0.5px">TRENDS ENGINEERING</div>
-          <div style="font-size:7.5pt;color:#1a3d6d;letter-spacing:2px;margin-top:-2px">- - S E R V I C E S - -</div>
-        </td>
-        <td style="width:45%;text-align:right;vertical-align:top;font-size:8pt;line-height:1.5">
-          <div>Plot 33305, Gerald, Francistown, Botswana</div>
-          <div>P.O Box 30177, Francistown, Botswana</div>
-          <div>cell: +267 72388904</div>
-          <div>email: info@trendsengineering.com</div>
-          <div>VAT No.: BW00000259728-00-05-42</div>
-        </td>
-      </tr>
-    </table>
-
-    <!-- ── TAGLINE ───────────────────────────────────────────────── -->
-    <div style="border-top:3px solid #ff9800;border-bottom:3px solid #ff9800;
-                text-align:center;padding:3px 0;margin:6px 0 10px 0;background:#fffdf5">
-      <span style="font-style:italic;font-weight:bold;font-size:9pt;color:#1a3d6d">"your success, our priority"</span>
-    </div>
-
-    <!-- ── TITLE ───────────────────────────────────────────────── -->
-    <div style="text-align:center;font-weight:bold;font-size:10pt;margin:0 0 10px 0">
-      ANNEXURE TO PAYMENT CERTIFICATE
-    </div>
-
-    <!-- ── META ───────────────────────────────────────────────── -->
-    <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:10px">
-      <tr>
-        <td style="width:60%;padding:1px 0"><b>Payment Certificate:</b> &nbsp;${certNo}</td>
-        <td style="width:40%;padding:1px 0"><b>Ref:</b> &nbsp;${certNo}</td>
-      </tr>
-      <tr>
-        <td style="padding:1px 0"><b>Contract:</b> &nbsp;Free Connections Projects - North</td>
-        <td style="padding:1px 0"></td>
-      </tr>
-      <tr>
-        <td style="padding:1px 0"><b>Employer:</b> &nbsp;Botswana Power Corporation</td>
-        <td style="padding:1px 0"></td>
-      </tr>
-      <tr>
-        <td style="padding:1px 0"><b>Contractor:</b> &nbsp;Trends Engineering Services (PTY) Ltd</td>
-        <td style="padding:1px 0"></td>
-      </tr>
-      <tr>
-        <td style="padding:1px 0"><b>Region:</b> &nbsp;North</td>
-        <td style="padding:1px 0"><b>Date:</b> &nbsp;${job.claimDate || ''}</td>
-      </tr>
-    </table>
-
-    <!-- ── MAIN TABLE ───────────────────────────────────────────── -->
-    <table style="width:100%;border-collapse:collapse;margin-bottom:6px">
-      <thead>
-        <tr style="background:${HEADER_BG}">
-          <th style="border:${BORDER};padding:3px 6px;font-size:8.5pt;text-align:left">BPC W/O No</th>
-          <th style="border:${BORDER};padding:3px 6px;font-size:8.5pt;text-align:left">Project Title</th>
-          <th style="border:${BORDER};padding:3px 6px;font-size:8.5pt;text-align:left">Meter Number</th>
-          <th style="border:${BORDER};padding:3px 6px;font-size:8.5pt;text-align:right">Final Cost</th>
-          <th style="border:${BORDER};padding:3px 6px;font-size:8.5pt;text-align:right">Penalities</th>
-          <th style="border:${BORDER};padding:3px 6px;font-size:8.5pt;text-align:right">Interim Payments</th>
-          <th style="border:${BORDER};padding:3px 6px;font-size:8.5pt;text-align:right">Final Payment</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-        <tr style="background:${TOTAL_BG};font-weight:bold;border-top:2px solid #999">
-          <td style="border:${BORDER};padding:3px 6px;font-size:8.5pt" colspan="6">TOTAL</td>
-          <td style="border:${BORDER};padding:3px 6px;font-size:8.5pt;text-align:right">P ${BWP(totalFinal)}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- ── FOOTER ───────────────────────────────────────────────── -->
-    <div style="text-align:right;font-size:6.5pt;color:#888;margin-top:14px">
-      Generated by Manager on ${generatedStamp} &middot; ClaimDesk
-    </div>
-
   </div>`;
 }
 
@@ -3348,207 +3109,6 @@ function docListOfJobs(job){
   </div>`;
 }
 
-/* ── LIST OF JOBS FOR PDF (CLEAN, NO INPUTS) ── */
-/**
- * DOC_LIST_OF_JOBS_FOR_PDF.JS
- * ------------------------------------------------------------------
- * Clean, static (no <input>) HTML render of the "List of Jobs Done"
- * document, built to visually match the original Excel-exported PDF.
- *
- * ⚠️ NOTE: your raw docListOfJobs() source wasn't included in this
- * chat (only doc_annexure_CURRENT.js was), so the field names below
- * are inferred from PREP_DOCUMENT_FIX_PLAN.md + the OG PDF columns.
- * Check the FIELD MAP block right below and adjust the `j.xxx`
- * property names to match your actual DB.jobs schema — everything
- * else (styling, layout, table structure) should not need changes.
- *
- * FIELD MAP (edit these to match your real job object):
- *   j.wo                 -> ITEM No. is just the row index (1,2,3…)
- *   j.wo                 -> PROJECT No.        e.g. "429636"
- *   j.vendorName          -> VENDOR NAME        (defaults to CO name)
- *   j.vendorNo            -> VENDOR No.         e.g. "103913"
- *   amount (computed)     -> AMOUNT             via bestTotal(j)
- *   j.pctComplete         -> % COMPLETE         e.g. 100
- *   j.phase               -> PHASE DESCRIPTION  e.g. "Phase 47"
- *   j.invoiceNo           -> INVOICE No.
- *   j.location / j.cust   -> LOCATION
- *   j.startDate           -> PLANNED START DATE
- *   j.completionDate      -> ACTUAL COMPLETION DATE
- *   j.internalResp        -> INTERNAL RESPONSIBLE
- *   j.externalResp        -> EXTERNAL RESPONSIBLE
- *
- * DEPENDENCIES:
- *   - BWP(n)              from doc-helpers.js
- *   - bestTotal(job)      from doc-helpers.js
- *   - DB.jobs              global jobs database
- *
- * USAGE:
- *   const html = docListOfJobsForPDF(job);
- * ------------------------------------------------------------------
- */
-
-/**
- * UPDATED DOC_LIST_OF_JOBS_FOR_PDF.JS (WITH PRINT SETTINGS)
- * 
- * Changes from original:
- * - Added LANDSCAPE orientation (@page size: landscape)
- * - Proper 0.75" margins (19.05mm)
- * - Reduced font size from 6.5pt to 5.5pt so all 13 columns fit on one page
- * - Removed horizontal scrollbars
- * 
- * DEPENDENCIES:
- *   - BWP(n), bestTotal(job) from doc-helpers.js
- *   - DB.jobs global
- */
-
-function docListOfJobsForPDF(job) {
-  const certNo = job?.claimRef || 'TES-001';
-  const claimJobs = Object.values(DB.jobs).filter(
-    j => j.claimRef === certNo && j.vo1 && j.vo1.items
-  );
-
-  const FONT = 'Arial, Helvetica, sans-serif';
-  const BORDER = '1px solid #999';
-  const HEADER_BG = '#d9d9d9';
-  const TOTAL_BG = '#eeeeee';
-
-  // Reduced from 6.5pt to 5.5pt so all columns fit on landscape page
-  const CELL_FS = '5.5pt';
-  const HEAD_FS = '5.5pt';
-
-  const cell = (content, align = 'left') => `
-    <td style="border:${BORDER};padding:2px 3px;font-size:${CELL_FS};font-family:${FONT};
-                text-align:${align};white-space:nowrap">${content}</td>`;
-
-  const totalClaim = claimJobs.reduce((s, j) => s + bestTotal(j).total, 0);
-
-  const rows = claimJobs.map((j, idx) => {
-    const amt = bestTotal(j).total;
-    return `<tr>
-      ${cell(idx + 1)}
-      ${cell(j.wo || '')}
-      ${cell(j.vendorName || 'Trends Engineering Services (PTY) Ltd')}
-      ${cell(j.vendorNo || '')}
-      ${cell('P ' + BWP(amt), 'right')}
-      ${cell(j.pctComplete != null ? j.pctComplete : 100, 'right')}
-      ${cell(j.phase || '')}
-      ${cell(j.invoiceNo || '')}
-      ${cell(j.location || j.cust || '')}
-      ${cell(j.startDate || '')}
-      ${cell(j.completionDate || '')}
-      ${cell(j.internalResp || '')}
-      ${cell(j.externalResp || '')}
-    </tr>`;
-  }).join('');
-
-  return `
-  <style>
-    @page { 
-      size: landscape;  /* LANDSCAPE for wide tables */
-      margin: 19.05mm;  /* 0.75" = 19.05mm */
-    }
-    body {
-      width: 100%;
-      max-width: 11in;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
-  </style>
-  
-  <div class="paper" style="width:100%;font-family:${FONT};color:#000;box-sizing:border-box;padding:0;">
-
-    <!-- ── HEADER ────────────────────────────────────────────────── -->
-    <table style="width:100%;border-collapse:collapse;margin-bottom:0">
-      <tr>
-        <td style="width:55%;vertical-align:top">
-          <div style="font-size:16pt;font-weight:bold;color:#1a3d6d;letter-spacing:0.5px">TRENDS ENGINEERING</div>
-          <div style="font-size:7.5pt;color:#1a3d6d;letter-spacing:2px;margin-top:-2px">- - S E R V I C E S - -</div>
-        </td>
-        <td style="width:45%;text-align:right;vertical-align:top;font-size:8pt;line-height:1.5">
-          <div>Plot 33305, Gerald, Francistown, Botswana</div>
-          <div>P.O Box 30177, Francistown, Botswana</div>
-          <div>cell: +267 72388904</div>
-          <div>email: info@trendsengineering.com</div>
-          <div>VAT No.: BW00000259728-00-05-42</div>
-        </td>
-      </tr>
-    </table>
-
-    <!-- ── TAGLINE ────────────────────────────────────────────────── -->
-    <div style="border-top:3px solid #ff9800;border-bottom:3px solid #ff9800;
-                text-align:center;padding:3px 0;margin:6px 0 10px 0;background:#fffdf5">
-      <span style="font-style:italic;font-weight:bold;font-size:9pt;color:#1a3d6d">"your success, our priority"</span>
-    </div>
-
-    <!-- ── DOC META ────────────────────────────────────────────────── -->
-    <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px">
-      <tr>
-        <td style="font-weight:bold;text-align:center" colspan="2">${(job.title || 'ZERO CONNECTION PROJECT - NORTH').toUpperCase()}</td>
-      </tr>
-    </table>
-    <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8px">
-      <tr>
-        <td style="width:50%;padding:1px 0"><b>DATE:</b> &nbsp;${job.claimDate || ''}</td>
-        <td style="width:50%;padding:1px 0"><b>CLAIM No.:</b> &nbsp;${certNo}</td>
-      </tr>
-    </table>
-
-    <!-- ── MAIN TABLE (13 columns, all fit on landscape) ──────────── -->
-    <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:6px">
-      <thead>
-        <tr style="background:${HEADER_BG}">
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">ITEM No.</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">PROJECT No.</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">VENDOR NAME</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">VENDOR No.</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:right">AMOUNT</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:right">%</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">PHASE</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">INVOICE No.</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">LOCATION</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">START DATE</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">COMPLETION</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">INT. RESP.</th>
-          <th style="border:${BORDER};padding:2px 3px;font-size:${HEAD_FS};text-align:left">EXT. RESP.</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-        <tr style="background:${TOTAL_BG};font-weight:bold;border-top:2px solid #999">
-          <td style="border:${BORDER};padding:2px 3px;font-size:${CELL_FS}" colspan="4">TOTAL CLAIM</td>
-          <td style="border:${BORDER};padding:2px 3px;font-size:${CELL_FS};text-align:right">P ${BWP(totalClaim)}</td>
-          <td style="border:${BORDER};padding:2px 3px" colspan="8"></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- ── SIGNATURE BLOCK ───────────────────────────────────────── -->
-    <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-top:28px">
-      <tr>
-        <td style="width:50%;vertical-align:top">
-          <div style="border-top:1px solid #333;width:70%;margin-bottom:4px">&nbsp;</div>
-          <div><b>Prepared by</b></div>
-          <div style="margin-top:14px">Name: ____________________________</div>
-          <div style="margin-top:10px">Date: ____________________________</div>
-        </td>
-        <td style="width:50%;vertical-align:top">
-          <div style="border-top:1px solid #333;width:70%;margin-bottom:4px">&nbsp;</div>
-          <div><b>Verified by</b></div>
-          <div style="margin-top:14px">Name: ____________________________</div>
-          <div style="margin-top:10px">Date: ____________________________</div>
-        </td>
-      </tr>
-    </table>
-
-    <div style="text-align:right;font-size:6.5pt;color:#888;margin-top:14px">
-      Generated by Manager on ${new Date().toLocaleString('en-BW', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})} &middot; ClaimDesk
-    </div>
-
-  </div>`;
-}
-
 function numWords(n){const m=Math.floor(n),c=Math.round((n-m)*100);return`${m.toLocaleString()} Pula${c?', '+c+' thebe':''} only`;}
 
 /* ═══════════════════════════════════════
@@ -3566,7 +3126,7 @@ function saveDocToStep(wo,docType){
     serializeFormValues(modalBody);
     html=modalBody.innerHTML;
   } else {
-    html=buildDocForPDF(docType,job);
+    html=buildDoc(docType,job);
   }
   job.savedDocs[docType]={html,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
   addLog(wo,`Document saved: ${docType} by ${RN[CU]}`);
@@ -3669,63 +3229,18 @@ function serializeToHTML(container){
 }
 
 /* Build a complete, standalone HTML document string for the paper document */
-/**
- * 🔴 REAL FIX: Updated buildPrintableHTML & openPrintWindow
- * 
- * The problem was:
- * 1. buildPrintableHTML was adding @page { margin: 1cm; } 
- *    which OVERRODE the @page rules in your PDF functions
- * 2. openPrintWindow had window size of 900x700, forcing horizontal scrolling
- * 
- * The solution:
- * 1. Remove conflicting @page rule from buildPrintableHTML
- * 2. Increase print window size to accommodate landscape documents
- * 3. Let the @page rules from your PDF functions take effect
- */
-
-/* Build a complete, standalone HTML document string for the paper document */
-function buildPrintableHTML(innerHtml, title) {
-  const now = new Date();
-  const timestamp = now.toLocaleDateString('en-BW', {day:'2-digit', month:'short', year:'numeric'}) + ' ' + now.toLocaleTimeString('en-BW', {hour:'2-digit', minute:'2-digit'});
-  const role = RN[CU] || CU;
+function buildPrintableHTML(innerHtml, title){
+  const now=new Date();
+  const timestamp=now.toLocaleDateString('en-BW',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-BW',{hour:'2-digit',minute:'2-digit'});
+  const role=RN[CU]||CU;
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title || 'ClaimDesk Document'}</title>
-<style>
-${DOC_PRINT_CSS}
-/* ⚠️ REMOVED: @page { margin: 1cm; } — let PDF functions control page settings */
-html, body { 
-  margin: 0; 
-  padding: 0; 
-  width: 100%; 
-  height: 100%;
-  box-sizing: border-box;
-}
-body { 
-  position: relative; 
-  font-family: Arial, Helvetica, sans-serif;
-}
-.pdf-footer { 
-  position: fixed; 
-  bottom: 0.5cm; 
-  left: 0; 
-  right: 0; 
-  font-size: 10px; 
-  color: #888; 
-  text-align: center; 
-  border-top: 1px solid #ddd; 
-  padding-top: 4px; 
-}
-/* Hide footer during screen view, only show in print */
-@media screen {
-  .pdf-footer { display: none; }
-}
-@media print {
-  .pdf-footer { display: block; }
-  body { margin: 0; padding: 0; }
-}
+<title>${title||'ClaimDesk Document'}</title>
+<style>${DOC_PRINT_CSS}
+@page { margin: 1cm; }
+body { position: relative; }
+.pdf-footer { position: fixed; bottom: 0.5cm; left: 0; right: 0; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; }
 </style>
 </head><body>
 ${innerHtml}
@@ -3736,150 +3251,16 @@ ${innerHtml}
 /* MAIN PDF / Print function.
    Opens the document in a clean popup and triggers print (Print → Save as PDF).
    This is more reliable than any canvas-screenshot approach. */
-function openPrintWindow(innerHtml, title) {
-  const html = buildPrintableHTML(innerHtml, title);
-  
-  // ⚠️ FIXED: Increased window size to accommodate landscape documents
-  // Old: width=900,height=700 (forced horizontal scrolling)
-  // New: width=1400,height=900 (gives enough room for landscape + margins)
-  const w = window.open('', '_blank', 'width=1400,height=900,menubar=yes,toolbar=yes,scrollbars=yes');
-  
-  if (!w) { 
-    toast('Pop-up blocked — allow pop-ups for this site then try again', 'rd'); 
-    return; 
-  }
-  
-  w.document.open(); 
-  w.document.write(html); 
-  w.document.close();
-  
+function openPrintWindow(innerHtml, title){
+  const html=buildPrintableHTML(innerHtml, title);
+  const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
+  if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
   // Small delay lets images/fonts settle before print dialog opens
-  w.onload = () => { 
-    setTimeout(() => { 
-      w.focus(); 
-      w.print(); 
-    }, 600); 
-  };
-  
+  w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
   // Fallback if onload already fired
-  setTimeout(() => { 
-    try { 
-      if (!w.closed) { 
-        w.focus(); 
-        w.print(); 
-      } 
-    } catch(e) {} 
-  }, 1200);
-  
-  toast('Print window opened — choose "Save as PDF" in the print dialog', 'gn');
-}
-
-/* MAIN PDF / Print function.
-   Opens the document in a clean popup and triggers print (Print → Save as PDF).
-   This is more reliable than any canvas-screenshot approach. */
-/**
- * 🔴 REAL FIX: Updated buildPrintableHTML & openPrintWindow
- * 
- * The problem was:
- * 1. buildPrintableHTML was adding @page { margin: 1cm; } 
- *    which OVERRODE the @page rules in your PDF functions
- * 2. openPrintWindow had window size of 900x700, forcing horizontal scrolling
- * 
- * The solution:
- * 1. Remove conflicting @page rule from buildPrintableHTML
- * 2. Increase print window size to accommodate landscape documents
- * 3. Let the @page rules from your PDF functions take effect
- */
-
-/* Build a complete, standalone HTML document string for the paper document */
-function buildPrintableHTML(innerHtml, title) {
-  const now = new Date();
-  const timestamp = now.toLocaleDateString('en-BW', {day:'2-digit', month:'short', year:'numeric'}) + ' ' + now.toLocaleTimeString('en-BW', {hour:'2-digit', minute:'2-digit'});
-  const role = RN[CU] || CU;
-  return `<!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title || 'ClaimDesk Document'}</title>
-<style>
-${DOC_PRINT_CSS}
-/* ⚠️ REMOVED: @page { margin: 1cm; } — let PDF functions control page settings */
-html, body { 
-  margin: 0; 
-  padding: 0; 
-  width: 100%; 
-  height: 100%;
-  box-sizing: border-box;
-}
-body { 
-  position: relative; 
-  font-family: Arial, Helvetica, sans-serif;
-}
-.pdf-footer { 
-  position: fixed; 
-  bottom: 0.5cm; 
-  left: 0; 
-  right: 0; 
-  font-size: 10px; 
-  color: #888; 
-  text-align: center; 
-  border-top: 1px solid #ddd; 
-  padding-top: 4px; 
-}
-/* Hide footer during screen view, only show in print */
-@media screen {
-  .pdf-footer { display: none; }
-}
-@media print {
-  .pdf-footer { display: block; }
-  body { margin: 0; padding: 0; }
-}
-</style>
-</head><body>
-${innerHtml}
-<div class="pdf-footer">Generated by ${role} on ${timestamp} · ClaimDesk</div>
-</body></html>`;
-}
-
-/* MAIN PDF / Print function.
-   Opens the document in a clean popup and triggers print (Print → Save as PDF).
-   This is more reliable than any canvas-screenshot approach. */
-function openPrintWindow(innerHtml, title) {
-  const html = buildPrintableHTML(innerHtml, title);
-  
-  // ⚠️ FIXED: Increased window size to accommodate landscape documents
-  // Old: width=900,height=700 (forced horizontal scrolling)
-  // New: width=1400,height=900 (gives enough room for landscape + margins)
-  const w = window.open('', '_blank', 'width=1400,height=900,menubar=yes,toolbar=yes,scrollbars=yes');
-  
-  if (!w) { 
-    toast('Pop-up blocked — allow pop-ups for this site then try again', 'rd'); 
-    return; 
-  }
-  
-  w.document.open(); 
-  w.document.write(html); 
-  w.document.close();
-  
-  // Small delay lets images/fonts settle before print dialog opens
-  w.onload = () => { 
-    setTimeout(() => { 
-      w.focus(); 
-      w.print(); 
-    }, 600); 
-  };
-  
-  // Fallback if onload already fired
-  setTimeout(() => { 
-    try { 
-      if (!w.closed) { 
-        w.focus(); 
-        w.print(); 
-      } 
-    } catch(e) {} 
-  }, 1200);
-  
-  toast('Print window opened — choose "Save as PDF" in the print dialog', 'gn');
+  setTimeout(()=>{ try{ if(!w.closed){ w.focus(); w.print(); } }catch(e){} },1200);
+  toast('Print window opened — choose "Save as PDF" in the print dialog','gn');
 }
 
 /* Download a saved doc — opens print window so user saves as PDF */
@@ -3892,21 +3273,12 @@ function downloadSavedDoc(wo, docType){
 }
 
 /* Download the currently-open modal document — opens print window */
-/**
- * ⚠️ REAL FIX FOR PDF DOWNLOADS
- * 
- * The problem: Your system was calling downloadDocAsPDF() which grabbed
- * the modal body HTML (full of form inputs), then printed it.
- * 
- * The solution: Use buildDocForPDF() to generate clean, PDF-ready HTML
- * BEFORE opening the print window.
- * 
- * REPLACE this function in app.js — find it and swap it out completely.
- */
-
-/* Download the currently-open modal document — opens print window with CLEAN PDF HTML */
 function downloadDocAsPDF(wo, docType){
-  showPrintSettingsDialog(wo, docType);
+  const body=document.getElementById('docModalBody');
+  if(!body){ toast('No document open','am'); return; }
+  const innerHtml=serializeToHTML(body);
+  const title=document.getElementById('docModalTitle')?.textContent||docType;
+  openPrintWindow(innerHtml, title);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
@@ -4301,35 +3673,25 @@ function nav(screen){
   const titles={dashboard:'Dashboard',jobs:'Work Orders',inbox:'Inbox',claims:'Claim Batch',rates:'Rates Sheet',actlog:'Activity Log',jobdetail:'Job Detail'};
   document.getElementById('tbt').textContent=titles[screen]||screen;
   document.getElementById('n-'+screen)?.classList.add('act');
-  if(screen==='dashboard'){
-  syncFromSupabase().then(()=>renderDashboard()).catch(e=>console.error('Sync failed:',e));
-}
- if(screen==='jobs'){
-  syncFromSupabase().then(()=>renderJobs()).catch(e=>console.error('Sync failed:',e));
-}
-if(screen==='inbox'){
-  syncFromSupabase().then(()=>renderInbox()).catch(e=>console.error('Sync failed:',e));
-}
-if(screen==='claims'){
-  syncFromSupabase().then(()=>renderClaims()).catch(e=>console.error('Sync failed:',e));
-}
- if(screen==='rates'){
-  syncFromSupabase().then(()=>renderRates()).catch(e=>console.error('Sync failed:',e));
-}
-if(screen==='actlog'){
-  syncFromSupabase().then(()=>renderActLog()).catch(e=>console.error('Sync failed:',e));
-}
-if(screen==='jobdetail'&&detailWO){
-  syncFromSupabase().then(()=>renderJobDetail(detailWO)).catch(e=>console.error('Sync failed:',e));
-}
+  if(screen==='dashboard'){renderDashboard();}
+  if(screen==='jobs'){renderJobs();}
+  if(screen==='inbox'){renderInbox();}
+  if(screen==='claims'){renderClaims();}
+  if(screen==='rates'){renderRates();}
+  if(screen==='actlog'){renderActLog();}
+  if(screen==='jobdetail'&&detailWO){renderJobDetail(detailWO);}
 }
 function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs();renderClaims();}
 
-function resetDatabase(){
+async function resetDatabase(){
   if(confirm('⚠️ DELETE ALL DATA? This cannot be undone. You will lose all work orders, jobs, and batches.')){
     if(confirm('Really? This is permanent.')){
-      DB = {version:3,jobs:{},notifs:{},actLog:[],rates:[...RATES_SEED],certSeq:1,batchScans:{},batchSaved:{}};
-      DB={jobs:{},certSeq:1,batchDocs:{},batchScans:{}};
+      if(SB.enabled){
+        await SB.client.from('jobs').delete().neq('wo','');
+        await SB.client.from('documents').delete().neq('id','');
+        await SB.client.from('claim_batches').delete().neq('id','');
+      }
+      DB={version:3,jobs:{},notifs:{admin:[],finance:[],md:[]},actLog:[],rates:[...RATES_SEED],certSeq:1,batchScans:{},batchSaved:{}};
       toast('✅ Database cleared. Page reloading...');
       setTimeout(()=>location.reload(),1000);
     }
@@ -4358,7 +3720,6 @@ async function doLogin(){
   const r=document.getElementById('loginRole').value;
   if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
   CU=r;
-  startAutoSync();  // Start refreshing data every 30 seconds
   // Persist session to localStorage so user stays logged in after page reload
   localStorage.setItem('tes_currentRole',r);
   // Reset all screens — clear any stale job detail from a previous role session
@@ -4368,15 +3729,6 @@ async function doLogin(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
   document.getElementById('sbRn').textContent=RN[r];
-
-  // Immediately hide whatever dashboard panel was left visible from the
-  // PREVIOUS role — otherwise it stays on screen (with real content) for
-  // the entire loading window until the sync finishes and renderDashboard()
-  // finally gets around to hiding it. This is what caused Admin's task list
-  // to flash up under a freshly logged-in Linesman.
-  ['dash-admin','dash-finance','dash-gis','dash-md','dash-linesman'].forEach(id=>{
-    const elx=document.getElementById(id); if(elx) elx.style.display='none';
-  });
 
   // Role-specific nav — always hide jobdetail first
   const show=id=>{const e=document.getElementById(id);if(e)e.style.display='flex';};
@@ -4391,15 +3743,6 @@ async function doLogin(){
   // Pull the latest shared data from Supabase before rendering
   if(SB.enabled){
     const tbt=document.getElementById('tbt'); if(tbt) tbt.textContent='Loading…';
-    
-    // Set a timeout so if Supabase is slow, we still show the dashboard
-    const timeoutId = setTimeout(()=>{
-      if(tbt && tbt.textContent==='Loading…'){
-        tbt.textContent = 'Trends Engineering Services (PTY) Ltd';
-        console.warn('Supabase sync timeout - showing dashboard with cached data');
-      }
-    }, 30000);  // 30 second timeout
-    
     // Flush any pending push to Supabase before syncing
     await new Promise(resolve=>{
       if(_sbSaveTimer){
@@ -4409,16 +3752,9 @@ async function doLogin(){
         resolve();
       }
     });
-    
-    try{
-      await syncFromSupabase(true);   // force a fresh pull on login
-      console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
-    }catch(e){
-      console.error('Supabase sync error:', e);
-    }
-    
-    clearTimeout(timeoutId);  // Clear the timeout since sync is done
-    if(tbt) tbt.textContent = 'Trends Engineering Services (PTY) Ltd';
+    await syncFromSupabase();
+    console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
+    subscribeRealtime();
   }else{
     console.log('SB not enabled. DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
   }
@@ -4430,9 +3766,9 @@ async function doLogin(){
 }
 function doLogout(){
   addLog('','Signed out');saveDB();
+  if(_rtChannel){ SB.client.removeChannel(_rtChannel); _rtChannel = null; }
   CU='';detailWO=null;
-  stopAutoSync();  // Stop auto-refresh when logging out
-  // Clear session from localStorage
+  DB = {version:3, jobs:{}, notifs:{admin:[],finance:[],md:[]}, actLog:[], rates:[...RATES_SEED], certSeq:1, batchScans:{}, batchSaved:{}};
   localStorage.removeItem('tes_currentRole');
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
@@ -4441,297 +3777,3 @@ function doLogout(){
 
 /* Auto-restore user session on page load */
 window.addEventListener('DOMContentLoaded',restoreSession);
-
-/**
- * PRINT SETTINGS DIALOG
- * 
- * Before opening the print window, show a dialog where user can:
- * 1. Choose orientation (Portrait/Landscape)
- * 2. Set page size (A4, Letter)
- * 3. Set margins (0.75")
- * 4. Then print with those settings
- * 
- * Each document type has DEFAULT settings (from your settings PDF)
- */
-
-/* Document-specific print settings (from your DOCUMENTS_SETTINGS.pdf) */
-const DOC_PRINT_SETTINGS = {
-  'annexure': {
-    name: 'Annexure to Payment Certificate',
-    orientation: 'portrait',
-    pageSize: 'A4',
-    margins: '0.75"',
-    collation: '1,2,3'
-  },
-  'list_of_jobs': {
-    name: 'List of Jobs Done',
-    orientation: 'landscape',  // THIS IS THE KEY SETTING
-    pageSize: 'A4',
-    margins: '0.75"',
-    collation: '1,2,3'
-  },
-  'payment_cert': {
-    name: 'Payment Certificate',
-    orientation: 'portrait',
-    pageSize: 'A4',
-    margins: '0.75"',
-    collation: '1,2,3'
-  },
-  'works_valuation': {
-    name: 'Works Valuation',
-    orientation: 'portrait',
-    pageSize: 'A4',
-    margins: '0.75"',
-    collation: '1,2,3'
-  },
-  'works_instruction': {
-    name: 'Works Instruction',
-    orientation: 'portrait',
-    pageSize: 'A4',
-    margins: '0.75"',
-    collation: '1,2,3'
-  },
-  'bpc_spreadsheet': {
-    name: 'BPC Spreadsheet',
-    orientation: 'landscape',
-    pageSize: 'A4',
-    margins: '0.75"',
-    collation: '1,2,3'
-  },
-  'invoice': {
-    name: 'Invoice',
-    orientation: 'portrait',
-    pageSize: 'Letter',
-    margins: '0.75"',
-    collation: '1,2,3'
-  }
-};
-
-/* Show print settings dialog */
-function showPrintSettingsDialog(wo, docType) {
-  const settings = DOC_PRINT_SETTINGS[docType] || {
-    name: docType.replace(/_/g, ' '),
-    orientation: 'portrait',
-    pageSize: 'A4',
-    margins: '0.75"',
-    collation: '1,2,3'
-  };
-
-  const orientationOptions = `
-    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
-      <input type="radio" name="orientation" value="portrait" ${settings.orientation==='portrait'?'checked':''} style="margin-right:8px">
-      <span>Portrait (Taller than wide)</span>
-    </label>
-    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
-      <input type="radio" name="orientation" value="landscape" ${settings.orientation==='landscape'?'checked':''} style="margin-right:8px">
-      <span>Landscape (Wider than tall)</span>
-    </label>
-  `;
-
-  const pageSizeOptions = `
-    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
-      <input type="radio" name="pageSize" value="A4" ${settings.pageSize==='A4'?'checked':''} style="margin-right:8px">
-      <span>A4 (8.27" × 11.69")</span>
-    </label>
-    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
-      <input type="radio" name="pageSize" value="Letter" ${settings.pageSize==='Letter'?'checked':''} style="margin-right:8px">
-      <span>Letter (8.5" × 11")</span>
-    </label>
-  `;
-
-  const marginOptions = `
-    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
-      <input type="radio" name="margins" value="0.5" style="margin-right:8px">
-      <span>0.5 inches</span>
-    </label>
-    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
-      <input type="radio" name="margins" value="0.75" checked style="margin-right:8px">
-      <span>0.75 inches (Recommended)</span>
-    </label>
-    <label style="display:flex;align-items:center;margin:8px 0;cursor:pointer">
-      <input type="radio" name="margins" value="1" style="margin-right:8px">
-      <span>1 inch</span>
-    </label>
-  `;
-
-  const html = `
-    <div style="padding:20px;font-family:Arial,sans-serif;max-width:500px">
-      <h2 style="margin-top:0;color:#333">Print Settings: ${settings.name}</h2>
-      
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-weight:bold;margin-bottom:10px;color:#333">Orientation:</label>
-        <div style="margin-left:10px">
-          ${orientationOptions}
-        </div>
-      </div>
-
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-weight:bold;margin-bottom:10px;color:#333">Page Size:</label>
-        <div style="margin-left:10px">
-          ${pageSizeOptions}
-        </div>
-      </div>
-
-      <div style="margin-bottom:20px">
-        <label style="display:block;font-weight:bold;margin-bottom:10px;color:#333">Margins:</label>
-        <div style="margin-left:10px">
-          ${marginOptions}
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:30px">
-        <button onclick="closePrintSettingsDialog()" style="padding:10px 20px;background:#999;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px">
-          Cancel
-        </button>
-        <button onclick="confirmPrintSettings('${wo}','${docType}')" style="padding:10px 20px;background:#27ae60;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px">
-          Print with These Settings
-        </button>
-      </div>
-    </div>
-  `;
-
-  // Show the dialog
-  document.getElementById('printSettingsModal').innerHTML = html;
-  document.getElementById('printSettingsModal').style.display = 'flex';
-}
-
-/* Close print settings dialog */
-function closePrintSettingsDialog() {
-  document.getElementById('printSettingsModal').style.display = 'none';
-}
-
-/* Confirm and apply print settings */
-function confirmPrintSettings(wo, docType) {
-  const orientation = document.querySelector('input[name="orientation"]:checked').value;
-  const pageSize = document.querySelector('input[name="pageSize"]:checked').value;
-  const margins = document.querySelector('input[name="margins"]:checked').value;
-
-  closePrintSettingsDialog();
-
-  // Get the document HTML
-  const job = DB.jobs[wo];
-  if (!job) { toast('Job not found', 'am'); return; }
-
-  const cleanPdfHtml = buildDocForPDF(docType, job);
-  if (!cleanPdfHtml) { toast('No PDF renderer for this document type', 'am'); return; }
-
-  // Open print window WITH the selected settings
-  openPrintWindowWithSettings(cleanPdfHtml, docType, orientation, pageSize, margins);
-}
-
-/* Open print window with custom settings */
-function openPrintWindowWithSettings(innerHtml, docType, orientation, pageSize, marginInches) {
-  const title = docType.replace(/_/g, ' ') + ' · ' + orientation.toUpperCase();
-  
-  // Convert margin to mm (0.75" = 19.05mm)
-  const marginMm = parseFloat(marginInches) * 25.4;
-  
-  // Page size in mm
-  const pageSizes = {
-    'A4': { width: 210, height: 297 },
-    'Letter': { width: 215.9, height: 279.4 }
-  };
-  
-  const ps = pageSizes[pageSize] || pageSizes['A4'];
-  
-  // Calculate orientation dimensions
-  const isLandscape = orientation === 'landscape';
-  const pageWidth = isLandscape ? ps.height : ps.width;
-  const pageHeight = isLandscape ? ps.width : ps.height;
-  
-  // Build print CSS
-  const printCss = `
-    @page {
-      size: ${pageWidth}mm ${pageHeight}mm;
-      margin: ${marginMm}mm;
-    }
-    @media print {
-      body { margin: 0; padding: 0; }
-      .paper { margin: 0; padding: 0; }
-    }
-  `;
-
-  const html = `<!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title}</title>
-<style>
-${printCss}
-html, body { 
-  margin: 0; 
-  padding: 0; 
-  width: 100%; 
-  height: 100%;
-}
-body { 
-  font-family: Arial, Helvetica, sans-serif;
-}
-</style>
-</head><body>
-${innerHtml}
-</body></html>`;
-
-  // Print window size based on orientation
-  const winWidth = isLandscape ? 1400 : 1000;
-  const winHeight = isLandscape ? 900 : 1100;
-
-  const w = window.open('', '_blank', `width=${winWidth},height=${winHeight},menubar=yes,toolbar=yes,scrollbars=yes`);
-
-  if (!w) { 
-    toast('Pop-up blocked — allow pop-ups for this site then try again', 'rd'); 
-    return; 
-  }
-
-  w.document.open(); 
-  w.document.write(html); 
-  w.document.close();
-
-  // Open print dialog
-  w.onload = () => { 
-    setTimeout(() => { 
-      w.focus(); 
-      w.print(); 
-    }, 600); 
-  };
-
-  setTimeout(() => { 
-    try { 
-      if (!w.closed) { 
-        w.focus(); 
-        w.print(); 
-      } 
-    } catch(e) {} 
-  }, 1200);
-
-  toast('Print window opened — your settings will be applied', 'gn');
-}
-
-let _syncTimer = null;
-
-function startAutoSync(){
-  // Auto-sync disabled - was causing conflicts with user edits
-  // Data now syncs only when user clicks navigation buttons
-  console.log('Sync-on-demand enabled. Data refreshes when you navigate.');
-}
-
-async function refreshDataAndRender(renderFunction){
-  try{
-    console.log('Syncing latest data from Supabase...');
-    await syncFromSupabase();
-    console.log('Sync complete. Now rendering view...');
-    if(renderFunction && typeof renderFunction === 'function'){
-      renderFunction();
-    }
-  }catch(e){
-    console.error('Failed to refresh data:', e);
-    if(typeof toast === 'function') toast('Could not refresh data','rd');
-  }
-}
-
-function stopAutoSync(){
-  if(_syncTimer){
-    clearInterval(_syncTimer);
-    _syncTimer = null;
-  }
-}
