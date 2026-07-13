@@ -344,7 +344,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 @keyframes slu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* PAPER DOCS */
-.paper{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:9pt;padding:16px;border:1px solid #bbb;line-height:1.45}
+.paper{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:9pt;padding:22px;border:1px solid #bbb;line-height:1.45}
 .paper *{box-sizing:border-box}
 .paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
 .lh-t{width:100%;border-collapse:collapse;margin-bottom:7px}
