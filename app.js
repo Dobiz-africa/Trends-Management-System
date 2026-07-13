@@ -320,7 +320,17 @@ const STAGE_DOCS = {
    saveDB() runs. If Supabase isn't configured, everything falls
    back to localStorage-only mode automatically.
 ═══════════════════════════════════════ */
-const SB = { client:null, enabled:false, bucket:'claimdesk-scans', ready:false };
+const SB = { client:null, enabled:false, bucket:'claimdesk-scans', ready:false, channel:null };
+
+/* Snapshot of each job's data exactly as last confirmed synced with Supabase.
+   Used to tell "this job has unpushed local edits" apart from "this job is
+   clean and safe to overwrite with fresh server data" — this is what stops
+   one role's stale in-memory copy from clobbering another role's changes. */
+let SB_LAST_SYNCED = {};
+function isJobDirty(wo){
+  if(!DB || !DB.jobs || !DB.jobs[wo]) return false;
+  return SB_LAST_SYNCED[wo] !== JSON.stringify(DB.jobs[wo]);
+}
 
 async function initSupabase(){
   try{
@@ -405,7 +415,21 @@ async function syncFromSupabase(){
       jobs[row.wo] = j;
     });
     console.log('syncFromSupabase: fetched', Object.keys(jobs).length, 'jobs from Supabase:', jobs);
-    DB.jobs = jobs;
+
+    // MERGE (not replace): if this browser has local edits to a job that
+    // haven't been pushed yet, keep the local copy so we don't erase
+    // in-progress work. Everything else gets the fresh server copy, and a
+    // job that just arrived on the server (e.g. added from another device)
+    // gets added in.
+    DB.jobs = DB.jobs || {};
+    Object.keys(jobs).forEach(wo=>{
+      if(isJobDirty(wo)){
+        // Keep local edits; they'll be pushed on the next save.
+        return;
+      }
+      DB.jobs[wo] = jobs[wo];
+      SB_LAST_SYNCED[wo] = JSON.stringify(jobs[wo]);
+    });
 
     (docsR.data||[]).forEach(d=>{
       const j = DB.jobs[d.wo]; if(!j) return;
@@ -457,11 +481,21 @@ async function _pushNow(){
   if(!SB.enabled) return;
   const c = SB.client;
   try{
-    const jobRows = Object.values(DB.jobs||{}).map(j=>({
+    // Only push jobs that actually differ from what we last confirmed was
+    // saved — this is the key fix for cross-role overwrites. Previously
+    // EVERY job in memory was re-uploaded on every save, so a stale copy
+    // sitting in one role's browser could stomp on another role's newer
+    // change (e.g. a Linesman's uploaded document being wiped out by an
+    // Admin's unrelated save). Now each job is only sent up if it changed.
+    const dirtyJobs = Object.values(DB.jobs||{}).filter(j=>isJobDirty(j.wo));
+    const jobRows = dirtyJobs.map(j=>({
       wo:j.wo, cust:j.cust, loc:j.loc, phase:j.phase, stage:j.stage,
       claim_ref:j.claimRef||null, data:j,
     }));
-    if(jobRows.length) await c.from('jobs').upsert(jobRows, {onConflict:'wo'});
+    if(jobRows.length){
+      await c.from('jobs').upsert(jobRows, {onConflict:'wo'});
+      jobRows.forEach(r=>{ SB_LAST_SYNCED[r.wo] = JSON.stringify(DB.jobs[r.wo]); });
+    }
 
     const notifRows=[];
     Object.entries(DB.notifs||{}).forEach(([role,list])=>{
@@ -478,6 +512,90 @@ async function _pushNow(){
   }catch(e){
     console.error('ClaimDesk: background save to Supabase failed (kept locally).', e);
   }
+}
+
+/* ═══════════════════════════════════════
+   REALTIME  (live updates across roles/devices)
+   ───────────────────────────────────────
+   Without this, one role only ever sees another role's changes after
+   clicking to a new screen (which triggers syncFromSupabase). That's the
+   "Admin doesn't see the Linesman's upload" complaint. This subscribes to
+   Postgres changes on the shared tables and patches DB in place, live.
+═══════════════════════════════════════ */
+function subscribeRealtime(){
+  if(!SB.enabled || SB.channel) return;
+  try{
+    SB.channel = SB.client.channel('tes-realtime')
+      .on('postgres_changes', {event:'*', schema:'public', table:'jobs'}, payload=>{
+        const row = payload.new || payload.old;
+        if(!row || !row.wo) return;
+        if(payload.eventType==='DELETE'){
+          delete DB.jobs[row.wo]; delete SB_LAST_SYNCED[row.wo];
+        }else if(!isJobDirty(row.wo)){
+          // Only auto-apply if we don't have unpushed local edits to this job.
+          const j = row.data && typeof row.data==='object' ? row.data : {};
+          j.wo=row.wo; j.cust=row.cust; j.loc=row.loc; j.phase=row.phase; j.stage=row.stage;
+          j.claimRef = row.claim_ref||j.claimRef||'';
+          // Keep whatever scans/savedDocs we already have locally merged in —
+          // the 'documents' table subscription below is what keeps those fresh.
+          if(DB.jobs[row.wo]){ j.scans=DB.jobs[row.wo].scans; j.savedDocs=DB.jobs[row.wo].savedDocs; }
+          DB.jobs[row.wo] = j;
+          SB_LAST_SYNCED[row.wo] = JSON.stringify(j);
+        }
+        liveRerender(row.wo);
+      })
+      .on('postgres_changes', {event:'*', schema:'public', table:'documents'}, payload=>{
+        const row = payload.new || payload.old;
+        if(!row || !row.wo || !DB.jobs[row.wo]) return;
+        const j = DB.jobs[row.wo];
+        if(payload.eventType==='DELETE'){
+          if(j.scans) delete j.scans[row.doc_type];
+          if(j.savedDocs) delete j.savedDocs[row.doc_type];
+        }else if(row.is_signed){
+          j.scans = j.scans||{};
+          j.scans[row.doc_type] = {
+            storagePath:row.storage_path, filename:row.filename,
+            uploadedAt:row.created_at, role:row.uploaded_role,
+            url: SB.client.storage.from(SB.bucket).getPublicUrl(row.storage_path).data.publicUrl,
+          };
+        }else if(row.html){
+          j.savedDocs = j.savedDocs||{};
+          j.savedDocs[row.doc_type] = {html:row.html, savedAt:row.created_at, role:row.uploaded_role};
+        }
+        // A doc landing/leaving usually means the job's data snapshot on the
+        // server is now newer than ours too — keep our snapshot marker as-is
+        // so the next syncFromSupabase still pulls the authoritative version
+        // unless we have other unpushed local edits.
+        liveRerender(row.wo);
+      })
+      .on('postgres_changes', {event:'*', schema:'public', table:'notifications'}, payload=>{
+        const row = payload.new || payload.old;
+        if(!row) return;
+        if(!DB.notifs) DB.notifs = {};
+        if(!DB.notifs[row.role]) DB.notifs[row.role] = [];
+        if(payload.eventType==='DELETE'){
+          DB.notifs[row.role] = DB.notifs[row.role].filter(n=>String(n.id)!==String(row.id));
+        }else{
+          const idx = DB.notifs[row.role].findIndex(n=>String(n.id)===String(row.id));
+          const entry = {id:row.id, msg:row.msg, wo:row.wo, read:row.is_read, ts:row.ts};
+          if(idx>=0) DB.notifs[row.role][idx]=entry; else DB.notifs[row.role].unshift(entry);
+        }
+        if(CU) renderNotifs();
+      })
+      .subscribe();
+  }catch(e){ console.error('ClaimDesk: realtime subscribe failed', e); }
+}
+function unsubscribeRealtime(){
+  if(SB.channel){
+    try{ SB.client.removeChannel(SB.channel); }catch(e){}
+    SB.channel = null;
+  }
+}
+function liveRerender(wo){
+  try{
+    if(typeof refreshAll==='function') refreshAll();
+    if(detailWO===wo && typeof refreshDetail==='function') refreshDetail();
+  }catch(e){ console.error('liveRerender failed', e); }
 }
 
 /* Append a single activity-log row to Supabase. */
@@ -4396,6 +4514,7 @@ async function doLogin(){
     
     clearTimeout(timeoutId);  // Clear the timeout since sync is done
     if(tbt) tbt.textContent = 'Trends Engineering Services (PTY) Ltd';
+    subscribeRealtime();  // Start listening for live changes from other roles/devices
   }else{
     console.log('SB not enabled. DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
   }
@@ -4409,6 +4528,7 @@ function doLogout(){
   addLog('','Signed out');saveDB();
   CU='';detailWO=null;
   stopAutoSync();  // Stop auto-refresh when logging out
+  unsubscribeRealtime();  // Stop listening for live changes
   // Clear session from localStorage
   localStorage.removeItem('tes_currentRole');
   document.getElementById('loginScreen').style.display='flex';
