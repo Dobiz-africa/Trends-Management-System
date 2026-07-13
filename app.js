@@ -320,17 +320,7 @@ const STAGE_DOCS = {
    saveDB() runs. If Supabase isn't configured, everything falls
    back to localStorage-only mode automatically.
 ═══════════════════════════════════════ */
-const SB = { client:null, enabled:false, bucket:'claimdesk-scans', ready:false, channel:null };
-
-/* Snapshot of each job's data exactly as last confirmed synced with Supabase.
-   Used to tell "this job has unpushed local edits" apart from "this job is
-   clean and safe to overwrite with fresh server data" — this is what stops
-   one role's stale in-memory copy from clobbering another role's changes. */
-let SB_LAST_SYNCED = {};
-function isJobDirty(wo){
-  if(!DB || !DB.jobs || !DB.jobs[wo]) return false;
-  return SB_LAST_SYNCED[wo] !== JSON.stringify(DB.jobs[wo]);
-}
+const SB = { client:null, enabled:false, bucket:'claimdesk-scans', ready:false };
 
 async function initSupabase(){
   try{
@@ -429,21 +419,7 @@ async function _syncFromSupabaseNow(){
       jobs[row.wo] = j;
     });
     console.log('syncFromSupabase: fetched', Object.keys(jobs).length, 'jobs from Supabase:', jobs);
-
-    // MERGE (not replace): if this browser has local edits to a job that
-    // haven't been pushed yet, keep the local copy so we don't erase
-    // in-progress work. Everything else gets the fresh server copy, and a
-    // job that just arrived on the server (e.g. added from another device)
-    // gets added in.
-    DB.jobs = DB.jobs || {};
-    Object.keys(jobs).forEach(wo=>{
-      if(isJobDirty(wo)){
-        // Keep local edits; they'll be pushed on the next save.
-        return;
-      }
-      DB.jobs[wo] = jobs[wo];
-      SB_LAST_SYNCED[wo] = JSON.stringify(jobs[wo]);
-    });
+    DB.jobs = jobs;
 
     (docsR.data||[]).forEach(d=>{
       const j = DB.jobs[d.wo]; if(!j) return;
@@ -495,15 +471,11 @@ async function _pushNow(){
   if(!SB.enabled) return;
   const c = SB.client;
   try{
-    const dirtyJobs = Object.values(DB.jobs||{}).filter(j=>isJobDirty(j.wo));
-    const jobRows = dirtyJobs.map(j=>({
+    const jobRows = Object.values(DB.jobs||{}).map(j=>({
       wo:j.wo, cust:j.cust, loc:j.loc, phase:j.phase, stage:j.stage,
       claim_ref:j.claimRef||null, data:j,
     }));
-    if(jobRows.length){
-      await c.from('jobs').upsert(jobRows, {onConflict:'wo'});
-      jobRows.forEach(r=>{ SB_LAST_SYNCED[r.wo] = JSON.stringify(DB.jobs[r.wo]); });
-    }
+    if(jobRows.length) await c.from('jobs').upsert(jobRows, {onConflict:'wo'});
 
     const notifRows=[];
     Object.entries(DB.notifs||{}).forEach(([role,list])=>{
@@ -520,78 +492,6 @@ async function _pushNow(){
   }catch(e){
     console.error('ClaimDesk: background save to Supabase failed (kept locally).', e);
   }
-}
-
-/* ═══════════════════════════════════════
-   REALTIME  (live updates across roles/devices)
-═══════════════════════════════════════ */
-function subscribeRealtime(){
-  if(!SB.enabled || SB.channel) return;
-  try{
-    SB.channel = SB.client.channel('tes-realtime')
-      .on('postgres_changes', {event:'*', schema:'public', table:'jobs'}, payload=>{
-        const row = payload.new || payload.old;
-        if(!row || !row.wo) return;
-        if(payload.eventType==='DELETE'){
-          delete DB.jobs[row.wo]; delete SB_LAST_SYNCED[row.wo];
-        }else if(!isJobDirty(row.wo)){
-          const j = row.data && typeof row.data==='object' ? row.data : {};
-          j.wo=row.wo; j.cust=row.cust; j.loc=row.loc; j.phase=row.phase; j.stage=row.stage;
-          j.claimRef = row.claim_ref||j.claimRef||'';
-          if(DB.jobs[row.wo]){ j.scans=DB.jobs[row.wo].scans; j.savedDocs=DB.jobs[row.wo].savedDocs; }
-          DB.jobs[row.wo] = j;
-          SB_LAST_SYNCED[row.wo] = JSON.stringify(j);
-        }
-        liveRerender(row.wo);
-      })
-      .on('postgres_changes', {event:'*', schema:'public', table:'documents'}, payload=>{
-        const row = payload.new || payload.old;
-        if(!row || !row.wo || !DB.jobs[row.wo]) return;
-        const j = DB.jobs[row.wo];
-        if(payload.eventType==='DELETE'){
-          if(j.scans) delete j.scans[row.doc_type];
-          if(j.savedDocs) delete j.savedDocs[row.doc_type];
-        }else if(row.is_signed){
-          j.scans = j.scans||{};
-          j.scans[row.doc_type] = {
-            storagePath:row.storage_path, filename:row.filename,
-            uploadedAt:row.created_at, role:row.uploaded_role,
-            url: SB.client.storage.from(SB.bucket).getPublicUrl(row.storage_path).data.publicUrl,
-          };
-        }else if(row.html){
-          j.savedDocs = j.savedDocs||{};
-          j.savedDocs[row.doc_type] = {html:row.html, savedAt:row.created_at, role:row.uploaded_role};
-        }
-        liveRerender(row.wo);
-      })
-      .on('postgres_changes', {event:'*', schema:'public', table:'notifications'}, payload=>{
-        const row = payload.new || payload.old;
-        if(!row) return;
-        if(!DB.notifs) DB.notifs = {};
-        if(!DB.notifs[row.role]) DB.notifs[row.role] = [];
-        if(payload.eventType==='DELETE'){
-          DB.notifs[row.role] = DB.notifs[row.role].filter(n=>String(n.id)!==String(row.id));
-        }else{
-          const idx = DB.notifs[row.role].findIndex(n=>String(n.id)===String(row.id));
-          const entry = {id:row.id, msg:row.msg, wo:row.wo, read:row.is_read, ts:row.ts};
-          if(idx>=0) DB.notifs[row.role][idx]=entry; else DB.notifs[row.role].unshift(entry);
-        }
-        if(CU) renderNotifs();
-      })
-      .subscribe();
-  }catch(e){ console.error('ClaimDesk: realtime subscribe failed', e); }
-}
-function unsubscribeRealtime(){
-  if(SB.channel){
-    try{ SB.client.removeChannel(SB.channel); }catch(e){}
-    SB.channel = null;
-  }
-}
-function liveRerender(wo){
-  try{
-    if(typeof refreshAll==='function') refreshAll();
-    if(detailWO===wo && typeof refreshDetail==='function') refreshDetail();
-  }catch(e){ console.error('liveRerender failed', e); }
 }
 
 /* Append a single activity-log row to Supabase. */
@@ -4469,6 +4369,15 @@ async function doLogin(){
   document.getElementById('mainApp').style.display='block';
   document.getElementById('sbRn').textContent=RN[r];
 
+  // Immediately hide whatever dashboard panel was left visible from the
+  // PREVIOUS role — otherwise it stays on screen (with real content) for
+  // the entire loading window until the sync finishes and renderDashboard()
+  // finally gets around to hiding it. This is what caused Admin's task list
+  // to flash up under a freshly logged-in Linesman.
+  ['dash-admin','dash-finance','dash-gis','dash-md','dash-linesman'].forEach(id=>{
+    const elx=document.getElementById(id); if(elx) elx.style.display='none';
+  });
+
   // Role-specific nav — always hide jobdetail first
   const show=id=>{const e=document.getElementById(id);if(e)e.style.display='flex';};
   const hide=id=>{const e=document.getElementById(id);if(e)e.style.display='none';};
@@ -4510,7 +4419,6 @@ async function doLogin(){
     
     clearTimeout(timeoutId);  // Clear the timeout since sync is done
     if(tbt) tbt.textContent = 'Trends Engineering Services (PTY) Ltd';
-    subscribeRealtime();  // Start listening for live changes from other roles/devices
   }else{
     console.log('SB not enabled. DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
   }
@@ -4524,7 +4432,6 @@ function doLogout(){
   addLog('','Signed out');saveDB();
   CU='';detailWO=null;
   stopAutoSync();  // Stop auto-refresh when logging out
-  unsubscribeRealtime();  // Stop listening for live changes
   // Clear session from localStorage
   localStorage.removeItem('tes_currentRole');
   document.getElementById('loginScreen').style.display='flex';
