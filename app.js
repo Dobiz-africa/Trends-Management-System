@@ -3738,6 +3738,8 @@ async function doLogin(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
   document.getElementById('sbRn').textContent=RN[r];
+  const loadOv=document.getElementById('loadOverlay');
+  if(loadOv) loadOv.style.display='flex';
 
   // Role-specific nav — always hide jobdetail first
   const show=id=>{const e=document.getElementById(id);if(e)e.style.display='flex';};
@@ -3765,6 +3767,7 @@ async function doLogin(){
   // Always land on dashboard — never carry over a screen from another role
   nav('dashboard');
   renderNotifs();
+  if(loadOv) loadOv.style.display='none';
 }
 async function doLogout(){
   addLog('','Signed out');
