@@ -435,6 +435,15 @@ function pushToSupabase(){
   clearTimeout(_sbSaveTimer);
   _sbSaveTimer = setTimeout(_pushNow, 400);
 }
+/* Forces any pending debounced save to run right now, and waits for it to finish.
+   Call this before anything that's about to clear or replace DB (like logging out). */
+async function flushPendingSave(){
+  if(_sbSaveTimer){
+    clearTimeout(_sbSaveTimer);
+    _sbSaveTimer = null;
+    await _pushNow();
+  }
+}
 async function _pushNow(){
   if(!SB.enabled) return;
   const c = SB.client;
@@ -3744,14 +3753,7 @@ async function doLogin(){
   if(SB.enabled){
     const tbt=document.getElementById('tbt'); if(tbt) tbt.textContent='Loading…';
     // Flush any pending push to Supabase before syncing
-    await new Promise(resolve=>{
-      if(_sbSaveTimer){
-        clearTimeout(_sbSaveTimer);
-        _pushNow().then(resolve).catch(resolve);
-      }else{
-        resolve();
-      }
-    });
+    await flushPendingSave();
     await syncFromSupabase();
     console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
     subscribeRealtime();
@@ -3764,8 +3766,10 @@ async function doLogin(){
   nav('dashboard');
   renderNotifs();
 }
-function doLogout(){
-  addLog('','Signed out');saveDB();
+async function doLogout(){
+  addLog('','Signed out');
+  saveDB();
+  await flushPendingSave();
   if(_rtChannel){ SB.client.removeChannel(_rtChannel); _rtChannel = null; }
   CU='';detailWO=null;
   DB = {version:3, jobs:{}, notifs:{admin:[],finance:[],md:[]}, actLog:[], rates:[...RATES_SEED], certSeq:1, batchScans:{}, batchSaved:{}};
