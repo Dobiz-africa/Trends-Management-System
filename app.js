@@ -358,10 +358,9 @@ async function initSupabase(){
   }
 }
 
-// Run initSupabase immediately
-(async () => {
-  await initSupabase();
-})();
+// Run initSupabase immediately, and keep a reference to it so other code
+// (like doLogin) can wait for it to finish before checking SB.enabled.
+const SB_INIT_PROMISE = initSupabase();
 
 /* Pull all shared data from Supabase into the in-memory DB (called on login). */
 async function syncFromSupabase(){
@@ -444,6 +443,22 @@ async function flushPendingSave(){
     await _pushNow();
   }
 }
+async function saveDBAndWait(){
+  const ov=document.getElementById('loadOverlay');
+  if(ov) ov.style.display='flex';
+  try{
+    clearTimeout(_sbSaveTimer);
+    _sbSaveTimer=null;
+    await _pushNow();
+  }catch(e){
+    console.error('Save failed:',e);
+    toast('⚠️ Could not save to the server — check your connection and try again','am');
+    throw e;
+  }finally{
+    if(ov) ov.style.display='none';
+  }
+}
+
 async function _pushNow(){
   if(!SB.enabled) return;
   const c = SB.client;
@@ -1878,30 +1893,30 @@ function checkGISComplete(wo){
   }
   advanceStage(wo,'gis_complete');
 }
-function advanceStageWV(wo){
+async function advanceStageWV(wo){
   const job=DB.jobs[wo];if(!job)return;
   job.stage='work_instruction_ready';
   job.actions['work_instruction_ready']={date:new Date().toISOString().slice(0,10),notes:'Works Valuation saved',extra:''};
   addLog(wo,'Works Valuation saved — ready to notify teams');
   notify(['md'],`Works Valuation completed for WO ${wo} — ${job.cust}. Admin will now notify teams.`,wo);
   markJobDirty(wo);
-  saveDB();closeModal('docModal');refreshDetail();refreshAll();
+  await saveDBAndWait();closeModal('docModal');refreshDetail();refreshAll();
   toast('Works Valuation saved — now notify teams to start work');
   setTimeout(()=>openRecord(wo,'teams_notified','Record: Notify Teams to Start Work','Send the job details to your field teams externally (WhatsApp/email), then record here when done.','Team(s) assigned (e.g. Shakawe Team A)'),400);
 }
-function advanceStageWI(wo){
+async function advanceStageWI(wo){
   const job=DB.jobs[wo];if(!job)return;
   job.stage='work_instruction_ready';
   job.actions['work_instruction_ready']={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
   addLog(wo,'Works Instruction prepared — stage advanced');
   markJobDirty(wo);
-  saveDB();closeModal('docModal');
+  await saveDBAndWait();closeModal('docModal');
   // Immediately prompt to record teams notified
   setTimeout(()=>openRecord(wo,'teams_notified','Record: Works Instruction Sent to Teams','Send the Works Instruction to the team externally (WhatsApp/email) with this doc, then record here.','Team(s) assigned (e.g. Shakawe Team A)'),200);
   refreshDetail();refreshAll();
   toast('Works Instruction ready — record sending it to teams');
 }
-function advanceStage(wo,newStage){
+async function advanceStage(wo,newStage){
   const job=DB.jobs[wo];if(!job)return;
   job.stage=newStage;
   job.actions[newStage]={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
@@ -1930,10 +1945,10 @@ function advanceStage(wo,newStage){
   if(newStage==='field_received')notify(['md'],`Linesman findings recorded &amp; attached for WO ${wo}`,wo);
   if(newStage==='gis_complete')notify(['md'],`GIS report attached for WO ${wo} — ${job.cust}. Finance can now generate claim docs.`,wo);
   markJobDirty(wo);
-  saveDB();closeModal('docModal');refreshDetail();refreshAll();
+  await saveDBAndWait();closeModal('docModal');refreshDetail();refreshAll();
   toast(stageLabel(newStage)+' ✓ — document auto-attached for MD');
 }
-function saveVO2(wo){
+async function saveVO2(wo){
   const job=DB.jobs[wo];if(!job)return;
   // collect VO2 items from form
   const items=job.vo2.items.map((it,i)=>({
@@ -1960,7 +1975,7 @@ function saveVO2(wo){
   addLog(wo,'VO2 (Variation Order) created');
   notify(['md'],`VO2 created for WO ${wo} — ${job.cust}. Next: Works Valuation Document.`,wo);
   markJobDirty(wo);
-  saveDB();closeModal('docModal');refreshDetail();refreshAll();
+  await saveDBAndWait();closeModal('docModal');refreshDetail();refreshAll();
   toast('VO2 saved — next step: create Works Valuation');
   setTimeout(()=>toast(msg,diff>0?'am':'gn'),400);
 }
@@ -3752,6 +3767,7 @@ async function doLogin(){
   if(r==='linesman'){show('n-inbox');}
 
   // Pull the latest shared data from Supabase before rendering
+  await SB_INIT_PROMISE;
   if(SB.enabled){
     const tbt=document.getElementById('tbt'); if(tbt) tbt.textContent='Loading…';
     // Flush any pending push to Supabase before syncing
