@@ -3786,9 +3786,11 @@ async function doLogin(){
   if(loadOv) loadOv.style.display='none';
 }
 async function doLogout(){
+  const loadOv=document.getElementById('loadOverlay');
+  if(loadOv) loadOv.style.display='flex';
   addLog('','Signed out');
   saveDB();
-  await flushPendingSave();
+  await Promise.race([ flushPendingSave(), new Promise(r=>setTimeout(r,6000)) ]);
   if(_rtChannel){ SB.client.removeChannel(_rtChannel); _rtChannel = null; }
   CU='';detailWO=null;
   DB = {version:3, jobs:{}, notifs:{admin:[],finance:[],md:[]}, actLog:[], rates:[...RATES_SEED], certSeq:1, batchScans:{}, batchSaved:{}};
@@ -3796,6 +3798,7 @@ async function doLogout(){
   document.getElementById('loginScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginRole').value='';
+  if(loadOv) loadOv.style.display='none';
 }
 
 /* Auto-restore user session on page load */
