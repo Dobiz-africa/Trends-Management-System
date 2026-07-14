@@ -506,6 +506,8 @@ function subscribeRealtime(){
       else{
         const j = (row.data && typeof row.data==='object') ? row.data : {};
         j.wo=row.wo; j.cust=row.cust; j.loc=row.loc; j.phase=row.phase; j.stage=row.stage; j.claimRef=row.claim_ref||j.claimRef||'';
+        if(!j.vo1) j.vo1={items:[]};
+        if(!j.vo2) j.vo2={items:[]};
         DB.jobs[row.wo] = j;
       }
       refreshAll();
@@ -793,7 +795,7 @@ function renderAdminDash(){
   ];
   const needsAction=jobs.filter(j=>ADMIN_NEEDS.includes(j.stage));
   const waiting=jobs.filter(j=>EXTERNAL_WAITING.includes(j.stage));
-  const val=jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const val=jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
   document.getElementById('a-total').textContent=jobs.length;
   document.getElementById('a-action').textContent=needsAction.length;
   document.getElementById('a-prog').textContent=waiting.length;
@@ -839,8 +841,8 @@ function renderFinanceDash(){
   const ready=jobs.filter(j=>j.stage==='gis_complete');
   const done=jobs.filter(j=>j.stage==='claim_docs_ready');
   const completed=jobs.filter(j=>j.stage==='job_complete');
-  const netVal=ready.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total*.92;},0)
-    +done.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total*.92;},0);
+  const netVal=ready.reduce((s,j)=>{const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');return s+t.total*.92;},0)
+    +done.reduce((s,j)=>{const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');return s+t.total*.92;},0);
   document.getElementById('f-ready').textContent=ready.length;
   document.getElementById('f-done').textContent=done.length;
   document.getElementById('f-net').textContent=P(netVal);
@@ -849,7 +851,7 @@ function renderFinanceDash(){
   const tasksEl=document.getElementById('f-tasks');
   if(!ready.length){tasksEl.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No jobs ready yet — waiting for GIS reports to be uploaded</div>';}
   else{tasksEl.innerHTML=ready.map(j=>{
-    const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');
     return`<div class="tbl-row" style="grid-template-columns:30px 1fr 110px 110px 120px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
       <span style="font-size:1.1rem">💰</span>
       <div>
@@ -864,7 +866,7 @@ function renderFinanceDash(){
   const procEl=document.getElementById('f-processed');
   if(![...done,...completed].length){procEl.innerHTML='<div style="padding:1rem;text-align:center;color:var(--tx3);font-size:.8rem">None yet</div>';}
   else{procEl.innerHTML=[...done,...completed].map(j=>{
-    const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');
     return`<div class="tbl-row" style="grid-template-columns:30px 1fr 110px 100px;cursor:pointer" onclick="openJobDetail('${j.wo}')">
       <span style="font-size:1.1rem">${j.stage==='job_complete'?'✅':'📋'}</span>
       <div><div style="font-size:.83rem;font-weight:500;color:var(--tx2)">${j.cust} · WO ${j.wo}</div>
@@ -886,7 +888,7 @@ function renderMDDash(){
   const financeDocTypes=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   const batchDocCount=claimReady.reduce((total,j)=>total+financeDocTypes.filter(dt=>j.savedDocs&&j.savedDocs[dt]).length,0);
   const batches=batchDocCount;
-  const val=jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
+  const val=jobs.reduce((s,j)=>{const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');return s+t.total;},0);
   document.getElementById('m-total').textContent=jobs.length;
   document.getElementById('m-active').textContent=inProgress.length;
   document.getElementById('m-docs').textContent=claimReady.length;
@@ -1044,7 +1046,7 @@ function renderMDDash(){
         <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Cert No</span>
         <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Action</span>
       </div>` + claimsReadyJobs.map(j=>{
-        const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+        const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');
         return`<div style="display:grid;grid-template-columns:80px 1fr 80px 110px 110px 130px;gap:10px;padding:.62rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center">
           <span class="mono">${j.wo}</span>
           <span>${j.cust}</span>
@@ -1115,7 +1117,7 @@ function renderJobs(){
     'linear-gradient(145deg,#2a1a60 0%,#5a3ab0 100%)',
   ];
   document.getElementById('jobsList').innerHTML=`<div class="wo-sc-grid">${jobs.map((j,idx)=>{
-    const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');
     const pct=stagePct(j.stage);
     const isDone=j.stage==='job_complete';
     const isReady=['gis_complete','claim_docs_ready'].includes(j.stage);
@@ -1659,6 +1661,10 @@ async function markGISComplete(wo) {
     toast('Upload at least one GIS report first', 'am');
     return;
   }
+  if (!job.gisCerts || job.gisCerts.length === 0) {
+    toast('Upload at least one GIS certificate first', 'am');
+    return;
+  }
   
   // Advance to gis_complete stage
   job.stage = 'gis_complete';
@@ -1993,7 +1999,7 @@ function renderClaims(){
   const list=document.getElementById('claimsList');
   if(!eligible.length){list.innerHTML='<div style="padding:1.5rem;text-align:center;color:var(--tx3);font-size:.8rem">No eligible jobs yet — GIS report must be uploaded first (and not already in a claim batch)</div>';document.getElementById('claimSummary').innerHTML='';return;}
   list.innerHTML=eligible.map(j=>{
-    const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');
+    const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');
     return`<div style="display:grid;grid-template-columns:32px 90px 1fr 90px 130px 90px;gap:10px;padding:.62rem 1rem;border-bottom:1px solid var(--bd);font-size:.8rem;align-items:center;cursor:pointer;transition:.1s" onclick="toggleClaim('${j.wo}')" onmouseover="this.style.background='var(--sf2)'" onmouseout="this.style.background=''">
       <span><input type="checkbox" id="cc-${j.wo}" ${selClaimJobs.has(j.wo)?'checked':''} onclick="toggleClaim('${j.wo}',event)" style="cursor:pointer;width:15px;height:15px;accent-color:var(--am)"></span>
       <span class="mono">${j.wo}</span><span>${j.cust}</span>
@@ -2005,7 +2011,7 @@ function renderClaims(){
 }
 function toggleClaim(wo,e){if(e)e.stopPropagation();selClaimJobs.has(wo)?selClaimJobs.delete(wo):selClaimJobs.add(wo);saveClaimBatchState();renderClaims();}
 function updateClaimSummary(){
-  const total=Array.from(selClaimJobs).reduce((s,wo)=>{const j=DB.jobs[wo];if(!j)return s;return s+jTotal(j,j.vo2.items.length?'vo2':'vo1').total;},0);
+  const total=Array.from(selClaimJobs).reduce((s,wo)=>{const j=DB.jobs[wo];if(!j)return s;return s+jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1').total;},0);
   const n=selClaimJobs.size;
   document.getElementById('claimSummary').innerHTML=n>0?`
     <div class="ua ua-gn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2181,7 +2187,7 @@ function docBatchSummary(batchJobs,certNo){
       <th style="border:1px solid #999;padding:4px 6px;text-align:right">Amount</th>
     </tr></thead>
     <tbody>
-      ${batchJobs.map(j=>{const t=jTotal(j,j.vo2.items.length?'vo2':'vo1');return`<tr>
+      ${batchJobs.map(j=>{const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');return`<tr>
         <td style="border:1px solid #bbb;padding:3px 6px">${j.wo}</td>
         <td style="border:1px solid #bbb;padding:3px 6px">${j.cust}</td>
         <td style="border:1px solid #bbb;padding:3px 6px">${j.loc}</td>
