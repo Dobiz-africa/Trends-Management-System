@@ -1586,7 +1586,7 @@ async function handleExternalUpload(wo, externalRole, files) {
   // Add each uploaded file
   Array.from(files).forEach(file => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const fileData = {
         name: file.name,
         size: file.size,
@@ -1636,7 +1636,8 @@ async function handleExternalUpload(wo, externalRole, files) {
         }
         
         // SAVE ONLY AFTER ALL FILES ARE READ
-        saveDB();
+        markJobDirty(wo);
+        await saveDBAndWait();
         refreshDetail();
         refreshAll();
       }
@@ -1649,7 +1650,7 @@ async function handleExternalUpload(wo, externalRole, files) {
  * Manually mark GIS as complete after uploads are done
  * Only requires GIS reports to be uploaded, certificate is optional
  */
-function markGISComplete(wo) {
+async function markGISComplete(wo) {
   const job = DB.jobs[wo];
   if (!job) return;
   
@@ -1674,7 +1675,8 @@ function markGISComplete(wo) {
     autoSaved: true
   };
   
-  saveDB();
+  markJobDirty(wo);
+  await saveDBAndWait();
   refreshDetail();
   refreshAll();
   
@@ -1779,7 +1781,7 @@ function showExternalFiles(wo, externalRole) {
 /**
  * Notify external role (Linesman or GIS) - no form, just mark as notified
  */
-function notifyExternalRole(wo, role) {
+async function notifyExternalRole(wo, role) {
   const job = DB.jobs[wo];
   if (!job) return;
   
@@ -1802,7 +1804,8 @@ function notifyExternalRole(wo, role) {
     toast('✅ GIS consultant notified. Now upload their report when ready.');
   }
   
-  saveDB();
+  markJobDirty(wo);
+  await saveDBAndWait();
   refreshDetail();
   refreshAll();
 }
@@ -2030,7 +2033,7 @@ function completeBatch(certNo){
     toast(`✅ Batch ${certNo} completed. Selection cleared. Ready for new batch.`);
   }
 }
-function generateClaimDocs(){
+async function generateClaimDocs(){
   if(!selClaimJobs.size){toast('Select at least one job','am');return;}
   const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
   DB.certSeq++;
@@ -2043,10 +2046,9 @@ function generateClaimDocs(){
   batchJobs.forEach(job=>{
     job.claimRef=certNo;
     job.stage='claim_docs_ready';
+    markJobDirty(job.wo);
     addLog(job.wo,`Claim docs generated — Cert: ${certNo}`);
   });
-  
-  saveDB();
   
   // Store batch documents — pass the first job with claimRef already set
   if(!DB.batchDocs)DB.batchDocs={};
@@ -2071,7 +2073,7 @@ function generateClaimDocs(){
     job.savedDocs['list_of_jobs']={html:docListOfJobs(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
     job.savedDocs['bpc_spreadsheet']={html:docBPCSpreadsheet(batchJobs,certNo),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
   });
-  saveDB();
+  await saveDBAndWait();
   notify(['admin','md'],`Claim ${certNo} generated — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
   renderInbox();renderDashboard();
   // DON'T call renderClaims() here - keep jobs visible until user completes batch
@@ -3471,7 +3473,7 @@ function addVO2Row(wo){
   const newInput=document.getElementById(`vo2d${wo}${newIdx}`);
   if(newInput)setTimeout(()=>newInput.focus(),10);
 }
-function createWorksValuation(wo){
+async function createWorksValuation(wo){
   const job=DB.jobs[wo];
   if(!job||!job.vo2.items.length){toast('VO2 must be created first','am');return;}
   job.worksValuation={created:true,date:new Date().toISOString()};
@@ -3479,7 +3481,8 @@ function createWorksValuation(wo){
   job.actions.works_valuation_created={date:new Date().toISOString().slice(0,10),notes:'Works Valuation document created'};
   addLog(wo,'Works Valuation document created');
   notify(['md'],'Works Valuation created for WO '+wo,wo);
-  saveDB();
+  markJobDirty(wo);
+  await saveDBAndWait();
   toast('✓ Works Valuation created');
   openDocForAction(wo,'works_valuation');
   refreshDetail();
@@ -3608,7 +3611,7 @@ function uploadLinesmanScan(wo,key,file){
   reader.readAsDataURL(file);
 }
 
-function markLinesmanDocsComplete(){
+async function markLinesmanDocsComplete(){
   const wo=currentLinesmanWO;
   const job=DB.jobs[wo];
   if(!job)return;
@@ -3621,7 +3624,8 @@ function markLinesmanDocsComplete(){
   job.actions['field_received']={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
   addLog(wo,'All 6 field documents uploaded by Linesman — marked complete');
   notify(['admin','md'],`✅ Linesman completed all field documents for WO ${wo} — ${job.cust}. Ready to create VO2.`,wo);
-  saveDB();
+  markJobDirty(wo);
+  await saveDBAndWait();
   closeModal('linesmanUploadModal');
   renderLinesmanDash();
   refreshAll();
