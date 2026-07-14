@@ -1289,7 +1289,7 @@ function renderJobDetail(wo){
   const canEdit=CU==='admin';
   const isFinance=CU==='finance';
   const isMD=CU==='md';
-  const t=jTotal(job,job.vo2.items.length?'vo2':'vo1');
+  const t=jTotal(job,job.vo2&&job.vo2.items&&job.vo2.items.length?'vo2':'vo1');
   const pct=stagePct(job.stage);
 
   // Header
@@ -1424,7 +1424,7 @@ function renderJobDetail(wo){
 
   // Summary
   const t1live=jTotal(job,'vo1');
-  const t2live=job.vo2.items.length?jTotal(job,'vo2'):null;
+  const t2live=job.vo2&&job.vo2.items&&job.vo2.items.length?jTotal(job,'vo2'):null;
   const claimAmount=t2live?t2live.total:t1live.total;
   document.getElementById('jdSummary').innerHTML=`
     <div style="font-size:.78rem;border-bottom:1px solid var(--bd);padding:4px 0"><span style="color:var(--tx3)">WO Number</span> &nbsp; <span class="mono">${job.wo}</span></div>
