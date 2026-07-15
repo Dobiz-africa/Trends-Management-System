@@ -429,10 +429,26 @@ async function syncFromSupabase(){
 const _dirtyJobs = new Set();
 function markJobDirty(wo){ _dirtyJobs.add(wo); }
 let _sbSaveTimer = null;
+
+/* Only one push to Supabase is ever allowed to run at a time. If a save is
+   requested while one is already in flight, it waits for that one to finish
+   and then runs again automatically — so it always ends up sending the latest
+   data, and two actions happening close together can never overwrite each
+   other's changes. */
+let _pushInFlight = null;
+function _runPushQueued(){
+  if(_pushInFlight){
+    _pushInFlight = _pushInFlight.then(()=>_pushNow(), ()=>_pushNow());
+  }else{
+    _pushInFlight = _pushNow().finally(()=>{ _pushInFlight = null; });
+  }
+  return _pushInFlight;
+}
+
 function pushToSupabase(){
   if(!SB.enabled) return;
   clearTimeout(_sbSaveTimer);
-  _sbSaveTimer = setTimeout(_pushNow, 400);
+  _sbSaveTimer = setTimeout(_runPushQueued, 400);
 }
 /* Forces any pending debounced save to run right now, and waits for it to finish.
    Call this before anything that's about to clear or replace DB (like logging out). */
@@ -440,7 +456,9 @@ async function flushPendingSave(){
   if(_sbSaveTimer){
     clearTimeout(_sbSaveTimer);
     _sbSaveTimer = null;
-    await _pushNow();
+    await _runPushQueued();
+  }else if(_pushInFlight){
+    await _pushInFlight;
   }
 }
 async function saveDBAndWait(){
@@ -449,7 +467,7 @@ async function saveDBAndWait(){
   try{
     clearTimeout(_sbSaveTimer);
     _sbSaveTimer=null;
-    await _pushNow();
+    await _runPushQueued();
   }catch(e){
     console.error('Save failed:',e);
     toast('⚠️ Could not save to the server — check your connection and try again','am');
