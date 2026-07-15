@@ -455,11 +455,8 @@ let _sbSaveTimer = null;
    other's changes. */
 let _pushInFlight = null;
 function _runPushQueued(){
-  if(_pushInFlight){
-    _pushInFlight = _pushInFlight.then(()=>_pushNow(), ()=>_pushNow());
-  }else{
-    _pushInFlight = _pushNow().finally(()=>{ _pushInFlight = null; });
-  }
+  const run = _pushInFlight ? _pushInFlight.then(()=>_pushNow(), ()=>_pushNow()) : _pushNow();
+  _pushInFlight = run.finally(()=>{ if(_pushInFlight===run) _pushInFlight=null; });
   return _pushInFlight;
 }
 
@@ -504,7 +501,10 @@ async function _pushNow(){
       const j = DB.jobs[wo];
       return { wo:j.wo, cust:j.cust, loc:j.loc, phase:j.phase, stage:j.stage, claim_ref:j.claimRef||null, data:j };
     });
-    if(jobRows.length) await c.from('jobs').upsert(jobRows, {onConflict:'wo'});
+    if(jobRows.length){
+      const {error:jobsErr} = await c.from('jobs').upsert(jobRows, {onConflict:'wo'});
+      if(jobsErr) throw jobsErr;
+    }
     _dirtyJobs.clear();
 
     const notifRows=[];
@@ -520,7 +520,8 @@ async function _pushNow(){
 
     if(DB.certSeq!=null) await c.from('app_meta').upsert({key:'certSeq', value:DB.certSeq}, {onConflict:'key'});
   }catch(e){
-    console.error('ClaimDesk: background save to Supabase failed (kept locally).', e);
+    console.error('ClaimDesk: background save to Supabase failed.', e);
+    if(typeof toast==='function') toast('⚠️ Your last change was NOT saved to the server — check permissions/connection and try again','rd');
   }
 }
 
@@ -1391,7 +1392,7 @@ function renderJobDetail(wo){
           actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','gis_report')">📎 Upload GIS Reports (${hasGISFiles?job.gisDocs.length+' files':''} files)</button>`;
           actBtns+=`<button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','gis_certificate')">📋 Upload GIS Certificate (${hasCerts?job.gisCerts.length+' files':''} files)</button>`;
           if(hasGISFiles||hasCerts) actBtns+=`<button class="btn btn-am btn-sm" onclick="showGISDocumentsModal('${wo}')">📄 View GIS Documents</button>`;
-          if(hasGISFiles) actBtns+=`<button class="btn btn-gn btn-sm" onclick="markGISComplete('${wo}')">✓ Mark GIS Complete & Proceed</button>`;
+          if(hasGISFiles && hasCerts) actBtns+=`<button class="btn btn-gn btn-sm" onclick="markGISComplete('${wo}')">✓ Mark GIS Complete & Proceed</button>`;
         }
         if(st.id==='gis_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="showGISDocumentsModal('${wo}')">📄 View GIS Documents</button>`;
         if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
