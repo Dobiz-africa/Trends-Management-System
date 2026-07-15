@@ -1290,7 +1290,7 @@ function openRecord(wo,stage,title,desc,extraLabel=''){
   }
   openModal('recordModal');
 }
-function confirmRecord(){
+async function confirmRecord(){
   const date=document.getElementById('rec-date').value;
   const notes=document.getElementById('rec-notes').value.trim();
   const extra=document.getElementById('rec-extra').value.trim();
@@ -1308,7 +1308,9 @@ function confirmRecord(){
     addLog(recordWO,'Job added to List of Jobs Done');
     notify(['md'],`Job complete: WO ${recordWO} — ${job.cust}. Added to List of Jobs Done.`,recordWO);
   }
-  saveDB();closeModal('recordModal');refreshDetail();refreshAll();
+  markJobDirty(recordWO);
+  await saveDBAndWait();
+  closeModal('recordModal');refreshDetail();refreshAll();
   toast(stageLabel(recordStage)+' recorded');
 }
 
