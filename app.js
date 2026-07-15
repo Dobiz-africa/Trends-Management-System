@@ -363,6 +363,22 @@ async function initSupabase(){
 const SB_INIT_PROMISE = initSupabase();
 
 /* Pull all shared data from Supabase into the in-memory DB (called on login). */
+/* Fills in any missing pieces of a job object with safe empty defaults, matching
+   what newJob() creates. Used whenever a job is loaded or updated from the server,
+   in case its stored data is incomplete for any reason — prevents render crashes. */
+function hydrateJob(j){
+  if(!j.vo1) j.vo1={items:[]};
+  if(!j.vo2) j.vo2={items:[]};
+  if(!j.actions) j.actions={};
+  if(!j.fieldData) j.fieldData={};
+  if(!j.gisData) j.gisData={};
+  if(!j.scans) j.scans={};
+  if(!j.savedDocs) j.savedDocs={};
+  if(!j.gisDocs) j.gisDocs=[];
+  if(!j.gisCerts) j.gisCerts=[];
+  return j;
+}
+
 async function syncFromSupabase(){
   if(!SB.enabled){ SB.ready = true; return; }
   try{
@@ -381,6 +397,7 @@ async function syncFromSupabase(){
       const j = row.data && typeof row.data==='object' ? row.data : {};
       j.wo = row.wo; j.cust = row.cust; j.loc = row.loc;
       j.phase = row.phase; j.stage = row.stage; j.claimRef = row.claim_ref||j.claimRef||'';
+      hydrateJob(j);
       jobs[row.wo] = j;
     });
     console.log('syncFromSupabase: fetched', Object.keys(jobs).length, 'jobs from Supabase:', jobs);
@@ -524,8 +541,7 @@ function subscribeRealtime(){
       else{
         const j = (row.data && typeof row.data==='object') ? row.data : {};
         j.wo=row.wo; j.cust=row.cust; j.loc=row.loc; j.phase=row.phase; j.stage=row.stage; j.claimRef=row.claim_ref||j.claimRef||'';
-        if(!j.vo1) j.vo1={items:[]};
-        if(!j.vo2) j.vo2={items:[]};
+        hydrateJob(j);
         DB.jobs[row.wo] = j;
       }
       refreshAll();
@@ -1341,7 +1357,7 @@ function renderJobDetail(wo){
     let actBtns='';
     const st=STAGES.find(s=>s.id===job.stage)||{id:job.stage,lbl:stageLabel(job.stage)};
     const docKey=STAGE_DOCS[st.id];
-    const action=job.actions[st.id];
+    const action=(job.actions||{})[st.id];
     if(!isMD){
       if(canEdit){
         if(st.id==='wo_received') actBtns+=`<button class="btn btn-am" onclick="openDocForAction('${wo}','vo1')">Create VO1</button>`;
@@ -1385,7 +1401,7 @@ function renderJobDetail(wo){
     const timelineRows=STAGES.map(s=>{
       const idx=STAGE_IDS.indexOf(s.id);
       const state=idx<currIdx?'done':idx===currIdx?'active':'pending';
-      const rec=job.actions[s.id];
+      const rec=(job.actions||{})[s.id];
       const mdDocs=isMD?(mdStepDocs[s.id]||[]):[];
       const mdDocBtns=mdDocs.map(dt=>{const hasSaved=job.savedDocs&&job.savedDocs[dt]&&job.savedDocs[dt].html;const hasScan2=job.scans&&job.scans[dt];if(hasScan2)return`<button class="tl-doc-btn" onclick="event.stopPropagation();downloadScan('${wo}','${dt}')">&#11015; ${docLabelMap[dt]||dt}</button>`;if(hasSaved)return`<button class="tl-doc-btn" onclick="event.stopPropagation();openDocForAction('${wo}','${dt}')">${docLabelMap[dt]||dt}</button>`;return`<span class="tl-doc-pending">${docLabelMap[dt]||dt}</span>`;}).join('');
       return`<div class="tl-row tl-${state}"><div class="tl-dot tl-dot-${state}"></div><div class="tl-body"><div class="tl-name">${s.lbl}</div>${rec?`<div class="tl-date">Recorded: ${rec.date}${rec.extra?' · '+rec.extra:''}${rec.notes?' · '+rec.notes:''}</div>`:''} ${state==='pending'?`<div class="tl-date">Pending</div>`:''} ${mdDocBtns?`<div class="tl-docs">${mdDocBtns}</div>`:''}</div>${state==='active'?`<span class="tl-now-badge">Now</span>`:''}${state==='done'?`<span class="tl-done-badge">Done</span>`:''}</div>`;
@@ -3438,6 +3454,7 @@ function recalcVO1(wo){
   s(`vo1sub${wo}`,(sub+loc).toFixed(2));
   s(`vo1mk${wo}`,markup.toFixed(2));
   s(`vo1tot${wo}`,tot.toFixed(2));
+  markJobDirty(wo);
   saveDB();
 }
 function recalcVO2(wo){
@@ -3455,6 +3472,7 @@ function recalcVO2(wo){
   const loc=sub*(lf/100),markup=(sub+loc)*(mk/100),tot=sub+loc+markup;
   const s=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   s(`vo2loc${wo}`,loc.toFixed(2));s(`vo2sub${wo}`,(sub+loc).toFixed(2));s(`vo2mk${wo}`,markup.toFixed(2));s(`vo2tot${wo}`,tot.toFixed(2));
+  markJobDirty(wo);
   saveDB();
 }
 function addVO1Row(wo){
