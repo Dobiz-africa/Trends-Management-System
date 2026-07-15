@@ -397,6 +397,7 @@ async function syncFromSupabase(){
       const j = row.data && typeof row.data==='object' ? row.data : {};
       j.wo = row.wo; j.cust = row.cust; j.loc = row.loc;
       j.phase = row.phase; j.stage = row.stage; j.claimRef = row.claim_ref||j.claimRef||'';
+      j._updatedAt = row.updated_at;
       hydrateJob(j);
       jobs[row.wo] = j;
     });
@@ -537,13 +538,18 @@ function subscribeRealtime(){
     .on('postgres_changes', {event:'*', schema:'public', table:'jobs'}, payload=>{
       const row = payload.new || payload.old;
       if(!row) return;
-      if(payload.eventType==='DELETE'){ delete DB.jobs[row.wo]; }
-      else{
-        const j = (row.data && typeof row.data==='object') ? row.data : {};
-        j.wo=row.wo; j.cust=row.cust; j.loc=row.loc; j.phase=row.phase; j.stage=row.stage; j.claimRef=row.claim_ref||j.claimRef||'';
-        hydrateJob(j);
-        DB.jobs[row.wo] = j;
+      if(payload.eventType==='DELETE'){ delete DB.jobs[row.wo]; refreshAll(); return; }
+      const existing = DB.jobs[row.wo];
+      if(existing && existing._updatedAt && row.updated_at && new Date(row.updated_at) < new Date(existing._updatedAt)){
+        // This update is older than what we already have locally (arrived out of
+        // order over the network) — ignore it so it can't overwrite newer data.
+        return;
       }
+      const j = (row.data && typeof row.data==='object') ? row.data : {};
+      j.wo=row.wo; j.cust=row.cust; j.loc=row.loc; j.phase=row.phase; j.stage=row.stage; j.claimRef=row.claim_ref||j.claimRef||'';
+      j._updatedAt = row.updated_at;
+      hydrateJob(j);
+      DB.jobs[row.wo] = j;
       refreshAll();
     })
     .subscribe();
@@ -3634,17 +3640,18 @@ function selectLinesmanFile(wo,key){
   input.click();
 }
 
-function uploadLinesmanScan(wo,key,file){
+async function uploadLinesmanScan(wo,key,file){
   if(file.size>10*1024*1024){toast('File too large — max 10MB','am');return;}
   const job=DB.jobs[wo];
   if(!job)return;
   const docMeta=LINESMAN_DOCS.find(d=>('ln_'+d.id)===key);
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload=async e=>{
     if(!job.scans)job.scans={};
     job.scans[key]={dataUrl:e.target.result,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
     addLog(wo,`Field document uploaded by Linesman: ${docMeta?docMeta.label:key} (${file.name})`);
-    saveDB();
+    markJobDirty(wo);
+    await saveDBAndWait();
     toast(`✓ Uploaded: ${file.name}`);
     renderLinesmanUploadModalContent();
     renderLinesmanDash();
