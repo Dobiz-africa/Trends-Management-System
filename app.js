@@ -2094,7 +2094,7 @@ async function generateClaimDocs(){
   const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
   DB.certSeq++;
   const batchWOs=Array.from(selClaimJobs);
-  const batchJobs=batchWOs.map(wo=>DB.jobs[wo]).filter(j=>j&&j.vo1&&j.vo1.items);
+  const batchJobs=batchWOs.map(wo=>DB.jobs[wo]).filter(j=>j);
   
   if(!batchJobs.length){toast('Selected jobs are missing data — please re-add them','rd');return;}
 
@@ -2158,7 +2158,8 @@ async function generateClaimDocs(){
  */
 function viewBatchDoc(certNo,docType){
   const batch=DB.batchDocs?.[certNo];
-  const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
+  const storedWOs=batch?.wos||[];
+  const batchJobs=storedWOs.map(wo=>DB.jobs[wo]).filter(j=>j);
   const firstJob=batchJobs[0];
   const titles={
     annexure:'Annexure to Payment Certificate',
@@ -2169,10 +2170,10 @@ function viewBatchDoc(certNo,docType){
   };
   // Regenerate doc live so values are always current
   let html='';
-  if(docType==='annexure')       html=docAnnexure(firstJob);
-  else if(docType==='payment_cert') html=docPaymentCert(firstJob);
-  else if(docType==='invoice')   html=docInvoice(firstJob);
-  else if(docType==='list_of_jobs') html=docListOfJobs(firstJob);
+  if(docType==='annexure')       html=docAnnexure(firstJob, batchJobs);
+  else if(docType==='payment_cert') html=docPaymentCert(firstJob, batchJobs);
+  else if(docType==='invoice')   html=docInvoice(firstJob, batchJobs);
+  else if(docType==='list_of_jobs') html=docListOfJobs(firstJob, batchJobs);
   else if(docType==='bpc_spreadsheet') html=docBPCSpreadsheet(batchJobs,certNo);
   else if(batch)                 html=batch[docType]||'';
   if(!html){toast('Document not available','rd');return;}
@@ -2700,17 +2701,17 @@ function docGISCert(job){
 }
 
 /* ── ANNEXURE TO PAYMENT CERTIFICATE ── */
-function docAnnexure(job){
+function docAnnexure(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
-  // ONLY show jobs that match this batch's claimRef
-  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
+  // Use provided batchJobs if available, otherwise fallback to claimRef query
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1);
   const totalFinal=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const inL=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none">`;
   const inR=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;text-align:right">`;
   const rows=claimJobs.map(j=>{
     const tVO1=jTotal(j,'vo1');
     const tVO2=(j.vo2&&j.vo2.items&&j.vo2.items.length)?jTotal(j,'vo2'):null;
-    const amt=tVO2?BWP(tVO2.total):BWP(tVO1.total);
+    const amt=tVO2?BWP(tVO2.total):BWP((tVO1&&tVO1.total)||0);
     return`<tr>
       <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.wo,'70px')}</td>
       <td style="border:1px solid #bbb;padding:3px 5px">${inL(j.cust,'99%')}</td>
@@ -2800,10 +2801,10 @@ function recalcPC(){
     const w=document.getElementById('pc_words');if(w)w.textContent='('+numWords(r11)+')';
   }catch(e){}
 }
-function docPaymentCert(job){
+function docPaymentCert(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
-  // Only show jobs for this batch by claimRef
-  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
+  // Use provided batchJobs if available, otherwise fallback to claimRef query
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
   const ef=(val,w,id)=>`<input class="ef ef-b" ${id?`id="${id}"`:''}  value="${val||''}" style="width:${w||'90%'}">`;
@@ -2869,10 +2870,10 @@ function docPaymentCert(job){
 }
 
 /* ── INVOICE (exact match to CLAIM_10 INVOICE sheet) ── */
-function docInvoice(job){
+function docInvoice(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
-  // Only show jobs for this batch by claimRef
-  const claimJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
+  // Use provided batchJobs if available, otherwise fallback to claimRef query
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
   const phase=job?.phase||claimJobs[0]?.phase||'46';
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const vat=gross*.14;
@@ -3089,9 +3090,9 @@ function addListJobRow(){
     <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>`;
   tb.appendChild(tr);
 }
-function docListOfJobs(job){
+function docListOfJobs(job, batchJobs){
   const allDoneJobs=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('work_complete'));
-  const claimJobs=job&&job.claimRef
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:job&&job.claimRef
     ?Object.values(DB.jobs).filter(j=>j.claimRef===job.claimRef)
     :allDoneJobs;
   const displayJobs=claimJobs.length?claimJobs:allDoneJobs;
