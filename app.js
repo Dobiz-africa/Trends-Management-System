@@ -1513,9 +1513,12 @@ function openDocForAction(wo,docType){
   let html='';
 
   if(claimDocTypes.includes(docType)){
-    // Check this job's savedDocs first
-    if(job&&job.savedDocs&&job.savedDocs[docType]&&job.savedDocs[docType].html){
-      html=job.savedDocs[docType].html;
+    // Always regenerate live from the job's current VO1/VO2 data first. A saved
+    // snapshot can go stale — e.g. if VO2 was entered or finished syncing after
+    // the documents were first generated — and showing it would silently
+    // display an outdated total, which is exactly what was happening before.
+    if(job&&job.vo1&&job.vo1.items){
+      html=buildDoc(docType,job);
     } else {
       // Search ALL jobs for any with same claimRef that has this doc saved
       const certNo=job?.claimRef;
@@ -1530,7 +1533,11 @@ function openDocForAction(wo,docType){
         const bkey=bmap[docType];
         if(bkey&&DB.batchDocs[certNo][bkey]){html=DB.batchDocs[certNo][bkey];found=true;}
       }
-      // Last resort: regenerate live (works for all roles)
+      // Last resort: fall back to a saved snapshot on this job itself
+      if(!found&&job&&job.savedDocs&&job.savedDocs[docType]&&job.savedDocs[docType].html){
+        html=job.savedDocs[docType].html;
+        found=true;
+      }
       if(!found){
         html=buildDoc(docType,job);
       }
