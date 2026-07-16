@@ -367,8 +367,8 @@ const SB_INIT_PROMISE = initSupabase();
    what newJob() creates. Used whenever a job is loaded or updated from the server,
    in case its stored data is incomplete for any reason — prevents render crashes. */
 function hydrateJob(j){
-  if(!j.vo1) j.vo1={items:[]};
-  if(!j.vo2) j.vo2={items:[]};
+  if(!j.vo1) j.vo1={items:[], lf:29.25, mk:0};
+  if(!j.vo2) j.vo2={items:[], lf:29.25, mk:10};
   if(!j.actions) j.actions={};
   if(!j.fieldData) j.fieldData={};
   if(!j.gisData) j.gisData={};
@@ -376,6 +376,10 @@ function hydrateJob(j){
   if(!j.savedDocs) j.savedDocs={};
   if(!j.gisDocs) j.gisDocs=[];
   if(!j.gisCerts) j.gisCerts=[];
+  if(j.vo1 && (j.vo1.lf === null || j.vo1.lf === undefined)) j.vo1.lf = 29.25;
+  if(j.vo1 && (j.vo1.mk === null || j.vo1.mk === undefined)) j.vo1.mk = 0;
+  if(j.vo2 && (j.vo2.lf === null || j.vo2.lf === undefined)) j.vo2.lf = 29.25;
+  if(j.vo2 && (j.vo2.mk === null || j.vo2.mk === undefined)) j.vo2.mk = 10;
   return j;
 }
 
