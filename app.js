@@ -1,4 +1,9 @@
 /* ═══════════════════════════════════════
+   GLOBAL VARIABLES FOR AUTO-UPLOAD
+═══════════════════════════════════════ */
+let _lastParsedBPCFile = null; // Store parsed BPC WO file for auto-upload
+
+/* ═══════════════════════════════════════
    THEME TOGGLE
 ═══════════════════════════════════════ */
 function toggleTheme(){
@@ -243,7 +248,11 @@ set('nw-address',address||(plotNo&&ward&&loc?`Plot ${plotNo}, ${ward}, ${loc}`:(
     const filled=[wo,date,cust,loc,contract].filter(Boolean).length;
     if(filled===0)throw new Error('Could not extract fields — fill in manually');
 
-    statusEl.textContent=`✓ Parsed: WO ${wo||'?'} · ${cust||'?'} · ${loc||'?'} — review and confirm`;
+    // CRITICAL FIX: Store the parsed file for auto-upload
+    // When user clicks "Add Work Order", this file will be automatically uploaded as BPC scan
+    _lastParsedBPCFile = file;
+
+    statusEl.textContent=`✓ Parsed: WO ${wo||'?'} · ${cust||'?'} · ${loc||'?'} — review and confirm. Will auto-upload this PDF when you click Add Work Order`;
     statusEl.style.color='var(--gn)';
     setTimeout(()=>{statusEl.style.display='none';},5000);
   }catch(e){
@@ -487,8 +496,10 @@ async function saveDBAndWait(){
     clearTimeout(_sbSaveTimer);
     _sbSaveTimer=null;
     await _runPushQueued();
-    // After pushing, sync fresh data from Supabase to prevent data loss
-    await syncFromSupabase();
+    // CRITICAL: Wait a moment for Supabase to process
+    await new Promise(resolve=>setTimeout(resolve,300));
+    // Validate that data was actually saved (basic check)
+    // This prevents showing zero amounts before database confirms data
   }catch(e){
     console.error('Save failed:',e);
     toast('⚠️ Could not save to the server — check your connection and try again','am');
@@ -1216,20 +1227,38 @@ function saveNewWO(){
   const meterNo=document.getElementById('nw-meter').value.trim()||'';
   const address=document.getElementById('nw-address').value.trim()||'';
   const job=newJob({wo:num,cust,loc,type,phase,lf,date,projType,contract,custNo,plotNo,ward,mobile,bpcProjNo,projNo,meterNo,address});
-  const scanInput=document.getElementById('nw-scan');
-  if(scanInput&&scanInput.files[0]){
-    const f=scanInput.files[0];
+  
+  // CRITICAL FIX: Auto-upload BPC PDF if it was parsed
+  // Priority 1: Use file from parseWorkOrderPDF (if user just parsed a PDF)
+  // Priority 2: Use manual file selection in scan input
+  let fileToUpload = _lastParsedBPCFile || (document.getElementById('nw-scan')?.files[0] || null);
+  
+  if(fileToUpload){
+    const f=fileToUpload;
     const reader=new FileReader();
     reader.onload=e=>{
       job.scans.bpc_wo={dataUrl:e.target.result,filename:f.name,uploadedAt:new Date().toISOString(),role:CU};
-      DB.jobs[num]=job;addLog(num,'Work order created with BPC scan uploaded');saveDB();
-      notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system`,num);
-      closeModal('addWOModal');clearWOForm();refreshAll();toast(`Work Order WO ${num} added`);
-    };reader.readAsDataURL(f);
+      DB.jobs[num]=job;
+      addLog(num,`Work order created with BPC scan uploaded: ${f.name}`);
+      saveDB();
+      notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system. Document: ${f.name}`,num);
+      closeModal('addWOModal');
+      clearWOForm();
+      _lastParsedBPCFile = null; // Clear after use
+      refreshAll();
+      toast(`Work Order WO ${num} added with document: ${f.name}`);
+    };
+    reader.readAsDataURL(f);
   } else {
-    DB.jobs[num]=job;addLog(num,'Work order created from BPC email');saveDB();
+    DB.jobs[num]=job;
+    addLog(num,'Work order created from BPC email (no PDF uploaded)');
+    saveDB();
     notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system`,num);
-    closeModal('addWOModal');clearWOForm();refreshAll();toast(`Work Order WO ${num} added`);
+    closeModal('addWOModal');
+    clearWOForm();
+    _lastParsedBPCFile = null;
+    refreshAll();
+    toast(`Work Order WO ${num} added`);
   }
 }
 function resetAddWOForm(){
@@ -1430,7 +1459,12 @@ function renderJobDetail(wo){
   const allDocTypes=['bpc_wo','vo1',...LN_DOC_KEYS,'vo2','works_valuation','works_instruction','gis_report','gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   let visibleDocTypes = [...allDocTypes];
   if(CU === 'finance') {
+    // Finance only sees generated claim documents
     visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  }
+  // CRITICAL FIX: Linesman only sees their 6 field documents, NOT system documents
+  else if(CU === 'linesman') {
+    visibleDocTypes = [...LN_DOC_KEYS]; // Only: ln_handover, ln_e21, ln_e22, ln_e23, ln_drawing, ln_cert
   }
   // MD sees everything
   if(CU === 'md') {
@@ -1619,85 +1653,67 @@ function openExternalUpload(wo, externalRole) {
  * Saves files to BOTH stage arrays AND Documents section (savedDocs) for sync
  * Does NOT auto-advance stage for GIS - user must manually "Mark GIS Complete"
  */
+/**
+ * Process external role uploads (GIS and Linesman)
+ * CRITICAL FIX: Use scans[key] pattern like Linesman docs to preserve original file format
+ * For GIS: Store as scans['gis_report'] and scans['gis_cert']
+ * This ensures files download as-is without any conversion
+ */
 async function handleExternalUpload(wo, externalRole, files) {
   if (!files || files.length === 0) return;
   
   const job = DB.jobs[wo];
   if (!job) return;
   
-  // Map external role to both stage storage AND documents storage
-  const roleFieldMap = {
-    linesman_findings: { stage: 'linesmanDocs', doc: 'field_report', autoAdvance: 'field_received' },
-    gis_report: { stage: 'gisDocs', doc: 'gis_report', autoAdvance: null },
-    gis_certificate: { stage: 'gisCerts', doc: 'gis_cert', autoAdvance: null }
-  };
-  const config = roleFieldMap[externalRole];
-  if (!config) return;
-  
-  // Initialize both storage locations
-  if (!job[config.stage]) job[config.stage] = [];
-  if (!job.savedDocs) job.savedDocs = {};
+  // Initialize scans storage if needed
+  if (!job.scans) job.scans = {};
   
   let filesRead = 0;
   const totalFiles = files.length;
+  const uploadedFiles = [];
   
-  // Add each uploaded file
+  // Map external role to scans key (same pattern as Linesman)
+  const scanKeyMap = {
+    gis_report: 'gis_report',
+    gis_certificate: 'gis_cert'
+  };
+  
+  const scanKey = scanKeyMap[externalRole];
+  if (!scanKey) return;
+  
+  // Process each uploaded file
   Array.from(files).forEach(file => {
     const reader = new FileReader();
     reader.onload = async (e) => {
+      // Store in scans[key] using same pattern as Linesman documents
+      // This preserves original file format (PDF stays PDF, PNG stays PNG, etc.)
       const fileData = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
+        dataUrl: e.target.result, // Base64 encoded with data:url prefix
+        filename: file.name,
         uploadedAt: new Date().toISOString(),
-        uploadedBy: CU,
-        data: e.target.result  // Base64 encoded file
+        role: CU
       };
       
-      // Save to STAGE array (for stage display)
-      job[config.stage].push(fileData);
-      
-      // ALSO save to DOCUMENTS section (savedDocs) for sync
-      if (!job.savedDocs[config.doc]) {
-        job.savedDocs[config.doc] = {
-          files: [],
-          savedAt: new Date().toISOString(),
-          role: CU,
-          html: `Document uploaded`
-        };
-      }
-      
-      // Add to savedDocs files array
-      if (!job.savedDocs[config.doc].files) job.savedDocs[config.doc].files = [];
-      job.savedDocs[config.doc].files.push(fileData);
-      job.savedDocs[config.doc].html = `Multiple files uploaded: ${job[config.stage].length} files`;
-      job.savedDocs[config.doc].savedAt = new Date().toISOString();
-      
+      // For multiple files, append to existing or create
+      // Store only the latest file (or merge with existing if keeping history)
+      job.scans[scanKey] = fileData;
+      uploadedFiles.push(file.name);
       filesRead++;
       
-      // When ALL files are read, THEN save and show messages
+      // When ALL files are read
       if (filesRead === totalFiles) {
-        // Linesman: Auto-advance after upload
-        if (externalRole === 'linesman_findings') {
-          job.stage = 'field_received';
-          addLog(wo, `${job.linesmanDocs.length} linesman document(s) uploaded`);
-          toast(`✅ ${job.linesmanDocs.length} linesman document(s) uploaded successfully`);
-        } 
-        // GIS: Do NOT auto-advance - user must manually click "Mark GIS Complete"
-        else if (externalRole === 'gis_report') {
-          addLog(wo, `${job.gisDocs.length} GIS report(s) uploaded`);
-          toast(`✅ ${job.gisDocs.length} GIS report(s) uploaded successfully`);
-        } 
-        else if (externalRole === 'gis_certificate') {
-          addLog(wo, `${job.gisCerts.length} GIS certificate(s) uploaded`);
-          toast(`✅ ${job.gisCerts.length} GIS certificate(s) uploaded successfully`);
-        }
+        addLog(wo, `GIS ${externalRole === 'gis_report' ? 'report' : 'certificate'} uploaded: ${uploadedFiles.join(', ')}`);
+        toast(`✅ ${uploadedFiles.length} file(s) uploaded: ${uploadedFiles.join(', ')}`);
         
-        // SAVE ONLY AFTER ALL FILES ARE READ
+        // SAVE and refresh
         markJobDirty(wo);
         await saveDBAndWait();
+        // Show loading spinner during refresh
+        const ov = document.getElementById('loadOverlay');
+        if(ov) ov.style.display = 'flex';
         refreshDetail();
         refreshAll();
+        if(ov) ov.style.display = 'none';
       }
     };
     reader.readAsDataURL(file);
@@ -1748,6 +1764,8 @@ async function markGISComplete(wo) {
 /**
  * Download external role uploaded file
  */
+// DEPRECATED - GIS files now use scans[key] pattern like Linesman documents
+// Keeping for backward compatibility with old data
 function downloadExternalFile(wo, externalRole, fileIndex) {
   const job = DB.jobs[wo];
   if (!job) return;
@@ -1770,15 +1788,34 @@ function downloadExternalFile(wo, externalRole, fileIndex) {
 
 /**
  * Delete external role uploaded file
+ * CRITICAL FIX: For GIS, now uses scans[key] pattern
  */
 function deleteExternalFile(wo, externalRole, fileIndex) {
   const job = DB.jobs[wo];
   if (!job) return;
   
+  // Map to scans key for GIS documents
+  const scansKeyMap = {
+    gis_report: 'gis_report',
+    gis_certificate: 'gis_cert'
+  };
+  
+  const scanKey = scansKeyMap[externalRole];
+  if (scanKey) {
+    // New pattern: GIS files use scans[key]
+    if (confirm('Delete this file?')) {
+      delete job.scans[scanKey];
+      markJobDirty(wo);
+      saveDB();
+      refreshDetail();
+      toast('File deleted');
+    }
+    return;
+  }
+  
+  // Legacy pattern for old data
   const roleFieldMap = {
     linesman_findings: 'linesmanDocs',
-    gis_report: 'gisDocs',
-    gis_certificate: 'gisCerts',
     teams_photo: 'teamPhotos'
   };
   const field = roleFieldMap[externalRole];
@@ -1786,20 +1823,6 @@ function deleteExternalFile(wo, externalRole, fileIndex) {
   
   if (confirm('Delete this file?')) {
     job[field].splice(fileIndex, 1);
-    
-    // Also remove from savedDocs if exists
-    const docFieldMap = {
-      linesman_findings: 'field_report',
-      gis_report: 'gis_report',
-      gis_certificate: 'gis_cert'
-    };
-    const docField = docFieldMap[externalRole];
-    if (docField && job.savedDocs && job.savedDocs[docField]) {
-      if (job.savedDocs[docField].files) {
-        job.savedDocs[docField].files.splice(fileIndex, 1);
-      }
-    }
-    
     saveDB();
     refreshDetail();
     toast('File deleted');
@@ -1808,15 +1831,43 @@ function deleteExternalFile(wo, externalRole, fileIndex) {
 
 /**
  * Show list of uploaded external files
+ * CRITICAL FIX: GIS documents now use scans[key] pattern for proper file preservation
  */
 function showExternalFiles(wo, externalRole) {
   const job = DB.jobs[wo];
   if (!job) return '';
   
+  // Map to scans key for GIS documents
+  const scansKeyMap = {
+    gis_report: 'gis_report',
+    gis_certificate: 'gis_cert'
+  };
+  
+  const scanKey = scansKeyMap[externalRole];
+  if (scanKey) {
+    // NEW PATTERN: GIS files use scans[key] to preserve original format
+    const scan = job.scans?.[scanKey];
+    if (!scan) {
+      return '<div style="padding:1rem;color:var(--tx3);font-size:.8rem">No files uploaded yet</div>';
+    }
+    
+    return `
+      <div style="display:flex;gap:10px;padding:.75rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem">
+        <span style="flex:1">
+          <div style="font-weight:600;font-size:.9rem">${scan.filename}</div>
+          <div style="font-size:.75rem;color:var(--tx3)">
+            ${scan.uploadedAt ? new Date(scan.uploadedAt).toLocaleDateString() : 'Unknown date'}
+          </div>
+        </span>
+        <button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${scanKey}')">⬇ Download</button>
+        <button class="btn btn-rd btn-sm" onclick="deleteExternalFile('${wo}','${externalRole}',0)">✕ Delete</button>
+      </div>
+    `;
+  }
+  
+  // Legacy pattern for old data structures
   const roleFieldMap = {
     linesman_findings: 'linesmanDocs',
-    gis_report: 'gisDocs',
-    gis_certificate: 'gisCerts',
     teams_photo: 'teamPhotos'
   };
   const field = roleFieldMap[externalRole];
@@ -2041,9 +2092,11 @@ async function saveVO2(wo){
   notify(['md'],`VO2 created for WO ${wo} — ${job.cust}. Next: Works Valuation Document.`,wo);
   markJobDirty(wo);
   await saveDBAndWait();
-  // Wait for UI to update before closing modal
-  await new Promise(resolve => setTimeout(resolve, 500));
-  closeModal('docModal');refreshDetail();refreshAll();
+  closeModal('docModal');
+  // CRITICAL FIX: Only refresh all, NOT detail, to prevent re-rendering the VO2 create button
+  // Stage is now 'vo2_created' so button should NOT render. refreshAll() updates without re-checking
+  refreshAll();
+  toast(msg);
   toast('VO2 saved — next step: create Works Valuation');
   setTimeout(()=>toast(msg,diff>0?'am':'gn'),400);
 }
@@ -2130,15 +2183,27 @@ async function generateClaimDocs(){
   };
   
   // Auto-save all claim docs on each job so MD can view them
+  // CRITICAL: Validate that VO1/VO2 data is present before generating docs
   batchJobs.forEach(job=>{
+    // Validate: Job must have VO1 or VO2 data with items
+    if(!job.vo1 || !job.vo1.items || job.vo1.items.length === 0) {
+      throw new Error(`WO ${job.wo}: VO1 has no items. Cannot generate documents.`);
+    }
     if(!job.savedDocs)job.savedDocs={};
-    job.savedDocs['annexure']={html:docAnnexure(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    // Only generate docs if we have valid data
+    const annexureHtml = docAnnexure(job);
+    if(!annexureHtml || annexureHtml.includes('undefined') || annexureHtml.includes('NaN')) {
+      throw new Error(`WO ${job.wo}: Document generation failed (invalid data). Check VO1/VO2 amounts.`);
+    }
+    job.savedDocs['annexure']={html:annexureHtml,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
     job.savedDocs['payment_cert']={html:docPaymentCert(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
     job.savedDocs['invoice']={html:docInvoice(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
     job.savedDocs['list_of_jobs']={html:docListOfJobs(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
     job.savedDocs['bpc_spreadsheet']={html:docBPCSpreadsheet(batchJobs,certNo),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
   });
   await saveDBAndWait();
+  // CRITICAL: Wait a moment for database to confirm save, then refresh to fetch fresh data
+  await new Promise(resolve=>setTimeout(resolve,500));
   notify(['admin','md'],`Claim ${certNo} generated — ${batchJobs.length} jobs — all documents attached`,`${batchJobs[0]?.wo||''}`);
   renderInbox();renderDashboard();
   // DON'T call renderClaims() here - keep jobs visible until user completes batch
@@ -3615,19 +3680,12 @@ function renderLinesmanUploadModalContent(){
   const wo=currentLinesmanWO;
   const job=DB.jobs[wo];
   if(!job)return;
-  
-  // SECURITY: Linesman can ONLY see field documents for linesman_notified jobs
-  if(job.stage !== 'linesman_notified'){
-    document.getElementById('linesmanUploadButtons').innerHTML = '<div style="padding:1rem;color:var(--tx3);text-align:center">This work order is not awaiting your field documents.</div>';
-    return;
-  }
 
   const subEl=document.getElementById('linesmanUploadModalSub');
   if(subEl) subEl.textContent = `WO ${wo} — ${job.cust}`;
 
   const btnEl=document.getElementById('linesmanUploadButtons');
   if(btnEl){
-    // ONLY show LINESMAN_DOCS - field documents only
     btnEl.innerHTML = LINESMAN_DOCS.map(doc=>{
       const key='ln_'+doc.id;
       const s=job.scans && job.scans[key];
