@@ -3,6 +3,9 @@
 ═══════════════════════════════════════ */
 let _lastParsedBPCFile = null; // Store parsed BPC WO file for auto-upload
 
+// CRITICAL FIX: Prevent simultaneous Linesman uploads
+let _linesmanUploadInProgress = false;
+
 /* ═══════════════════════════════════════
    THEME TOGGLE
 ═══════════════════════════════════════ */
@@ -78,7 +81,13 @@ const LN_DOC_KEYS = LINESMAN_DOCS.map(d => 'ln_' + d.id);
 const LN_DOC_LABELS = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.label]));
 const LN_DOC_SHORT = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.short]));
 function linesmanDocsUploadedCount(job){
-  return LINESMAN_DOCS.filter(d => job && job.scans && job.scans['ln_' + d.id]).length;
+  // CRITICAL FIX: Only count documents that have COMPLETE data
+  return LINESMAN_DOCS.filter(d => {
+    if(!job || !job.scans) return false;
+    const scan = job.scans['ln_' + d.id];
+    // Must have all required fields to be considered uploaded
+    return scan && scan.filename && scan.uploadedAt && scan.dataUrl;
+  }).length;
 }
 function linesmanDocsAllUploaded(job){
   return linesmanDocsUploadedCount(job) === LINESMAN_DOCS.length;
@@ -3668,12 +3677,37 @@ function renderLinesmanDash(){
   }
 }
 
-function openLinesmanUploadModal(wo){
+async function openLinesmanUploadModal(wo){
   const job = wo ? DB.jobs[wo] : (currentLinesmanWO && DB.jobs[currentLinesmanWO]);
   if(!job){ toast('No work order selected','am'); return; }
   currentLinesmanWO = job.wo;
+  
+  // CRITICAL FIX: Show loading overlay while fetching fresh data
+  const ov = document.getElementById('loadOverlay');
+  if(ov) ov.style.display = 'flex';
+  
+  try {
+    // CRITICAL: Refresh job data from Supabase to ensure we have latest state
+    if(SB.enabled) {
+      const { data, error } = await SB.client
+        .from('jobs')
+        .select('*')
+        .eq('wo', job.wo)
+        .single();
+      
+      if(data && !error) {
+        // Update in-memory job with latest from database
+        DB.jobs[wo] = data;
+      }
+    }
+  } catch(err) {
+    console.warn('Could not refresh from Supabase:', err);
+  }
+  
   renderLinesmanUploadModalContent();
   openModal('linesmanUploadModal');
+  
+  if(ov) ov.style.display = 'none';
 }
 
 function renderLinesmanUploadModalContent(){
@@ -3715,6 +3749,11 @@ function renderLinesmanUploadModalContent(){
 }
 
 function selectLinesmanFile(wo,key){
+  // CRITICAL FIX: Prevent opening file dialog if upload already in progress
+  if(_linesmanUploadInProgress){
+    toast('Upload in progress — please wait','am');
+    return;
+  }
   const input=document.createElement('input');
   input.type='file';
   input.accept='image/*,application/pdf';
@@ -3727,21 +3766,56 @@ function selectLinesmanFile(wo,key){
 
 async function uploadLinesmanScan(wo,key,file){
   if(file.size>10*1024*1024){toast('File too large — max 10MB','am');return;}
+  
+  // CRITICAL FIX: Prevent simultaneous uploads
+  if(_linesmanUploadInProgress){
+    toast('Please wait for current upload to complete','am');
+    return;
+  }
+  _linesmanUploadInProgress = true;
+  
   const job=DB.jobs[wo];
-  if(!job)return;
+  if(!job){
+    _linesmanUploadInProgress = false;
+    return;
+  }
+  
   const docMeta=LINESMAN_DOCS.find(d=>('ln_'+d.id)===key);
   const reader=new FileReader();
+  
   reader.onload=async e=>{
-    if(!job.scans)job.scans={};
-    job.scans[key]={dataUrl:e.target.result,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
-    addLog(wo,`Field document uploaded by Linesman: ${docMeta?docMeta.label:key} (${file.name})`);
-    markJobDirty(wo);
-    await saveDBAndWait();
-    toast(`✓ Uploaded: ${file.name}`);
-    renderLinesmanUploadModalContent();
-    renderLinesmanDash();
+    try {
+      // Read file into memory
+      if(!job.scans)job.scans={};
+      job.scans[key]={dataUrl:e.target.result,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
+      addLog(wo,`Field document uploaded by Linesman: ${docMeta?docMeta.label:key} (${file.name})`);
+      markJobDirty(wo);
+      
+      // CRITICAL: Save to database with proper wait
+      await saveDBAndWait();
+      
+      // CRITICAL FIX: Wait additional time for Supabase to confirm save
+      await new Promise(resolve=>setTimeout(resolve,500));
+      
+      // CRITICAL FIX: Refresh modal to show updated state
+      renderLinesmanUploadModalContent();
+      
+      toast(`✓ Uploaded: ${file.name}`);
+    } catch(err) {
+      console.error('Upload error:', err);
+      toast('Upload failed — please try again','rd');
+    } finally {
+      // CRITICAL: Clear upload flag AFTER everything completes
+      _linesmanUploadInProgress = false;
+      renderLinesmanDash();
+    }
   };
-  reader.onerror=()=>toast('Upload failed — please try again','rd');
+  
+  reader.onerror=()=>{
+    toast('File read failed — please try again','rd');
+    _linesmanUploadInProgress = false;
+  };
+  
   reader.readAsDataURL(file);
 }
 
