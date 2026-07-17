@@ -487,6 +487,8 @@ async function saveDBAndWait(){
     clearTimeout(_sbSaveTimer);
     _sbSaveTimer=null;
     await _runPushQueued();
+    // After pushing, sync fresh data from Supabase to prevent data loss
+    await syncFromSupabase();
   }catch(e){
     console.error('Save failed:',e);
     toast('⚠️ Could not save to the server — check your connection and try again','am');
@@ -2038,7 +2040,10 @@ async function saveVO2(wo){
   addLog(wo,'VO2 (Variation Order) created');
   notify(['md'],`VO2 created for WO ${wo} — ${job.cust}. Next: Works Valuation Document.`,wo);
   markJobDirty(wo);
-  await saveDBAndWait();closeModal('docModal');refreshDetail();refreshAll();
+  await saveDBAndWait();
+  // Wait for UI to update before closing modal
+  await new Promise(resolve => setTimeout(resolve, 500));
+  closeModal('docModal');refreshDetail();refreshAll();
   toast('VO2 saved — next step: create Works Valuation');
   setTimeout(()=>toast(msg,diff>0?'am':'gn'),400);
 }
@@ -3610,12 +3615,19 @@ function renderLinesmanUploadModalContent(){
   const wo=currentLinesmanWO;
   const job=DB.jobs[wo];
   if(!job)return;
+  
+  // SECURITY: Linesman can ONLY see field documents for linesman_notified jobs
+  if(job.stage !== 'linesman_notified'){
+    document.getElementById('linesmanUploadButtons').innerHTML = '<div style="padding:1rem;color:var(--tx3);text-align:center">This work order is not awaiting your field documents.</div>';
+    return;
+  }
 
   const subEl=document.getElementById('linesmanUploadModalSub');
   if(subEl) subEl.textContent = `WO ${wo} — ${job.cust}`;
 
   const btnEl=document.getElementById('linesmanUploadButtons');
   if(btnEl){
+    // ONLY show LINESMAN_DOCS - field documents only
     btnEl.innerHTML = LINESMAN_DOCS.map(doc=>{
       const key='ln_'+doc.id;
       const s=job.scans && job.scans[key];
