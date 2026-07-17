@@ -566,6 +566,11 @@ function subscribeRealtime(){
       const row = payload.new || payload.old;
       if(!row) return;
       if(payload.eventType==='DELETE'){ delete DB.jobs[row.wo]; refreshAll(); return; }
+      // Don't let a realtime message overwrite a job that still has local
+      // changes we haven't finished pushing yet — otherwise an in-flight
+      // upload (or any other unsaved edit) gets clobbered by an older
+      // echo of a previous save, and the UI appears to "forget" it.
+      if(_dirtyJobs.has(row.wo)) return;
       const existing = DB.jobs[row.wo];
       if(existing && existing._updatedAt && row.updated_at && new Date(row.updated_at) < new Date(existing._updatedAt)){
         // This update is older than what we already have locally (arrived out of
@@ -1431,10 +1436,10 @@ function renderJobDetail(wo){
         if(st.id==='teams_notified') actBtns+=`<button class="btn btn-am" onclick="openRecord('${wo}','work_complete','Record: Work Complete','Record when the field team reported back that work is complete.')">Record Work Complete</button>`;
         if(st.id==='work_complete') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">Fill Works Instruction</button><button class="btn btn-am btn-sm" onclick="notifyExternalRole('${wo}','gis')">🔔 Notify GIS Consultant (External)</button>`;
         if(st.id==='gis_notified') {
-          const hasGISFiles=(job.gisDocs&&job.gisDocs.length)?true:false;
-          const hasCerts=(job.gisCerts&&job.gisCerts.length)?true:false;
-          actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','gis_report')">📎 Upload GIS Reports (${hasGISFiles?job.gisDocs.length+' files':''} files)</button>`;
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','gis_certificate')">📋 Upload GIS Certificate (${hasCerts?job.gisCerts.length+' files':''} files)</button>`;
+          const hasGISFiles=!!(job.scans && job.scans['gis_report']);
+          const hasCerts=!!(job.scans && job.scans['gis_cert']);
+          actBtns+=`<button class="btn btn-am" onclick="openExternalUpload('${wo}','gis_report')">📎 Upload GIS Reports (${hasGISFiles?'1 file':''})</button>`;
+          actBtns+=`<button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','gis_certificate')">📋 Upload GIS Certificate (${hasCerts?'1 file':''})</button>`;
           if(hasGISFiles||hasCerts) actBtns+=`<button class="btn btn-am btn-sm" onclick="showGISDocumentsModal('${wo}')">📄 View GIS Documents</button>`;
           if(hasGISFiles && hasCerts) actBtns+=`<button class="btn btn-gn btn-sm" onclick="markGISComplete('${wo}')">✓ Mark GIS Complete & Proceed</button>`;
         }
@@ -1738,11 +1743,11 @@ async function markGISComplete(wo) {
   if (!job) return;
   
   // Only require GIS reports, not certificate
-  if (!job.gisDocs || job.gisDocs.length === 0) {
+  if (!job.scans || !job.scans['gis_report']) {
     toast('Upload at least one GIS report first', 'am');
     return;
   }
-  if (!job.gisCerts || job.gisCerts.length === 0) {
+  if (!job.scans || !job.scans['gis_cert']) {
     toast('Upload at least one GIS certificate first', 'am');
     return;
   }
@@ -3696,8 +3701,15 @@ async function openLinesmanUploadModal(wo){
         .single();
       
       if(data && !error) {
-        // Update in-memory job with latest from database
-        DB.jobs[wo] = data;
+        // Update in-memory job with latest from database.
+        // NOTE: the actual job object lives in data.data — the row itself
+        // only has wo/cust/loc/phase/stage/claim_ref/data columns.
+        const j = (data.data && typeof data.data === 'object') ? data.data : {};
+        j.wo = data.wo; j.cust = data.cust; j.loc = data.loc; j.phase = data.phase;
+        j.stage = data.stage; j.claimRef = data.claim_ref || j.claimRef || '';
+        j._updatedAt = data.updated_at;
+        hydrateJob(j);
+        DB.jobs[wo] = j;
       }
     }
   } catch(err) {
