@@ -2191,42 +2191,20 @@ function completeBatch(certNo){
 async function generateClaimDocs(){
   if(!selClaimJobs.size){toast('Select at least one job','am');return;}
   const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
+  DB.certSeq++;
   const batchWOs=Array.from(selClaimJobs);
   const batchJobs=batchWOs.map(wo=>DB.jobs[wo]).filter(j=>j);
-
+  
   if(!batchJobs.length){toast('Selected jobs are missing data — please re-add them','rd');return;}
 
-  // STEP 1: Validate every job BEFORE mutating any state, so a bad job
-  // can never leave the batch half-committed (some jobs advanced/saved,
-  // others not). Validate the actual computed total instead of sniffing
-  // the rendered HTML string, since the HTML embeds a base64 logo image
-  // that can coincidentally contain substrings like "NaN" or "undefined"
-  // with zero relation to the real numbers.
-  for(const job of batchJobs){
-    const hasVO2Items = job.vo2 && job.vo2.items && job.vo2.items.length > 0;
-    const hasVO1Items = job.vo1 && job.vo1.items && job.vo1.items.length > 0;
-    if(!hasVO2Items && !hasVO1Items) {
-      toast(`WO ${job.wo}: No priced items found in VO1 or VO2. Cannot generate documents.`,'rd');
-      return;
-    }
-    const claimTotalCheck = bestTotal(job);
-    if(!claimTotalCheck || isNaN(claimTotalCheck.total)) {
-      toast(`WO ${job.wo}: Document generation failed (invalid data). Check VO1/VO2 amounts.`,'rd');
-      return;
-    }
-  }
-
-  // STEP 2: All jobs validated — now it's safe to bump the cert sequence
-  // and commit stage changes/docs for the whole batch.
-  DB.certSeq++;
-
+  // Set claimRef on all selected jobs FIRST before generating docs
   batchJobs.forEach(job=>{
     job.claimRef=certNo;
     job.stage='claim_docs_ready';
     markJobDirty(job.wo);
     addLog(job.wo,`Claim docs generated — Cert: ${certNo}`);
   });
-
+  
   // Store batch documents — pass the first job with claimRef already set
   if(!DB.batchDocs)DB.batchDocs={};
   const firstJob=batchJobs[0];
@@ -2240,12 +2218,35 @@ async function generateClaimDocs(){
     listOfJobs:docListOfJobs(firstJob),
     bpcSpreadsheet:docBPCSpreadsheet(batchJobs,certNo)
   };
-
-  // Auto-save all claim docs on each job so MD can view them.
-  // Data is already validated above, so this loop just generates & saves.
+  
+  // Auto-save all claim docs on each job so MD can view them
+  // CRITICAL: Validate that VO1/VO2 data is present before generating docs
   batchJobs.forEach(job=>{
+    // Validate: Job must have priced items in VO2 (if one was created) or,
+    // failing that, in VO1 — matching the same VO2-takes-priority rule used
+    // everywhere else in the app (see bestTotal()/jTotal()). Previously this
+    // hard-required VO1 to have items even when VO2 already had valid,
+    // priced items, which is why generating claim docs failed with
+    // "VO1 has no items" for jobs where VO1 was intentionally left at zero
+    // and pricing was moved into VO2.
+    const hasVO2Items = job.vo2 && job.vo2.items && job.vo2.items.length > 0;
+    const hasVO1Items = job.vo1 && job.vo1.items && job.vo1.items.length > 0;
+    if(!hasVO2Items && !hasVO1Items) {
+      throw new Error(`WO ${job.wo}: No priced items found in VO1 or VO2. Cannot generate documents.`);
+    }
     if(!job.savedDocs)job.savedDocs={};
-    job.savedDocs['annexure']={html:docAnnexure(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
+    // Only generate docs if we have valid data
+    const annexureHtml = docAnnexure(job);
+    // CRITICAL FIX: the old check scanned the rendered HTML text for "NaN"/"undefined" —
+    // but every generated document embeds the company logo as a Base64 image, and that
+    // Base64 data happens to contain the literal substring "NaN" by pure coincidence. That
+    // made this check fail on every single job regardless of whether the amounts were
+    // actually valid. Validate the real computed total instead of scanning markup text.
+    const jobTotal = bestTotal(job).total;
+    if(!annexureHtml || !isFinite(jobTotal)) {
+      throw new Error(`WO ${job.wo}: Document generation failed (invalid data). Check VO1/VO2 amounts.`);
+    }
+    job.savedDocs['annexure']={html:annexureHtml,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
     job.savedDocs['payment_cert']={html:docPaymentCert(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
     job.savedDocs['invoice']={html:docInvoice(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
     job.savedDocs['list_of_jobs']={html:docListOfJobs(job),savedAt:new Date().toISOString(),role:CU,autoSaved:true};
