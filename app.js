@@ -467,7 +467,13 @@ async function syncFromSupabase(){
 
 /* Push current DB state to Supabase (debounced; called by saveDB). */
 const _dirtyJobs = new Set();
-function markJobDirty(wo){ _dirtyJobs.add(wo); }
+// CRITICAL FIX: remember the timestamp of the last LOCAL edit per work order.
+// This lets us reject a delayed realtime echo of an OLDER save even after
+// _dirtyJobs has already been cleared by a newer save — which is what was
+// causing uploaded documents / VO1 rows to appear to "disappear" until the
+// page was refreshed.
+const _localEditAt = {};
+function markJobDirty(wo){ _dirtyJobs.add(wo); _localEditAt[wo] = Date.now(); }
 let _sbSaveTimer = null;
 
 /* Only one push to Supabase is ever allowed to run at a time. If a save is
@@ -571,6 +577,14 @@ function subscribeRealtime(){
       // upload (or any other unsaved edit) gets clobbered by an older
       // echo of a previous save, and the UI appears to "forget" it.
       if(_dirtyJobs.has(row.wo)) return;
+      // CRITICAL FIX: also reject any echo that is older than the last LOCAL
+      // edit for this job, even after _dirtyJobs has already been cleared.
+      // Without this, a delayed confirmation of an EARLIER save can arrive
+      // after a LATER save was already made locally and silently overwrite
+      // the newer in-memory data with the older snapshot (the "vanishing
+      // upload" / "empty VO1" bug).
+      const lastLocalEdit = _localEditAt[row.wo];
+      if(lastLocalEdit && row.updated_at && new Date(row.updated_at).getTime() < lastLocalEdit) return;
       const existing = DB.jobs[row.wo];
       if(existing && existing._updatedAt && row.updated_at && new Date(row.updated_at) < new Date(existing._updatedAt)){
         // This update is older than what we already have locally (arrived out of
@@ -2199,9 +2213,17 @@ async function generateClaimDocs(){
   // Auto-save all claim docs on each job so MD can view them
   // CRITICAL: Validate that VO1/VO2 data is present before generating docs
   batchJobs.forEach(job=>{
-    // Validate: Job must have VO1 or VO2 data with items
-    if(!job.vo1 || !job.vo1.items || job.vo1.items.length === 0) {
-      throw new Error(`WO ${job.wo}: VO1 has no items. Cannot generate documents.`);
+    // Validate: Job must have priced items in VO2 (if one was created) or,
+    // failing that, in VO1 — matching the same VO2-takes-priority rule used
+    // everywhere else in the app (see bestTotal()/jTotal()). Previously this
+    // hard-required VO1 to have items even when VO2 already had valid,
+    // priced items, which is why generating claim docs failed with
+    // "VO1 has no items" for jobs where VO1 was intentionally left at zero
+    // and pricing was moved into VO2.
+    const hasVO2Items = job.vo2 && job.vo2.items && job.vo2.items.length > 0;
+    const hasVO1Items = job.vo1 && job.vo1.items && job.vo1.items.length > 0;
+    if(!hasVO2Items && !hasVO1Items) {
+      throw new Error(`WO ${job.wo}: No priced items found in VO1 or VO2. Cannot generate documents.`);
     }
     if(!job.savedDocs)job.savedDocs={};
     // Only generate docs if we have valid data
