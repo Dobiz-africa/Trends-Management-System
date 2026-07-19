@@ -81,12 +81,16 @@ const LN_DOC_KEYS = LINESMAN_DOCS.map(d => 'ln_' + d.id);
 const LN_DOC_LABELS = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.label]));
 const LN_DOC_SHORT = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.short]));
 function linesmanDocsUploadedCount(job){
-  // CRITICAL FIX: Only count documents that have COMPLETE data
+  // CRITICAL FIX: Only count documents that have COMPLETE data. A document
+  // counts as uploaded if it has either a locally-embedded dataUrl (offline
+  // mode) OR a Supabase Storage url/storagePath (normal online mode) — the
+  // old check only accepted dataUrl, which would have hidden any document
+  // uploaded straight to Storage.
   return LINESMAN_DOCS.filter(d => {
     if(!job || !job.scans) return false;
     const scan = job.scans['ln_' + d.id];
-    // Must have all required fields to be considered uploaded
-    return scan && scan.filename && scan.uploadedAt && scan.dataUrl;
+    if(!scan || !scan.filename || !scan.uploadedAt) return false;
+    return !!(scan.dataUrl || (scan.storagePath && scan.url));
   }).length;
 }
 function linesmanDocsAllUploaded(job){
@@ -1689,63 +1693,68 @@ function openExternalUpload(wo, externalRole) {
  */
 async function handleExternalUpload(wo, externalRole, files) {
   if (!files || files.length === 0) return;
-  
+
   const job = DB.jobs[wo];
   if (!job) return;
-  
+
   // Initialize scans storage if needed
   if (!job.scans) job.scans = {};
-  
-  let filesRead = 0;
-  const totalFiles = files.length;
-  const uploadedFiles = [];
-  
+
   // Map external role to scans key (same pattern as Linesman)
   const scanKeyMap = {
     gis_report: 'gis_report',
     gis_certificate: 'gis_cert'
   };
-  
+
   const scanKey = scanKeyMap[externalRole];
   if (!scanKey) return;
-  
-  // Process each uploaded file
-  Array.from(files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      // Store in scans[key] using same pattern as Linesman documents
-      // This preserves original file format (PDF stays PDF, PNG stays PNG, etc.)
-      const fileData = {
-        dataUrl: e.target.result, // Base64 encoded with data:url prefix
-        filename: file.name,
-        uploadedAt: new Date().toISOString(),
-        role: CU
-      };
-      
-      // For multiple files, append to existing or create
-      // Store only the latest file (or merge with existing if keeping history)
-      job.scans[scanKey] = fileData;
-      uploadedFiles.push(file.name);
-      filesRead++;
-      
-      // When ALL files are read
-      if (filesRead === totalFiles) {
-        addLog(wo, `GIS ${externalRole === 'gis_report' ? 'report' : 'certificate'} uploaded: ${uploadedFiles.join(', ')}`);
-        toast(`✅ ${uploadedFiles.length} file(s) uploaded: ${uploadedFiles.join(', ')}`);
-        
-        // SAVE and refresh
-        markJobDirty(wo);
-        await saveDBAndWait();
-        // Show loading spinner during refresh
-        const ov = document.getElementById('loadOverlay');
-        if(ov) ov.style.display = 'flex';
-        refreshDetail();
-        refreshAll();
-        if(ov) ov.style.display = 'none';
+
+  const uploadedFiles = [];
+
+  try {
+    // Process files one at a time (not in parallel) so multiple files can't
+    // race each other and clobber job.scans[scanKey] out of order.
+    for (const file of Array.from(files)) {
+      if (SB.enabled) {
+        // PERFORMANCE / RELIABILITY FIX: upload straight to Supabase Storage
+        // instead of embedding as base64 in the job record — see
+        // uploadLinesmanScan for the full explanation of why this matters.
+        const ext = (file.name.split('.').pop() || 'pdf').toLowerCase();
+        const path = `${wo}/${scanKey}_${Date.now()}.${ext}`;
+        const {error:upErr} = await SB.client.storage.from(SB.bucket).upload(path, file, {upsert:true, contentType:file.type||undefined});
+        if (upErr) throw upErr;
+        const url = SB.client.storage.from(SB.bucket).getPublicUrl(path).data.publicUrl;
+        job.scans[scanKey] = {storagePath:path, url, filename:file.name, uploadedAt:new Date().toISOString(), role:CU};
+        await SB.client.from('documents').insert({
+          wo, doc_type:scanKey, is_signed:true, storage_path:path, filename:file.name, uploaded_role:CU,
+        });
+      } else {
+        // Offline mode (no Supabase configured) — fall back to base64, same as before.
+        const dataUrl = await new Promise((resolve,reject)=>{
+          const reader = new FileReader();
+          reader.onload = ev => resolve(ev.target.result);
+          reader.onerror = () => reject(new Error('File read failed'));
+          reader.readAsDataURL(file);
+        });
+        job.scans[scanKey] = {dataUrl, filename:file.name, uploadedAt:new Date().toISOString(), role:CU};
       }
-    };
-    reader.readAsDataURL(file);
-  });
+      uploadedFiles.push(file.name);
+    }
+
+    addLog(wo, `GIS ${externalRole === 'gis_report' ? 'report' : 'certificate'} uploaded: ${uploadedFiles.join(', ')}`);
+    toast(`✅ ${uploadedFiles.length} file(s) uploaded: ${uploadedFiles.join(', ')}`);
+
+    markJobDirty(wo);
+    await saveDBAndWait();
+    const ov = document.getElementById('loadOverlay');
+    if (ov) ov.style.display = 'flex';
+    refreshDetail();
+    refreshAll();
+    if (ov) ov.style.display = 'none';
+  } catch (err) {
+    console.error('GIS upload error:', err);
+    toast('Upload failed: ' + (err.message || 'check connection'), 'rd');
+  }
 }
 
 /**
@@ -3800,57 +3809,73 @@ function selectLinesmanFile(wo,key){
 
 async function uploadLinesmanScan(wo,key,file){
   if(file.size>10*1024*1024){toast('File too large — max 10MB','am');return;}
-  
+
   // CRITICAL FIX: Prevent simultaneous uploads
   if(_linesmanUploadInProgress){
     toast('Please wait for current upload to complete','am');
     return;
   }
   _linesmanUploadInProgress = true;
-  
+
   const job=DB.jobs[wo];
   if(!job){
     _linesmanUploadInProgress = false;
     return;
   }
-  
+
   const docMeta=LINESMAN_DOCS.find(d=>('ln_'+d.id)===key);
-  const reader=new FileReader();
-  
-  reader.onload=async e=>{
-    try {
-      // Read file into memory
-      if(!job.scans)job.scans={};
-      job.scans[key]={dataUrl:e.target.result,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
-      addLog(wo,`Field document uploaded by Linesman: ${docMeta?docMeta.label:key} (${file.name})`);
-      markJobDirty(wo);
-      
-      // CRITICAL: Save to database with proper wait
-      await saveDBAndWait();
-      
-      // CRITICAL FIX: Wait additional time for Supabase to confirm save
-      await new Promise(resolve=>setTimeout(resolve,500));
-      
-      // CRITICAL FIX: Refresh modal to show updated state
-      renderLinesmanUploadModalContent();
-      
-      toast(`✓ Uploaded: ${file.name}`);
-    } catch(err) {
-      console.error('Upload error:', err);
-      toast('Upload failed — please try again','rd');
-    } finally {
-      // CRITICAL: Clear upload flag AFTER everything completes
-      _linesmanUploadInProgress = false;
-      renderLinesmanDash();
+
+  try {
+    if(!job.scans)job.scans={};
+
+    if(SB.enabled){
+      // PERFORMANCE / RELIABILITY FIX: upload the file straight to Supabase
+      // Storage instead of embedding it as base64 inside the job record.
+      // Previously every job save re-sent every already-uploaded document's
+      // full base64 data along with any small edit (like a VO1 rate),
+      // which made saves slow and, on larger jobs, could silently fail or
+      // time out — which is what was causing uploads and VO1 rates to
+      // appear to be lost. Only a small storage reference is saved on the
+      // job now, same as admin/finance signed scans already do.
+      const ext=(file.name.split('.').pop()||'pdf').toLowerCase();
+      const path=`${wo}/${key}_${Date.now()}.${ext}`;
+      const {error:upErr}=await SB.client.storage.from(SB.bucket).upload(path,file,{upsert:true,contentType:file.type||undefined});
+      if(upErr) throw upErr;
+      const url=SB.client.storage.from(SB.bucket).getPublicUrl(path).data.publicUrl;
+      job.scans[key]={storagePath:path,url,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
+      await SB.client.from('documents').insert({
+        wo, doc_type:key, is_signed:true, storage_path:path, filename:file.name, uploaded_role:CU,
+      });
+    } else {
+      // Offline mode (no Supabase configured) — fall back to embedding the
+      // file as base64 inside the job record, same as before.
+      const dataUrl = await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=ev=>resolve(ev.target.result);
+        reader.onerror=()=>reject(new Error('File read failed'));
+        reader.readAsDataURL(file);
+      });
+      job.scans[key]={dataUrl,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
     }
-  };
-  
-  reader.onerror=()=>{
-    toast('File read failed — please try again','rd');
+
+    addLog(wo,`Field document uploaded by Linesman: ${docMeta?docMeta.label:key} (${file.name})`);
+    markJobDirty(wo);
+
+    // CRITICAL: Save to database with proper wait
+    await saveDBAndWait();
+
+    // CRITICAL FIX: Refresh modal to show updated state
+    renderLinesmanUploadModalContent();
+
+    toast(`✓ Uploaded: ${file.name}`);
+  } catch(err) {
+    console.error('Upload error:', err);
+    toast('Upload failed — please try again','rd');
+  } finally {
+    // CRITICAL: Clear upload flag AFTER everything completes
     _linesmanUploadInProgress = false;
-  };
-  
-  reader.readAsDataURL(file);
+    renderLinesmanDash();
+  }
 }
 
 async function markLinesmanDocsComplete(){
