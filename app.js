@@ -2817,6 +2817,7 @@ function docGISReport(job){
     <tr><td style="font-weight:bold">Accessibility</td><td>${ef('g_access',g.access,'Good / Poor / 4x4 required')}</td></tr>
     <tr><td style="font-weight:bold">Nearest LV Network</td><td>${ef('g_lv',g.lv,'Distance to nearest LV line (m)')}</td></tr>
   </tbody></table>
+  <span class="p-grey">2. FINDINGS</span>${ta('g_findings',g.findings,'Site conditions, obstacles, existing infrastructure...')}
   <span class="p-grey">3. PROPOSED ROUTE / RECOMMENDATION</span>${ta('g_recs',g.recs,'Recommended connection route, installation method...')}
   <span class="p-grey">4. SURVEYOR</span>
   <table class="boq"><tbody>
@@ -2824,17 +2825,10 @@ function docGISReport(job){
     <tr><td style="font-weight:bold">Company</td><td>${ef('g_company',g.company,'GIS firm name')}</td></tr>
     <tr><td style="font-weight:bold">Equipment Used</td><td>${ef('g_equipment',g.equipment,'GPS, Total Station, etc.')}</td></tr>
   </tbody></table>
-  <div class="page-break"></div>
-  <table class="sig-table">
-    <tr>
-      <td style="width:50%;padding-right:12px">
-        ${sigBlank('GIS Consultant')}
-      </td>
-      <td style="width:50%;padding-left:12px">
-        ${sigBlank('BPC Representative')}
-      </td>
-    </tr>
-  </table>
+  <div class="sig-area">
+    ${sigBlank('GIS Consultant')}
+    ${sigBlank('BPC Representative')}
+  </div>
   </div>`;
 }
 
@@ -2857,17 +2851,10 @@ function docGISCert(job){
     <tr><td style="font-weight:bold">Date of Survey</td><td><input class="ef ef-b" id="gc_survdate" type="date" value="" style="width:98%"></td></tr>
     <tr><td style="font-weight:bold">Remarks</td><td>${ef('gc_remarks','','Any certification remarks')}</td></tr>
   </tbody></table>
-  <div class="page-break"></div>
-  <table class="sig-table" style="margin-top:14px">
-    <tr>
-      <td style="width:50%;padding-right:12px">
-        ${sigBlank('GIS Consultant (Certified)')}
-      </td>
-      <td style="width:50%;padding-left:12px">
-        ${sigBlank('Admin (Received)')}
-      </td>
-    </tr>
-  </table>
+  <div class="sig-area" style="margin-top:14px">
+    ${sigBlank('GIS Consultant (Certified)')}
+    ${sigBlank('Admin (Received)')}
+  </div>
   </div>`;
 }
 
@@ -3348,25 +3335,18 @@ function docListOfJobs(job, batchJobs){
   </table>
   </div>
   <button onclick="addListJobRow()" style="margin-top:6px;font-size:8pt;padding:3px 10px;cursor:pointer;border:1px solid #bbb;border-radius:3px;background:#f8f8f8;font-family:Arial,sans-serif">+ Add Row</button>
-  <div class="page-break"></div>
-  <table style="width:100%;margin-top:12px;border-collapse:collapse">
-    <tr>
-      <td style="width:50%;padding-right:10px;vertical-align:top">
-        <div style="border-top:1px solid #000;padding-top:4px">
-          <div style="font-size:8pt;font-weight:bold;margin-bottom:16px">Prepared by (Admin · Trends Engineering)</div>
-          <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:3px"></div>
-          <div style="font-size:8pt">Name: <input type="text" value="" style="width:55%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none"> &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
-        </div>
-      </td>
-      <td style="width:50%;padding-left:10px;vertical-align:top">
-        <div style="border-top:1px solid #000;padding-top:4px">
-          <div style="font-size:8pt;font-weight:bold;margin-bottom:16px">Verified by (Managing Director · Trends Engineering)</div>
-          <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:3px"></div>
-          <div style="font-size:8pt">Name: <input type="text" value="" style="width:55%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none"> &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
-        </div>
-      </td>
-    </tr>
-  </table>
+  <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div style="border-top:1px solid #000;padding-top:4px">
+      <div style="font-size:8pt;font-weight:bold;margin-bottom:16px">Prepared by (Admin · Trends Engineering)</div>
+      <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:3px"></div>
+      <div style="font-size:8pt">Name: <input type="text" value="" style="width:55%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none"> &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
+    </div>
+    <div style="border-top:1px solid #000;padding-top:4px">
+      <div style="font-size:8pt;font-weight:bold;margin-bottom:16px">Verified by (Managing Director · Trends Engineering)</div>
+      <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:3px"></div>
+      <div style="font-size:8pt">Name: <input type="text" value="" style="width:55%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none"> &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
+    </div>
+  </div>
   </div>`;
 }
 
@@ -3416,14 +3396,14 @@ const docLabels={
    ─────────────────────────────────────────────────────── */
 const DOC_PRINT_CSS=`
   *{box-sizing:border-box}
-  body{font-family:Helvetica,Arial,sans-serif;font-size:9pt;margin:0;padding:18px;background:#fff;color:#000}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;margin:0;padding:18px;background:#fff;color:#000}
   img{max-width:100%;height:auto}
   table{border-collapse:collapse;width:100%}
-  .paper{font-family:Helvetica,Arial,sans-serif;font-size:9pt;line-height:1.45;background:#fff;color:#000}
+  .paper{font-family:Arial,Helvetica,sans-serif;font-size:9pt;line-height:1.45;background:#fff;color:#000}
   .paper hr{border:none;border-top:1.5px solid #000;margin:6px 0}
   .hdt td{padding:2px 5px;font-size:8.5pt;vertical-align:top}
   .hdt .lbl{font-weight:bold;white-space:nowrap;width:160px}
-  .ef,.ef-b{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Helvetica,Arial;font-size:8.5pt;color:#000;padding:0 2px;min-width:50px}
+  .ef,.ef-b{display:inline-block;border:none;border-bottom:1px solid #000;background:transparent;font-family:Arial;font-size:8.5pt;color:#000;padding:0 2px;min-width:50px}
   .p-grey{background:#d9d9d9;padding:2px 6px;font-weight:bold;font-size:9pt;display:block;margin:7px 0 3px}
   .boq{width:100%;border-collapse:collapse;font-size:8.5pt;margin:4px 0}
   .boq th{background:#d9d9d9;border:1px solid #999;padding:4px 5px;font-weight:bold;text-align:left}
@@ -3432,38 +3412,37 @@ const DOC_PRINT_CSS=`
   .boq td.c,.boq th.c{text-align:center}
   .boq .sr td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
   .boq .tr td{background:#d9d9d9;font-weight:bold;border-top:2px solid #000}
+  .pc-row{display:flex;padding:3px 5px;border-bottom:1px solid #e8e8e8;font-size:8.5pt}
+  .pc-row .n{width:25px;flex-shrink:0}.pc-row .d{flex:1}
+  .pc-row .c{width:20px;text-align:right;flex-shrink:0}
+  .pc-row .v{width:95px;text-align:right;font-weight:bold;flex-shrink:0}
+  .pc-row.sub{background:#f0f0f0;font-weight:bold;border:none;border-top:1.5px solid #999;margin-top:2px}
+  .pc-row.fin{background:#d9d9d9;font-weight:bold;border:none;border-top:2px solid #000;margin-top:4px}
+  .pc-row.ded .v{color:#cc0000}
   .pc-sec{background:#d9d9d9;font-weight:bold;padding:3px 5px;font-size:9pt;display:block;margin:5px 0 2px}
-  .sig-table{width:100%;border-collapse:collapse;margin-top:14px}
-  .sig-table td{padding:0;vertical-align:top}
+  .sig-area{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:14px}
   .sig-box{border-top:1px solid #000;padding-top:4px}
   .sig-lbl{font-size:8pt;font-weight:bold;margin-bottom:18px}
   .sig-line{border-bottom:1px solid #000;margin-bottom:3px;height:22px}
   .sig-sub{font-size:7.5pt;color:#666}
-  .jt{width:100%;table-layout:fixed;border-collapse:collapse;font-size:7.5pt}
-  .jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center;overflow:hidden}
-  .jt td{border:1px solid #bbb;padding:3px 4px;overflow:hidden}
+  .jt{width:100%;border-collapse:collapse;font-size:7.5pt}
+  .jt th{background:#d9d9d9;border:1px solid #999;padding:3px 4px;font-weight:bold;text-align:center}
+  .jt td{border:1px solid #bbb;padding:3px 4px}
   .jt .tot td{background:#f0f0f0;font-weight:bold;border-top:1.5px solid #999}
-  .page-break{page-break-before:always}
   /* hide all UI chrome — only the document content should appear */
   button,.btn,.scan-done,.scan-upload-label,.ua,.ac-dd,.pipe-step,
   label[style*="cursor:pointer"]>input[type=file]{display:none!important}
   label[style*="cursor:pointer"]{pointer-events:none}
   input,select,textarea{
-    border:none!important;border-bottom:1px solid #000!important;
+    border:none!important;border-bottom:none!important;
     background:transparent!important;outline:none!important;
-    font-family:Helvetica,Arial,sans-serif!important;font-size:8.5pt!important;
+    font-family:Arial,sans-serif!important;font-size:8.5pt!important;
     color:#000!important;padding:0 2px!important;
   }
-  @page{size:A4;margin:15mm 15mm 15mm 15mm}
+  @page{size:A4 PAGE_ORIENTATION_PLACEHOLDER;margin:15mm 15mm 15mm 15mm}
   @media print{
     body{padding:0}
     .no-print{display:none!important}
-    /* Hide input underlines in claim documents during print */
-    .paper input[type="text"],
-    .paper input[type="date"] {
-      border:none!important;
-      border-bottom:none!important;
-    }
   }
 `;
 
@@ -3491,16 +3470,18 @@ function serializeToHTML(container){
 }
 
 /* Build a complete, standalone HTML document string for the paper document */
-function buildPrintableHTML(innerHtml, title){
+function buildPrintableHTML(innerHtml, title, docType){
   const now=new Date();
   const timestamp=now.toLocaleDateString('en-BW',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-BW',{hour:'2-digit',minute:'2-digit'});
   const role=RN[CU]||CU;
+  const landscapeTypes=['list_of_jobs','bpc_spreadsheet'];
+  const orientation=(docType&&landscapeTypes.includes(docType))?'landscape':'portrait';
+  const printCss=DOC_PRINT_CSS.replace('PAGE_ORIENTATION_PLACEHOLDER',orientation);
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8">
 <title>${title||'ClaimDesk Document'}</title>
-<style>${DOC_PRINT_CSS}
-@page { margin: 1cm; }
+<style>${printCss}
 body { position: relative; }
 .pdf-footer { position: fixed; bottom: 0.5cm; left: 0; right: 0; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; }
 </style>
@@ -3513,8 +3494,8 @@ ${innerHtml}
 /* MAIN PDF / Print function.
    Opens the document in a clean popup and triggers print (Print → Save as PDF).
    This is more reliable than any canvas-screenshot approach. */
-function openPrintWindow(innerHtml, title){
-  const html=buildPrintableHTML(innerHtml, title);
+function openPrintWindow(innerHtml, title, docType){
+  const html=buildPrintableHTML(innerHtml, title, docType);
   const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
   if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
   w.document.open(); w.document.write(html); w.document.close();
@@ -3531,7 +3512,7 @@ function downloadSavedDoc(wo, docType){
   const saved=job&&job.savedDocs&&job.savedDocs[docType];
   if(!saved){ toast('Not saved yet — click 💾 Save & Attach first','am'); return; }
   const title=(docType.replace(/_/g,' '))+' · WO '+wo;
-  openPrintWindow(saved.html, title);
+  openPrintWindow(saved.html, title, docType);
 }
 
 /* Download the currently-open modal document — opens print window */
@@ -3540,7 +3521,7 @@ function downloadDocAsPDF(wo, docType){
   if(!body){ toast('No document open','am'); return; }
   const innerHtml=serializeToHTML(body);
   const title=document.getElementById('docModalTitle')?.textContent||docType;
-  openPrintWindow(innerHtml, title);
+  openPrintWindow(innerHtml, title, docType);
 }
 /* ─── FIX 7: Batch doc save/scan helpers ─── */
 function saveBatchDocRecord(certNo,docType){
