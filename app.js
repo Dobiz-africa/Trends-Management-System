@@ -3458,6 +3458,12 @@ const DOC_PRINT_CSS=`
   @media print{
     body{padding:0}
     .no-print{display:none!important}
+    /* Hide input underlines in claim documents during print */
+    .paper input[type="text"],
+    .paper input[type="date"] {
+      border:none!important;
+      border-bottom:none!important;
+    }
   }
 `;
 
