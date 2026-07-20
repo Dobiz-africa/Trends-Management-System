@@ -395,6 +395,19 @@ const SB_INIT_PROMISE = initSupabase();
    partial sync of the job row was overwriting the real, priced job in memory. */
 function preserveVOData(existing, incoming){
   if(!existing) return;
+  
+  // CRITICAL FIX: If incoming update is older than or equal to the last local edit,
+  // do not overwrite vo1, vo2, or type fields. This prevents stale Supabase echoes
+  // (with incomplete data) from silently erasing VO pricing after generateClaimDocs().
+  const lastLocalEdit = _localEditAt[incoming.wo];
+  if(lastLocalEdit && incoming._updatedAt){
+    const incomingTime = new Date(incoming._updatedAt).getTime();
+    if(incomingTime <= lastLocalEdit){
+      // This is an older or equal-aged update — do not overwrite critical fields
+      return;
+    }
+  }
+  
   const incomingHasVO1 = incoming.vo1 && incoming.vo1.items && incoming.vo1.items.length>0;
   const existingHasVO1 = existing.vo1 && existing.vo1.items && existing.vo1.items.length>0;
   if(!incomingHasVO1 && existingHasVO1) incoming.vo1 = existing.vo1;
