@@ -388,6 +388,24 @@ const SB_INIT_PROMISE = initSupabase();
 /* Fills in any missing pieces of a job object with safe empty defaults, matching
    what newJob() creates. Used whenever a job is loaded or updated from the server,
    in case its stored data is incomplete for any reason — prevents render crashes. */
+/* CRITICAL FIX: never let a job update coming from the server silently erase
+   VO1/VO2 pricing or the type field that we already have locally. This is
+   what caused claim documents (and the Job Summary panel) to show P0.00 /
+   "Type: undefined" right after Finance generated claim docs — a delayed or
+   partial sync of the job row was overwriting the real, priced job in memory. */
+function preserveVOData(existing, incoming){
+  if(!existing) return;
+  const incomingHasVO1 = incoming.vo1 && incoming.vo1.items && incoming.vo1.items.length>0;
+  const existingHasVO1 = existing.vo1 && existing.vo1.items && existing.vo1.items.length>0;
+  if(!incomingHasVO1 && existingHasVO1) incoming.vo1 = existing.vo1;
+
+  const incomingHasVO2 = incoming.vo2 && incoming.vo2.items && incoming.vo2.items.length>0;
+  const existingHasVO2 = existing.vo2 && existing.vo2.items && existing.vo2.items.length>0;
+  if(!incomingHasVO2 && existingHasVO2) incoming.vo2 = existing.vo2;
+
+  if((incoming.type===undefined || incoming.type===null) && existing.type!==undefined) incoming.type = existing.type;
+}
+
 function hydrateJob(j){
   if(!j.vo1) j.vo1={items:[], lf:29.25, mk:0};
   if(!j.vo2) j.vo2={items:[], lf:29.25, mk:10};
@@ -424,6 +442,7 @@ async function syncFromSupabase(){
       j.wo = row.wo; j.cust = row.cust; j.loc = row.loc;
       j.phase = row.phase; j.stage = row.stage; j.claimRef = row.claim_ref||j.claimRef||'';
       j._updatedAt = row.updated_at;
+      preserveVOData(DB.jobs[row.wo], j);
       hydrateJob(j);
       jobs[row.wo] = j;
     });
@@ -598,6 +617,7 @@ function subscribeRealtime(){
       const j = (row.data && typeof row.data==='object') ? row.data : {};
       j.wo=row.wo; j.cust=row.cust; j.loc=row.loc; j.phase=row.phase; j.stage=row.stage; j.claimRef=row.claim_ref||j.claimRef||'';
       j._updatedAt = row.updated_at;
+      preserveVOData(DB.jobs[row.wo], j);
       hydrateJob(j);
       DB.jobs[row.wo] = j;
       refreshAll();
