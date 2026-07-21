@@ -2921,16 +2921,25 @@ function docAnnexure(job, batchJobs){
       <td style="padding:2px 4px"><input type="date" value="${new Date().toISOString().slice(0,10)}" style="border:none;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none"></td>
     </tr>
   </table>
-  <table style="width:100%;border-collapse:collapse;font-size:8.5pt">
+  <table style="width:100%;border-collapse:collapse;font-size:8.5pt;table-layout:auto">
+    <colgroup>
+      <col style="width:80px">
+      <col style="width:220px">
+      <col style="width:90px">
+      <col style="width:100px">
+      <col style="width:70px">
+      <col style="width:85px">
+      <col style="width:100px">
+    </colgroup>
     <thead>
       <tr style="background:#f0f0f0">
-        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:left;width:80px;font-weight:bold">BPC W/O No</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:left;font-weight:bold">BPC W/O No</th>
         <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:left;font-weight:bold">Project Title</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:left;width:120px;font-weight:bold">Meter Number</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:right;width:110px;font-weight:bold">Final Cost</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:right;width:75px;font-weight:bold">Penalties</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:right;width:90px;font-weight:bold">Interim Payments</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:right;width:110px;font-weight:bold">Final Payment</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:left;font-weight:bold">Meter Number</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:right;font-weight:bold">Final Cost</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:right;font-weight:bold">Penalties</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:right;font-weight:bold">Interim Payments</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:5px 6px;text-align:right;font-weight:bold">Final Payment</th>
       </tr>
     </thead>
     <tbody>
