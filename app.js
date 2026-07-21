@@ -3194,7 +3194,7 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
   const grandTotal=batchJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
 
   return`<div class="paper">
-  <div style="overflow-x:auto;width:100%;background:#fff">
+  <div class="doc-scroll-wrap" style="overflow-x:auto;width:100%;background:#fff">
   <table style="width:100%;min-width:1500px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
     <thead>
       <tr style="background:#d9d9d9">
@@ -3282,8 +3282,8 @@ function docListOfJobs(job, batchJobs){
     </tr>`;
   }).join('');
   return`<div class="paper">
-  <div style="overflow-x:auto;width:100%;background:#fff">
-  <table style="width:100%;min-width:1300px;border-collapse:collapse;font-size:9pt;table-layout:auto">
+  <div class="doc-scroll-wrap" style="overflow-x:auto;width:100%;background:#fff">
+  <table style="width:100%;min-width:1500px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
     <colgroup>
       <col style="width:32px">
       <col style="width:56px">
@@ -3419,6 +3419,7 @@ const DOC_PRINT_CSS=`
     font-family:Arial,sans-serif!important;font-size:8.5pt!important;
     color:#000!important;padding:0 2px!important;
   }
+  .doc-scroll-wrap{overflow-x:visible!important;width:auto!important;background:transparent!important}
   @page{size:A4 PAGE_ORIENTATION_PLACEHOLDER;margin:15mm 15mm 15mm 15mm}
   @media print{
     body{padding:0}
