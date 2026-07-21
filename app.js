@@ -711,6 +711,8 @@ const fdt=iso=>iso?new Date(iso).toLocaleString('en-BW',{day:'2-digit',month:'sh
 let CU=''; // current role
 let detailWO=null;
 let selClaimJobs=new Set();
+let CURRENT_CERT_NO=null;
+let CURRENT_DOC_TYPE=null;
 let recordCb=null;
 let hasUnsavedChanges=false; // Track if user has unsaved edits in modals
 let jobsSearchQuery=''; // Search query for jobs
@@ -2315,6 +2317,8 @@ async function generateClaimDocs(){
  * View batch document in modal (not print)
  */
 function viewBatchDoc(certNo,docType){
+  CURRENT_CERT_NO=certNo;
+  CURRENT_DOC_TYPE=docType;
   const batch=DB.batchDocs?.[certNo];
   const storedWOs=batch?.wos||[];
   const batchJobs=storedWOs.map(wo=>DB.jobs[wo]).filter(j=>j);
@@ -3172,53 +3176,51 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
       <td style="border:none;padding:2px">${ei(j.wo,'55px')}</td>
       <td style="border:none;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'80px')}</td>
       <td style="border:none;padding:2px">${ei(j.meterNo||'','75px')}</td>
-      <td style="border:none;padding:2px">${ei(CO.name,'125px')}</td>
+      <td style="border:none;padding:2px">${ei(CO.name,'190px')}</td>
       <td style="border:none;padding:2px">${ei(CO.vendor,'52px')}</td>
       <td style="border:none;padding:2px">${eir(BWP(t.total),'80px')}</td>
       <td style="border:none;padding:2px">${ei('100','28px')}</td>
       <td style="border:none;padding:2px">${eid(j.date)}</td>
       <td style="border:none;padding:2px">${ei('Ph '+j.phase+'-Free Con','78px')}</td>
       <td style="border:none;padding:2px">${ei(invNo,'100px')}</td>
-      <td style="border:none;padding:2px">${ei(j.loc,'88px')}</td>
+      <td style="border:none;padding:2px">${ei(j.loc,'130px')}</td>
       <td style="border:none;padding:2px">${eid(startDate)}</td>
       <td style="border:none;padding:2px">${eid(compDate)}</td>
-      <td style="border:none;padding:2px">${ei(CO.name,'120px')}</td>
-      <td style="border:none;padding:2px">${ei('BPC Engineer','100px')}</td>
+      <td style="border:none;padding:2px">${ei(CO.name,'190px')}</td>
+      <td style="border:none;padding:2px">${ei('BPC Engineer','140px')}</td>
     </tr>`;
   }).join('');
 
   const grandTotal=batchJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
 
   return`<div class="paper">
-  <div style="font-size:10pt;font-weight:bold;margin-bottom:5px">BPC SPREADSHEET — CLAIM ${certNo} (${batchJobs.length} job${batchJobs.length!==1?'s':''})</div>
-  <hr>
-  <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:6px">
+  <table style="width:100%;min-width:1500px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
     <thead>
       <tr style="background:#d9d9d9">
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">WO No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Project No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Meter No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Vendor Name</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Vendor No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Amount (BWP)</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">%</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">WO Date</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Phase</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Invoice No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Location</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Start Date</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Completion</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">Internal Responsible</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;white-space:nowrap">External Responsible</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">No.</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">WO No.</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Project No.</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Meter No.</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Vendor Name</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Vendor No.</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Amount (BWP)</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">%</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">WO Date</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Phase</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Invoice No.</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Location</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Start Date</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Completion</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Internal Responsible</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">External Responsible</th>
       </tr>
     </thead>
     <tbody>
       ${rows}
-      <tr style="background:#d9d9d9;font-weight:bold;border-top:2px solid #999">
-        <td colspan="6" style="border:none;border-top:1px solid #000;padding:3px;text-align:right"><strong>TOTAL</strong></td>
-        <td style="border:none;border-top:1px solid #000;padding:3px;text-align:right"><strong>${BWP(grandTotal)}</strong></td>
-        <td colspan="9" style="border:none;border-top:1px solid #000;padding:3px"></td>
+      <tr style="background:#d9d9d9;font-weight:bold">
+        <td colspan="6" style="border:none;border-top:2px solid #000;padding:3px;text-align:right"><strong>TOTAL</strong></td>
+        <td style="border:none;border-top:2px solid #000;padding:3px;text-align:right"><strong>${BWP(grandTotal)}</strong></td>
+        <td colspan="9" style="border:none;border-top:2px solid #000;padding:3px"></td>
       </tr>
     </tbody>
   </table>
@@ -3263,65 +3265,53 @@ function docListOfJobs(job, batchJobs){
     const invNo=`INV_${certNo}.${new Date().getFullYear()}`;
     return`<tr>
       <td style="border:none;padding:1px 3px;text-align:center">${i+1}.0</td>
-      <td style="border:none;padding:1px 3px">${inL(j.wo,'98%')}</td>
-      <td style="border:none;padding:1px 3px">${inL(CO.name,'98%')}</td>
-      <td style="border:none;padding:1px 3px">${inL(CO.vendor,'98%')}</td>
+      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.wo,'98%')}</td>
+      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(CO.name,'98%')}</td>
+      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(CO.vendor,'98%')}</td>
       <td style="border:none;padding:1px 3px;text-align:right">${inL(BWP(t.total),'98%')}</td>
       <td style="border:none;padding:1px 3px;text-align:center">${inL('100','98%')}</td>
-      <td style="border:none;padding:1px 3px">${inL(j.phase,'98%')}</td>
-      <td style="border:none;padding:1px 3px">${inL(invNo,'98%')}</td>
-      <td style="border:none;padding:1px 3px">${inL(j.loc,'98%')}</td>
+      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.phase,'98%')}</td>
+      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(invNo,'98%')}</td>
+      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.loc,'98%')}</td>
       <td style="border:none;padding:1px 3px">${inD(j.actions.teams_notified?.date||'')}</td>
       <td style="border:none;padding:1px 3px">${inD(j.actions.work_complete?.date||'')}</td>
-      <td style="border:none;padding:1px 3px">${inL('Kagiso Jeff Kewagamang','98%')}</td>
-      <td style="border:none;padding:1px 3px">${inL('Poloko Moiseraela','98%')}</td>
+      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL('Kagiso Jeff Kewagamang','98%')}</td>
+      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL('Poloko Moiseraela','98%')}</td>
     </tr>`;
   }).join('');
   return`<div class="paper">
-  <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
-    <tr>
-      <td>
-        <div style="font-size:9pt;font-weight:bold"><input type="text" value="ZERO CONNECTION PROJECT - NORTH" style="border:none;background:transparent;font-family:Arial,sans-serif;font-size:9pt;font-weight:bold;color:#000;padding:0 2px;outline:none;width:280px"></div>
-        <div style="font-size:8.5pt;margin-top:2px">DATE: <input type="date" value="${new Date().toISOString().slice(0,10)}" style="border:none;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;width:120px"></div>
-      </td>
-      <td style="text-align:right;font-size:8.5pt;vertical-align:top">
-        CLAIM No. &nbsp; <input type="text" value="${certNo}" style="border:none;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;width:80px">
-      </td>
-    </tr>
-  </table>
-  <hr>
-  <div style="overflow-x:auto;width:100%">
-  <table style="width:100%;min-width:900px;border-collapse:collapse;font-size:9pt;table-layout:fixed">
+  <div style="overflow-x:visible;width:100%">
+  <table style="width:100%;min-width:1300px;border-collapse:collapse;font-size:9pt;table-layout:auto">
     <colgroup>
-      <col style="width:34px">
-      <col style="width:58px">
-      <col style="width:130px">
+      <col style="width:32px">
+      <col style="width:56px">
+      <col style="width:190px">
       <col style="width:56px">
       <col style="width:70px">
       <col style="width:34px">
-      <col style="width:42px">
-      <col style="width:72px">
-      <col style="width:80px">
-      <col style="width:64px">
-      <col style="width:64px">
-      <col style="width:100px">
-      <col style="width:100px">
+      <col style="width:60px">
+      <col style="width:78px">
+      <col style="width:130px">
+      <col style="width:70px">
+      <col style="width:75px">
+      <col style="width:150px">
+      <col style="width:140px">
     </colgroup>
     <thead>
       <tr style="background:#d9d9d9">
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">ITEM No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">PROJECT No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">VENDOR NAME</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">VENDOR No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;text-align:right;overflow:hidden">AMOUNT</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;text-align:center;overflow:hidden">%</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">PHASE</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">INVOICE No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">LOCATION</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">START DATE</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden"></th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">INTERNAL</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:hidden">EXTERNAL</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">ITEM No.</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">PROJECT NUMBER</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">VENDOR NAME</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">VENDOR NUMBER</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;text-align:right;overflow:visible;white-space:normal">AMOUNT</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;text-align:center;overflow:visible;white-space:normal">% COMPLETE</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">PHASE DESCRIPTION</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">INVOICE No.</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">LOCATION</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">PLANNED START DATE</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">ACTUAL COMPLETION DATE</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">INTERNAL RESPONSIBLE</th>
+        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">EXTERNAL RESPONSIBLE</th>
       </tr>
     </thead>
     <tbody id="loj_tbody">
@@ -3335,18 +3325,6 @@ function docListOfJobs(job, batchJobs){
   </table>
   </div>
   <button onclick="addListJobRow()" style="margin-top:6px;font-size:8pt;padding:3px 10px;cursor:pointer;border:1px solid #bbb;border-radius:3px;background:#f8f8f8;font-family:Arial,sans-serif">+ Add Row</button>
-  <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
-    <div style="border-top:1px solid #000;padding-top:4px">
-      <div style="font-size:8pt;font-weight:bold;margin-bottom:16px">Prepared by (Admin · Trends Engineering)</div>
-      <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:3px"></div>
-      <div style="font-size:8pt">Name: <input type="text" value="" style="width:55%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none"> &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
-    </div>
-    <div style="border-top:1px solid #000;padding-top:4px">
-      <div style="font-size:8pt;font-weight:bold;margin-bottom:16px">Verified by (Managing Director · Trends Engineering)</div>
-      <div style="border-bottom:1px solid #aaa;height:20px;margin-bottom:3px"></div>
-      <div style="font-size:8pt">Name: <input type="text" value="" style="width:55%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none"> &nbsp; Date: <input type="date" style="border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:8pt;color:#000;padding:0 2px;outline:none;width:110px"></div>
-    </div>
-  </div>
   </div>`;
 }
 
@@ -3483,11 +3461,9 @@ function buildPrintableHTML(innerHtml, title, docType){
 <title>${title||'ClaimDesk Document'}</title>
 <style>${printCss}
 body { position: relative; }
-.pdf-footer { position: fixed; bottom: 0.5cm; left: 0; right: 0; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 4px; }
 </style>
 </head><body>
 ${innerHtml}
-<div class="pdf-footer">Generated by ${role} on ${timestamp} · ClaimDesk</div>
 </body></html>`;
 }
 
@@ -3981,9 +3957,13 @@ function printModal(){
   // Delegate to the unified print/PDF function which uses the clean popup approach
   const body=document.getElementById('docModalBody');
   if(!body) return;
+  // Persist whatever is currently on screen so the Documents section stays in sync with Print
+  if(CURRENT_CERT_NO && CURRENT_DOC_TYPE && typeof saveBatchDocAttach==='function'){
+    saveBatchDocAttach(CURRENT_CERT_NO, CURRENT_DOC_TYPE);
+  }
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
-  openPrintWindow(innerHtml, title);
+  openPrintWindow(innerHtml, title, CURRENT_DOC_TYPE);
 }
 
 /* ═══════════════════════════════════════
