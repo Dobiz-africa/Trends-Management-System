@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClaimDesk — Admin: Manage Accounts</title>
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body{font-family:system-ui,sans-serif;background:#0a0f1c;color:#e8ecf3;margin:0;padding:2rem}
+  .wrap{max-width:720px;margin:0 auto}
+  h1{color:#f0a500}
+  label{display:block;margin-top:1rem;font-size:.85rem;color:#aab3c5}
+  input,select{width:100%;box-sizing:border-box;padding:.6rem;margin-top:.3rem;background:#11172a;border:1px solid #2a3350;border-radius:6px;color:#e8ecf3}
+  button{margin-top:1.5rem;padding:.7rem 1.4rem;background:#f0a500;border:none;border-radius:6px;color:#0a0f1c;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  table{width:100%;border-collapse:collapse;margin-top:1rem}
+  th,td{text-align:left;padding:.5rem;border-bottom:1px solid #2a3350;font-size:.85rem}
+  #msg{margin-top:1rem;font-size:.85rem}
+  #gate{padding:3rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="gate">Checking access…</div>
+
+  <div id="panel" style="display:none">
+    <h1>Manage Worker Accounts</h1>
+    <p style="color:#aab3c5">Create a login for a linesman, finance, or managing director user. They'll sign in with the email/password you set here, then can change their password from the login screen's "Forgot password?" link.</p>
+
+    <label for="fullName">Full Name</label>
+    <input id="fullName" placeholder="e.g. Kabo Modise">
+
+    <label for="email">Email</label>
+    <input id="email" type="email" placeholder="worker@example.com">
+
+    <label for="tempPassword">Temporary Password</label>
+    <input id="tempPassword" type="text" placeholder="At least 6 characters">
+
+    <label for="role">Role</label>
+    <select id="role">
+      <option value="">Select role…</option>
+      <option value="linesman">Linesman</option>
+      <option value="finance">Finance</option>
+      <option value="md">Managing Director</option>
+    </select>
+
+    <button id="createBtn" onclick="createAccount()">Create Account</button>
+    <div id="msg"></div>
+
+    <h1 style="font-size:1.1rem;margin-top:2.5rem">Existing Accounts</h1>
+    <table id="userTable">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+      <tbody id="userRows"></tbody>
+    </table>
+
+    <button style="background:transparent;border:1px solid #2a3350;color:#e8ecf3;margin-top:2rem" onclick="location.href='index.html'">← Back to ClaimDesk</button>
+  </div>
+</div>
+
+<script>
+let sb, session;
+
+async function init(){
+  const res = await fetch('/api/config');
+  const cfg = await res.json();
+  sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+  const { data } = await sb.auth.getSession();
+  session = data?.session;
+
+  if(!session){
+    document.getElementById('gate').textContent = 'Please sign in on the main app first, then come back to this page.';
+    return;
+  }
+
+  const { data: me } = await sb.from('users').select('is_admin').eq('id', session.user.id).single();
+  if(!me?.is_admin){
+    document.getElementById('gate').textContent = 'This page is admin-only.';
+    return;
+  }
+
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('panel').style.display = 'block';
+  loadUsers();
+}
+
+async function loadUsers(){
+  const { data } = await sb.from('users').select('full_name,email,role').order('email');
+  const rows = document.getElementById('userRows');
+  rows.innerHTML = '';
+  (data||[]).forEach(u=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${u.full_name||''}</td><td>${u.email}</td><td>${u.role}</td>`;
+    rows.appendChild(tr);
+  });
+}
+
+async function createAccount(){
+  const full_name = document.getElementById('fullName').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('tempPassword').value;
+  const role = document.getElementById('role').value;
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('createBtn');
+
+  if(!full_name || !email || !password || !role){ msg.textContent = 'Fill all fields.'; return; }
+  if(password.length < 6){ msg.textContent = 'Password must be 6+ characters.'; return; }
+
+  btn.disabled = true;
+  msg.textContent = 'Creating…';
+
+  try{
+    const res = await fetch('/api/admin-create-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token
+      },
+      body: JSON.stringify({ full_name, email, password, role })
+    });
+    const out = await res.json();
+    if(!res.ok) throw new Error(out.error || 'Failed to create account');
+
+    msg.style.color = '#7fdc9a';
+    msg.textContent = `Account created for ${email}. Share the email + temporary password with them directly.`;
+    document.getElementById('fullName').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('tempPassword').value = '';
+    document.getElementById('role').value = '';
+    loadUsers();
+  }catch(e){
+    msg.style.color = '#e57373';
+    msg.textContent = 'Error: ' + e.message;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
