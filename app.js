@@ -3164,7 +3164,7 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
 
   const ei=(v,w)=>`<input type="text" value="${(v||'').toString().replace(/"/g,'&quot;')}" style="width:${w||'98%'};border:none;background:transparent;font-family:Arial;font-size:6.5pt;color:#000;padding:0 1px;outline:none">`;
   const eir=(v,w)=>`<input type="text" value="${(v||'').toString()}" style="width:${w||'98%'};border:none;background:transparent;font-family:Arial;font-size:6.5pt;color:#000;padding:0 1px;outline:none;text-align:right">`;
-  const eid=(v)=>`<input type="text" value="${v||''}" style="width:100%;border:none;background:transparent;font-family:Arial;font-size:6pt;color:#000;padding:0;outline:none">`;
+  const eid=(v)=>`<input type="date" value="${v||''}" style="width:98%;border:none;background:transparent;font-family:Arial;font-size:6pt;color:#000;padding:0;outline:none">`;
 
   const rows=batchJobs.map((j,i)=>{
     const t=bestTotal(j);
@@ -3173,21 +3173,21 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
     const compDate=j.actions.work_complete?.date||'';
     return`<tr>
       <td style="border:1px solid #bbb;padding:2px;text-align:center;font-size:6.5pt">${i+1}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.wo,'100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.meterNo||'','100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(CO.vendor,'100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${eir(BWP(t.total),'100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei('100','100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.wo,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.meterNo||'','98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.vendor,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eir(BWP(t.total),'98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('100','98%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(j.date)}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei('Ph '+j.phase+'-Free Con','100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(invNo,'100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.loc,'100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('Ph '+j.phase+'-Free Con','98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(invNo,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.loc,'98%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(startDate)}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(compDate)}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'100%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei('BPC Engineer','100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('BPC Engineer','98%')}</td>
     </tr>`;
   }).join('');
 
@@ -3195,43 +3195,43 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
 
   return`<div class="paper">
   <div class="doc-scroll-wrap" style="overflow-x:auto;width:100%;background:#fff">
-  <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:fixed">
+  <table style="width:100%;min-width:1450px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
     <colgroup>
-      <col style="width:2%">
-      <col style="width:4%">
-      <col style="width:4%">
-      <col style="width:5%">
-      <col style="width:15%">
-      <col style="width:4%">
-      <col style="width:5%">
-      <col style="width:3%">
-      <col style="width:5%">
-      <col style="width:6%">
-      <col style="width:7%">
-      <col style="width:8%">
-      <col style="width:5%">
-      <col style="width:5%">
-      <col style="width:14%">
-      <col style="width:8%">
+      <col style="width:32px">
+      <col style="width:56px">
+      <col style="width:70px">
+      <col style="width:56px">
+      <col style="width:190px">
+      <col style="width:52px">
+      <col style="width:80px">
+      <col style="width:34px">
+      <col style="width:78px">
+      <col style="width:78px">
+      <col style="width:100px">
+      <col style="width:130px">
+      <col style="width:78px">
+      <col style="width:78px">
+      <col style="width:190px">
+      <col style="width:140px">
     </colgroup>
     <thead>
       <tr style="background:#d9d9d9">
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">No.</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">WO No.</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Project No.</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Meter No.</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Vendor Name</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Vendor No.</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Amount (BWP)</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">%</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">WO Date</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Phase</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Invoice No.</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Location</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Start Date</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Completion</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Internal Responsible</th>
-        <th style="border:1px solid #999;padding:3px;white-space:nowrap">External Responsible</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">WO No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Project No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Meter No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Vendor Name</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Vendor No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Amount (BWP)</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">%</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">WO Date</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Phase</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Invoice No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Location</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Start Date</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Completion</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Internal Responsible</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">External Responsible</th>
       </tr>
     </thead>
     <tbody>
