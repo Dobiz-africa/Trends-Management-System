@@ -3172,58 +3172,60 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
     const startDate=j.actions.vo2_created?.date||j.actions.teams_notified?.date||'';
     const compDate=j.actions.work_complete?.date||'';
     return`<tr>
-      <td style="border:none;padding:2px;text-align:center;font-size:6.5pt">${i+1}</td>
-      <td style="border:none;padding:2px">${ei(j.wo,'55px')}</td>
-      <td style="border:none;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'80px')}</td>
-      <td style="border:none;padding:2px">${ei(j.meterNo||'','75px')}</td>
-      <td style="border:none;padding:2px">${ei(CO.name,'190px')}</td>
-      <td style="border:none;padding:2px">${ei(CO.vendor,'52px')}</td>
-      <td style="border:none;padding:2px">${eir(BWP(t.total),'80px')}</td>
-      <td style="border:none;padding:2px">${ei('100','28px')}</td>
-      <td style="border:none;padding:2px">${eid(j.date)}</td>
-      <td style="border:none;padding:2px">${ei('Ph '+j.phase+'-Free Con','78px')}</td>
-      <td style="border:none;padding:2px">${ei(invNo,'100px')}</td>
-      <td style="border:none;padding:2px">${ei(j.loc,'130px')}</td>
-      <td style="border:none;padding:2px">${eid(startDate)}</td>
-      <td style="border:none;padding:2px">${eid(compDate)}</td>
-      <td style="border:none;padding:2px">${ei(CO.name,'190px')}</td>
-      <td style="border:none;padding:2px">${ei('BPC Engineer','140px')}</td>
+      <td style="border:1px solid #bbb;padding:2px;text-align:center;font-size:6.5pt">${i+1}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.wo,'55px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'80px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.meterNo||'','75px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'190px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.vendor,'52px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eir(BWP(t.total),'80px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('100','28px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eid(j.date)}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('Ph '+j.phase+'-Free Con','78px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(invNo,'100px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.loc,'130px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eid(startDate)}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eid(compDate)}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'190px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('BPC Engineer','140px')}</td>
     </tr>`;
   }).join('');
 
   const grandTotal=batchJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
 
   return`<div class="paper">
+  <div style="overflow-x:auto;width:100%;background:#fff">
   <table style="width:100%;min-width:1500px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
     <thead>
       <tr style="background:#d9d9d9">
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">WO No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Project No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Meter No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Vendor Name</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Vendor No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Amount (BWP)</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">%</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">WO Date</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Phase</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Invoice No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Location</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Start Date</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Completion</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">Internal Responsible</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:3px;white-space:nowrap">External Responsible</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">WO No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Project No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Meter No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Vendor Name</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Vendor No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Amount (BWP)</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">%</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">WO Date</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Phase</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Invoice No.</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Location</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Start Date</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Completion</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">Internal Responsible</th>
+        <th style="border:1px solid #999;padding:3px;white-space:nowrap">External Responsible</th>
       </tr>
     </thead>
     <tbody>
       ${rows}
-      <tr style="background:#d9d9d9;font-weight:bold">
-        <td colspan="6" style="border:none;border-top:2px solid #000;padding:3px;text-align:right"><strong>TOTAL</strong></td>
-        <td style="border:none;border-top:2px solid #000;padding:3px;text-align:right"><strong>${BWP(grandTotal)}</strong></td>
-        <td colspan="9" style="border:none;border-top:2px solid #000;padding:3px"></td>
+      <tr style="background:#d9d9d9;font-weight:bold;border-top:2px solid #999">
+        <td colspan="6" style="border:1px solid #999;padding:3px;text-align:right"><strong>TOTAL</strong></td>
+        <td style="border:1px solid #999;padding:3px;text-align:right"><strong>${BWP(grandTotal)}</strong></td>
+        <td colspan="9" style="border:1px solid #999;padding:3px"></td>
       </tr>
     </tbody>
   </table>
+  </div>
   </div>`;
 }
 
@@ -3264,23 +3266,23 @@ function docListOfJobs(job, batchJobs){
     const t=bestTotal(j);
     const invNo=`INV_${certNo}.${new Date().getFullYear()}`;
     return`<tr>
-      <td style="border:none;padding:1px 3px;text-align:center">${i+1}.0</td>
-      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.wo,'98%')}</td>
-      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(CO.name,'98%')}</td>
-      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(CO.vendor,'98%')}</td>
-      <td style="border:none;padding:1px 3px;text-align:right">${inL(BWP(t.total),'98%')}</td>
-      <td style="border:none;padding:1px 3px;text-align:center">${inL('100','98%')}</td>
-      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.phase,'98%')}</td>
-      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(invNo,'98%')}</td>
-      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.loc,'98%')}</td>
-      <td style="border:none;padding:1px 3px">${inD(j.actions.teams_notified?.date||'')}</td>
-      <td style="border:none;padding:1px 3px">${inD(j.actions.work_complete?.date||'')}</td>
-      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL('Kagiso Jeff Kewagamang','98%')}</td>
-      <td style="border:none;padding:1px 3px;white-space:normal;overflow:visible">${inL('Poloko Moiseraela','98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${i+1}.0</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.wo,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(CO.name,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(CO.vendor,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;text-align:right">${inL(BWP(t.total),'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${inL('100','98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.phase,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(invNo,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.loc,'98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.teams_notified?.date||'')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.work_complete?.date||'')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL('Kagiso Jeff Kewagamang','98%')}</td>
+      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL('Poloko Moiseraela','98%')}</td>
     </tr>`;
   }).join('');
   return`<div class="paper">
-  <div style="overflow-x:visible;width:100%">
+  <div style="overflow-x:auto;width:100%;background:#fff">
   <table style="width:100%;min-width:1300px;border-collapse:collapse;font-size:9pt;table-layout:auto">
     <colgroup>
       <col style="width:32px">
@@ -3299,27 +3301,27 @@ function docListOfJobs(job, batchJobs){
     </colgroup>
     <thead>
       <tr style="background:#d9d9d9">
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">ITEM No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">PROJECT NUMBER</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">VENDOR NAME</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">VENDOR NUMBER</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;text-align:right;overflow:visible;white-space:normal">AMOUNT</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;text-align:center;overflow:visible;white-space:normal">% COMPLETE</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">PHASE DESCRIPTION</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">INVOICE No.</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">LOCATION</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">PLANNED START DATE</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">ACTUAL COMPLETION DATE</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">INTERNAL RESPONSIBLE</th>
-        <th style="border:none;border-bottom:1.5px solid #000;padding:2px 3px;overflow:visible;white-space:normal">EXTERNAL RESPONSIBLE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">ITEM No.</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">PROJECT NUMBER</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">VENDOR NAME</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">VENDOR NUMBER</th>
+        <th style="border:1px solid #999;padding:2px 3px;text-align:right;overflow:visible;white-space:normal">AMOUNT</th>
+        <th style="border:1px solid #999;padding:2px 3px;text-align:center;overflow:visible;white-space:normal">% COMPLETE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">PHASE DESCRIPTION</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">INVOICE No.</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">LOCATION</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">PLANNED START DATE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">ACTUAL COMPLETION DATE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">INTERNAL RESPONSIBLE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">EXTERNAL RESPONSIBLE</th>
       </tr>
     </thead>
     <tbody id="loj_tbody">
       ${rows}
       <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #999">
-        <td style="border:none;border-top:1px solid #000;padding:2px 3px" colspan="4"><strong>TOTAL CLAIM</strong></td>
-        <td style="border:none;border-top:1px solid #000;padding:2px 3px;text-align:right"><strong>${BWP(total)}</strong></td>
-        <td style="border:none;border-top:1px solid #000;padding:2px 3px" colspan="7"></td>
+        <td style="border:1px solid #bbb;padding:2px 3px" colspan="4"><strong>TOTAL CLAIM</strong></td>
+        <td style="border:1px solid #bbb;padding:2px 3px;text-align:right"><strong>${BWP(total)}</strong></td>
+        <td style="border:1px solid #bbb;padding:2px 3px" colspan="7"></td>
       </tr>
     </tbody>
   </table>
