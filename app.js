@@ -4051,94 +4051,209 @@ async function resetDatabase(){
   }
 }
 // Role cards set the hidden select, then defer to the original doLogin()
-function pickRole(role){
-  document.getElementById('loginRole').value = role;
-  doLogin();
+// REAL LOGIN FUNCTIONS
+function showLogin(){
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('signUpScreen').style.display='none';
 }
-/* Auto-restore session if user was previously logged in */
-async function restoreSession(){
-  const saved=localStorage.getItem('tes_currentRole');
-  const boot=document.getElementById('bootLoader');
-  if(!saved){
-    // No saved session — drop the boot spinner and reveal the login screen
-    if(boot) boot.style.display='none';
-    document.getElementById('loginScreen').style.display='flex';
+
+function showSignUp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('signUpScreen').style.display='flex';
+}
+
+async function realSignUp(){
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  const role = document.getElementById('signupRole').value;
+
+  if(!name || !email || !password || !role){
+    alert('Please fill all fields');
     return;
   }
+
+  if(password.length < 6){
+    alert('Password must be 6+ characters');
+    return;
+  }
+
   try{
-    // Silently restore the role and log in — boot spinner stays up the whole time,
-    // so the user never sees the login screen flash before the dashboard appears
-    document.getElementById('loginRole').value=saved;
-    await doLogin();
+    // Create Supabase auth user
+    const { data: authData, error: authError } = await SB.client.auth.signUp({
+      email, password
+    });
+
+    if(authError) throw authError;
+
+    // Create user record
+    const { error: dbError } = await SB.client.from('users').insert([{
+      id: authData.user.id,
+      email,
+      full_name: name,
+      role,
+      is_admin: false
+    }]);
+
+    if(dbError) throw dbError;
+
+    alert('Account created! Check your email to verify.');
+    showLogin();
+
   }catch(e){
-    console.error('Session restore failed:',e);
-    // Clear broken session and fall back to the login screen
-    localStorage.removeItem('tes_currentRole');
-    document.getElementById('loginScreen').style.display='flex';
-  }finally{
-    if(boot) boot.style.display='none';
+    alert('Error: ' + (e.message || 'Sign up failed'));
   }
 }
-async function doLogin(){
-  const r=document.getElementById('loginRole').value;
-  if(!r){document.getElementById('loginRole').style.borderColor='var(--rd)';return;}
-  CU=r;
-  // Persist session to localStorage so user stays logged in after page reload
-  localStorage.setItem('tes_currentRole',r);
-  // Reset all screens — clear any stale job detail from a previous role session
-  detailWO=null;
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
-  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('act'));
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('mainApp').style.display='block';
-  document.getElementById('sbRn').textContent=RN[r];
-  const loadOv=document.getElementById('loadOverlay');
-  if(loadOv) loadOv.style.display='flex';
 
-  // Role-specific nav — always hide jobdetail first
-  const show=id=>{const e=document.getElementById(id);if(e)e.style.display='flex';};
-  const hide=id=>{const e=document.getElementById(id);if(e)e.style.display='none';};
+async function realLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  if(!email || !password){
+    alert('Enter email and password');
+    return;
+  }
+
+  try{
+    const { data, error } = await SB.client.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+
+    // Get user's role from users table
+    const { data: userData } = await SB.client
+      .from('users')
+      .select('role, is_admin')
+      .eq('id', data.user.id)
+      .single();
+
+    if(!userData) throw new Error('User not found in database');
+
+    CU = userData.role;
+    if(userData.is_admin) window.DEVELOPER_MODE = true;
+
+    // Login successful - show dashboard
+    loginSuccess();
+
+  }catch(e){
+    alert('Login failed: ' + (e.message || 'Invalid email or password'));
+  }
+}
+
+async function googleLogin(){
+  try{
+    const { error } = await SB.client.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if(error) throw error;
+  }catch(e){
+    alert('Google login failed: ' + e.message);
+  }
+}
+
+function loginSuccess(){
+  const boot = document.getElementById('bootLoader');
+  if(boot) boot.style.display = 'none';
+
+  detailWO = null;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('act'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('act'));
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('signUpScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('sbRn').textContent = RN[CU];
+
+  const loadOv = document.getElementById('loadOverlay');
+  if(loadOv) loadOv.style.display = 'flex';
+
+  const show = id => {const e = document.getElementById(id); if(e) e.style.display = 'flex';};
+  const hide = id => {const e = document.getElementById(id); if(e) e.style.display = 'none';};
   ['n-inbox','n-claims','n-rates','n-actlog','n-jobdetail'].forEach(hide);
 
-  if(r==='admin'){show('n-inbox');show('n-rates');show('n-actlog');}
-  if(r==='finance'){show('n-inbox');show('n-claims');}
-  if(r==='md'){show('n-actlog');show('n-jobs');show('n-claims');}
-  if(r==='linesman'){show('n-inbox');}
+  if(CU === 'admin'){show('n-inbox'); show('n-rates'); show('n-actlog');}
+  if(CU === 'finance'){show('n-inbox'); show('n-claims');}
+  if(CU === 'md'){show('n-actlog'); show('n-jobs'); show('n-claims');}
+  if(CU === 'linesman'){show('n-inbox');}
 
-  // Pull the latest shared data from Supabase before rendering
-  await SB_INIT_PROMISE;
-  if(SB.enabled){
-    const tbt=document.getElementById('tbt'); if(tbt) tbt.textContent='Loading…';
-    // Flush any pending push to Supabase before syncing
-    await flushPendingSave();
-    await syncFromSupabase();
-    console.log('After syncFromSupabase, DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
-    subscribeRealtime();
-  }else{
-    console.log('SB not enabled. DB.jobs has', Object.keys(DB.jobs).length, 'jobs:', DB.jobs);
+  if(window.DEVELOPER_MODE){
+    const devPanel = document.getElementById('devControlPanel');
+    if(devPanel) devPanel.style.display = 'flex';
   }
 
-  addLog('','Signed in as '+RN[r]);
-  // Always land on dashboard — never carry over a screen from another role
-  nav('dashboard');
-  renderNotifs();
-  if(loadOv) loadOv.style.display='none';
-}
-async function doLogout(){
-  const loadOv=document.getElementById('loadOverlay');
-  if(loadOv) loadOv.style.display='flex';
-  addLog('','Signed out');
-  saveDB();
-  await Promise.race([ flushPendingSave(), new Promise(r=>setTimeout(r,6000)) ]);
-  if(_rtChannel){ SB.client.removeChannel(_rtChannel); _rtChannel = null; }
-  CU='';detailWO=null;
-  DB = {version:3, jobs:{}, notifs:{admin:[],finance:[],md:[]}, actLog:[], rates:[...RATES_SEED], certSeq:1, batchScans:{}, batchSaved:{}};
-  localStorage.removeItem('tes_currentRole');
-  document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('mainApp').style.display='none';
-  document.getElementById('loginRole').value='';
-  if(loadOv) loadOv.style.display='none';
+  // Load data
+  SB_INIT_PROMISE.then(async () => {
+    if(SB.enabled){
+      const tbt = document.getElementById('tbt');
+      if(tbt) tbt.textContent = 'Loading…';
+      await flushPendingSave();
+      await syncFromSupabase();
+      subscribeRealtime();
+    }
+    addLog('', 'Signed in as ' + RN[CU]);
+    nav('dashboard');
+    renderNotifs();
+    if(loadOv) loadOv.style.display = 'none';
+  });
 }
 
-/* Auto-restore user session on page load */
-window.addEventListener('DOMContentLoaded',restoreSession);
+async function doLogout(){
+  const loadOv = document.getElementById('loadOverlay');
+  if(loadOv) loadOv.style.display = 'flex';
+
+  try{
+    addLog('', 'Signed out');
+    saveDB();
+    await Promise.race([ flushPendingSave(), new Promise(r => setTimeout(r, 6000)) ]);
+    if(_rtChannel){ SB.client.removeChannel(_rtChannel); _rtChannel = null; }
+    await SB.client.auth.signOut();
+  }catch(e){
+    console.error('Logout error:', e);
+  }finally{
+    CU = '';
+    detailWO = null;
+    DB = {version:3, jobs:{}, notifs:{admin:[],finance:[],md:[]}, actLog:[], rates:[...RATES_SEED], certSeq:1, batchScans:{}, batchSaved:{}};
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('signUpScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    if(loadOv) loadOv.style.display = 'none';
+  }
+}
+
+async function restoreSession(){
+  const boot = document.getElementById('bootLoader');
+
+  if(!SB.enabled){
+    if(boot) boot.style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    return;
+  }
+
+  try{
+    const { data } = await SB.client.auth.getSession();
+
+    if(data?.session){
+      const { data: userData } = await SB.client
+        .from('users')
+        .select('role, is_admin')
+        .eq('id', data.session.user.id)
+        .single();
+
+      if(userData){
+        CU = userData.role;
+        if(userData.is_admin) window.DEVELOPER_MODE = true;
+        loginSuccess();
+      }
+    }else{
+      if(boot) boot.style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+    }
+  }catch(e){
+    console.error('Session error:', e);
+    if(boot) boot.style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', restoreSession);
