@@ -2232,10 +2232,6 @@ async function generateClaimDocs(){
   
   if(!batchJobs.length){toast('Selected jobs are missing data — please re-add them','rd');return;}
 
-  // Clear the checklist immediately so a future "Generate" click can never
-  // re-include a job that was already committed to this batch.
-  selClaimJobs.clear();
-
   // Set claimRef on all selected jobs FIRST before generating docs
   batchJobs.forEach(job=>{
     job.claimRef=certNo;
@@ -2870,7 +2866,7 @@ function docGISCert(job){
 function docAnnexure(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
   // Use provided batchJobs if available, otherwise fallback to claimRef query
-  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:(DB.batchDocs&&DB.batchDocs[certNo]&&DB.batchDocs[certNo].wos?DB.batchDocs[certNo].wos.map(wo=>DB.jobs[wo]).filter(j=>j&&j.vo1):Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1));
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1);
   const totalFinal=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const inL=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none">`;
   const inR=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;text-align:right">`;
@@ -2980,7 +2976,7 @@ function recalcPC(){
 function docPaymentCert(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
   // Use provided batchJobs if available, otherwise fallback to claimRef query
-  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:(DB.batchDocs&&DB.batchDocs[certNo]&&DB.batchDocs[certNo].wos?DB.batchDocs[certNo].wos.map(wo=>DB.jobs[wo]).filter(Boolean):Object.values(DB.jobs).filter(j=>j.claimRef===certNo));
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
   const ef=(val,w,id)=>`<input class="ef ef-b" ${id?`id="${id}"`:''}  value="${val||''}" style="width:${w||'90%'}">`;
@@ -3049,7 +3045,7 @@ function docPaymentCert(job, batchJobs){
 function docInvoice(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
   // Use provided batchJobs if available, otherwise fallback to claimRef query
-  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:(DB.batchDocs&&DB.batchDocs[certNo]&&DB.batchDocs[certNo].wos?DB.batchDocs[certNo].wos.map(wo=>DB.jobs[wo]).filter(Boolean):Object.values(DB.jobs).filter(j=>j.claimRef===certNo));
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const vat=gross*.14;
   const ret=gross*.05, wht=gross*.03;
@@ -3286,7 +3282,7 @@ function addListJobRow(){
 function docListOfJobs(job, batchJobs){
   const allDoneJobs=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('work_complete'));
   const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:job&&job.claimRef
-    ?(DB.batchDocs&&DB.batchDocs[job.claimRef]&&DB.batchDocs[job.claimRef].wos?DB.batchDocs[job.claimRef].wos.map(wo=>DB.jobs[wo]).filter(Boolean):Object.values(DB.jobs).filter(j=>j.claimRef===job.claimRef))
+    ?Object.values(DB.jobs).filter(j=>j.claimRef===job.claimRef)
     :allDoneJobs;
   const displayJobs=claimJobs.length?claimJobs:allDoneJobs;
   const total=displayJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
