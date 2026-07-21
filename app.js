@@ -3173,21 +3173,21 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
     const compDate=j.actions.work_complete?.date||'';
     return`<tr>
       <td style="border:1px solid #bbb;padding:2px;text-align:center;font-size:6.5pt">${i+1}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.wo,'55px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'80px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.meterNo||'','75px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'190px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(CO.vendor,'52px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${eir(BWP(t.total),'80px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei('100','28px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.wo,'100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.meterNo||'','100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.vendor,'100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${eir(BWP(t.total),'100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('100','100%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(j.date)}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei('Ph '+j.phase+'-Free Con','78px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(invNo,'100px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.loc,'130px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('Ph '+j.phase+'-Free Con','100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(invNo,'100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(j.loc,'100%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(startDate)}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(compDate)}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'190px')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei('BPC Engineer','140px')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'100%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('BPC Engineer','100%')}</td>
     </tr>`;
   }).join('');
 
@@ -3195,7 +3195,25 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
 
   return`<div class="paper">
   <div class="doc-scroll-wrap" style="overflow-x:auto;width:100%;background:#fff">
-  <table style="width:100%;min-width:1500px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
+  <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:fixed">
+    <colgroup>
+      <col style="width:3%">
+      <col style="width:5%">
+      <col style="width:5%">
+      <col style="width:5%">
+      <col style="width:14%">
+      <col style="width:4%">
+      <col style="width:6%">
+      <col style="width:2%">
+      <col style="width:5%">
+      <col style="width:5%">
+      <col style="width:6%">
+      <col style="width:4%">
+      <col style="width:4%">
+      <col style="width:4%">
+      <col style="width:14%">
+      <col style="width:14%">
+    </colgroup>
     <thead>
       <tr style="background:#d9d9d9">
         <th style="border:1px solid #999;padding:3px;white-space:nowrap">No.</th>
