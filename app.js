@@ -3164,7 +3164,7 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
 
   const ei=(v,w)=>`<input type="text" value="${(v||'').toString().replace(/"/g,'&quot;')}" style="width:${w||'98%'};border:none;background:transparent;font-family:Arial;font-size:6.5pt;color:#000;padding:0 1px;outline:none">`;
   const eir=(v,w)=>`<input type="text" value="${(v||'').toString()}" style="width:${w||'98%'};border:none;background:transparent;font-family:Arial;font-size:6.5pt;color:#000;padding:0 1px;outline:none;text-align:right">`;
-  const eid=(v)=>`<input type="date" value="${v||''}" style="width:98%;border:none;background:transparent;font-family:Arial;font-size:6pt;color:#000;padding:0;outline:none">`;
+  const eid=(v)=>`<input type="text" value="${v||''}" style="width:100%;border:none;background:transparent;font-family:Arial;font-size:6pt;color:#000;padding:0;outline:none">`;
 
   const rows=batchJobs.map((j,i)=>{
     const t=bestTotal(j);
@@ -3197,22 +3197,22 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
   <div class="doc-scroll-wrap" style="overflow-x:auto;width:100%;background:#fff">
   <table style="width:100%;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:fixed">
     <colgroup>
+      <col style="width:2%">
+      <col style="width:4%">
+      <col style="width:4%">
+      <col style="width:5%">
+      <col style="width:15%">
+      <col style="width:4%">
+      <col style="width:5%">
       <col style="width:3%">
       <col style="width:5%">
-      <col style="width:5%">
-      <col style="width:5%">
-      <col style="width:14%">
-      <col style="width:4%">
       <col style="width:6%">
-      <col style="width:2%">
+      <col style="width:7%">
+      <col style="width:8%">
       <col style="width:5%">
       <col style="width:5%">
-      <col style="width:6%">
-      <col style="width:4%">
-      <col style="width:4%">
-      <col style="width:4%">
       <col style="width:14%">
-      <col style="width:14%">
+      <col style="width:8%">
     </colgroup>
     <thead>
       <tr style="background:#d9d9d9">
@@ -3438,7 +3438,7 @@ const DOC_PRINT_CSS=`
     color:#000!important;padding:0 2px!important;
   }
   .doc-scroll-wrap{overflow-x:visible!important;width:auto!important;background:transparent!important}
-  @page{size:A4 PAGE_ORIENTATION_PLACEHOLDER;margin:15mm 15mm 15mm 15mm}
+  @page{size:PAGE_SIZE_PLACEHOLDER;margin:PAGE_MARGIN_PLACEHOLDER}
   @media print{
     body{padding:0}
     .no-print{display:none!important}
@@ -3474,8 +3474,10 @@ function buildPrintableHTML(innerHtml, title, docType){
   const timestamp=now.toLocaleDateString('en-BW',{day:'2-digit',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-BW',{hour:'2-digit',minute:'2-digit'});
   const role=RN[CU]||CU;
   const landscapeTypes=['list_of_jobs','bpc_spreadsheet'];
-  const orientation=(docType&&landscapeTypes.includes(docType))?'landscape':'portrait';
-  const printCss=DOC_PRINT_CSS.replace('PAGE_ORIENTATION_PLACEHOLDER',orientation);
+  const isLandscape=docType&&landscapeTypes.includes(docType);
+  const pageSize=isLandscape?'297mm 210mm':'210mm 297mm';
+  const pageMargin=isLandscape?'8mm':'15mm';
+  const printCss=DOC_PRINT_CSS.replace('PAGE_SIZE_PLACEHOLDER',pageSize).replace('PAGE_MARGIN_PLACEHOLDER',pageMargin+' '+pageMargin+' '+pageMargin+' '+pageMargin);
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8">
