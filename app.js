@@ -3048,6 +3048,7 @@ function docPaymentCert(job, batchJobs){
 /* ── INVOICE (exact match to CLAIM_10 INVOICE sheet) ── */
 function docInvoice(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
+  const phase=job?.phase||'47';
   // Use provided batchJobs if available, otherwise fallback to claimRef query
   const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:(DB.batchDocs&&DB.batchDocs[certNo]&&DB.batchDocs[certNo].wos?DB.batchDocs[certNo].wos.map(wo=>DB.jobs[wo]).filter(Boolean):Object.values(DB.jobs).filter(j=>j.claimRef===certNo));
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
@@ -4057,15 +4058,25 @@ function pickRole(role){
 /* Auto-restore session if user was previously logged in */
 async function restoreSession(){
   const saved=localStorage.getItem('tes_currentRole');
-  if(!saved)return;// No saved session
+  const boot=document.getElementById('bootLoader');
+  if(!saved){
+    // No saved session — drop the boot spinner and reveal the login screen
+    if(boot) boot.style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+    return;
+  }
   try{
-    // Silently restore the role and log in
+    // Silently restore the role and log in — boot spinner stays up the whole time,
+    // so the user never sees the login screen flash before the dashboard appears
     document.getElementById('loginRole').value=saved;
     await doLogin();
   }catch(e){
     console.error('Session restore failed:',e);
-    // Clear broken session
+    // Clear broken session and fall back to the login screen
     localStorage.removeItem('tes_currentRole');
+    document.getElementById('loginScreen').style.display='flex';
+  }finally{
+    if(boot) boot.style.display='none';
   }
 }
 async function doLogin(){
