@@ -11,8 +11,14 @@
 <body>
 <div id="printArea"></div>
 
+<!-- BOOT SPINNER — shown instantly on load/refresh, before any JS decides whether to show the login screen or the dashboard -->
+<div id="bootLoader" style="position:fixed;inset:0;z-index:99999;background:#060a11;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-family:inherit">
+  <div style="width:38px;height:38px;border:3px solid rgba(255,255,255,.25);border-top-color:#f0a500;border-radius:50%;animation:bootspin .8s linear infinite"></div>
+  <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
+</div>
+
 <!-- LOGIN -->
-<div id="loginScreen">
+<div id="loginScreen" style="display:none">
   <div class="login-split">
 
     <!-- LEFT: branded hero panel with rotating taglines -->
