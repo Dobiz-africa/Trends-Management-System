@@ -110,9 +110,8 @@
 
         <button class="lf-btn" onclick="realLogin()">Sign In →</button>
 
-        <div style="margin-top:1.5rem;border-top:1px solid var(--bd);padding-top:1rem">
-          <p style="font-size:.85rem;color:var(--tx2);margin:0 0 .5rem 0">No account yet?</p>
-          <button class="lf-btn" onclick="showSignUp()" style="background:var(--sf);color:var(--tx);border:1px solid var(--bd);cursor:pointer">Create Account →</button>
+        <div style="margin-top:1rem;text-align:center">
+          <button onclick="forgotPassword()" style="background:transparent;border:none;color:var(--am);cursor:pointer;text-decoration:underline;font-size:.85rem">Forgot password?</button>
         </div>
 
         <button class="lf-btn" onclick="googleLogin()" style="background:transparent;border:1px solid var(--bd);color:var(--tx);margin-top:.5rem">G Sign in with Google</button>
@@ -120,78 +119,37 @@
         <p class="login-form-foot">Trends Engineering Services (PTY) Ltd · © 2026</p>
       </div>
     </div>
+  </div>
+</div>
 
-  <!-- SIGN UP SCREEN -->
-<div id="signUpScreen" style="display:none">
+<!-- RESET PASSWORD SCREEN — shown when a user opens their password-reset email link -->
+<div id="resetPasswordScreen" style="display:none">
   <div class="login-split">
     <div class="login-hero">
-      <div class="login-hero-bg" aria-hidden="true">
-        <svg viewBox="0 0 800 1000" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="lhg" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#0c1322"/><stop offset="0.55" stop-color="#11203a"/><stop offset="1" stop-color="#0a0f1c"/>
-            </linearGradient>
-            <radialGradient id="lglow" cx="0.3" cy="0.25" r="0.7">
-              <stop offset="0" stop-color="#f0a500" stop-opacity=".25"/><stop offset="1" stop-color="#f0a500" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <rect width="800" height="1000" fill="url(#lhg)"/>
-          <rect width="800" height="1000" fill="url(#lglow)"/>
-          <g stroke="#2e3d58" stroke-width="3.5" fill="none">
-            <path d="M150 250 L150 760 M110 290 L190 290 M118 330 L182 330 M100 250 L200 250 M150 250 L120 220 M150 250 L180 220"/>
-            <path d="M420 180 L420 760 M376 226 L464 226 M384 272 L456 272 M364 180 L476 180 M420 180 L388 146 M420 180 L452 146"/>
-            <path d="M690 250 L690 760 M650 290 L730 290 M658 330 L722 330 M640 250 L740 250"/>
-          </g>
-          <g stroke="#f0a500" stroke-width="2" fill="none" opacity=".5">
-            <path class="hwire" d="M150 250 Q285 360 420 180"/><path class="hwire" d="M150 290 Q285 400 420 226"/>
-            <path class="hwire" d="M420 180 Q555 360 690 250"/><path class="hwire" d="M420 226 Q555 400 690 290"/>
-          </g>
-          <g fill="#f0a500"><circle cx="150" cy="250" r="4"/><circle cx="420" cy="180" r="4"/><circle cx="690" cy="250" r="4"/></g>
-          <g stroke="#1d2942" stroke-width="1" opacity=".6">
-            <line x1="0" y1="800" x2="800" y2="800"/><line x1="0" y1="860" x2="800" y2="860"/><line x1="0" y1="930" x2="800" y2="930"/>
-          </g>
-        </svg>
+      <div class="login-hero-content">
+        <div class="login-hero-brand">
+          <div><div class="login-hero-name">ClaimDesk</div><div class="login-hero-loc">Portal</div></div>
+        </div>
       </div>
     </div>
-
     <div class="login-form-wrap">
       <div class="login-form">
         <div class="login-form-head">
-          <h1>Create Account</h1>
-          <p>Join ClaimDesk</p>
+          <h1>Set a new password</h1>
+          <p>Choose a new password for your account</p>
         </div>
 
-        <label class="lf-label" for="signupName">Full Name</label>
+        <label class="lf-label" for="resetPassword1">New Password</label>
         <div class="lf-input-wrap">
-          <input id="signupName" type="text" placeholder="John Doe">
+          <input id="resetPassword1" type="password" placeholder="At least 6 characters">
         </div>
 
-        <label class="lf-label" for="signupEmail">Email</label>
+        <label class="lf-label" for="resetPassword2">Confirm Password</label>
         <div class="lf-input-wrap">
-          <input id="signupEmail" type="email" placeholder="john@example.com">
+          <input id="resetPassword2" type="password" placeholder="Repeat password">
         </div>
 
-        <label class="lf-label" for="signupPassword">Password</label>
-        <div class="lf-input-wrap">
-          <input id="signupPassword" type="password" placeholder="At least 6 characters">
-        </div>
-
-        <label class="lf-label" for="signupRole">Your Role</label>
-        <div class="lf-select-wrap">
-          <select id="signupRole">
-            <option value="">Select role…</option>
-            <option value="linesman">Linesman</option>
-            <option value="admin">Admin</option>
-            <option value="finance">Finance</option>
-            <option value="md">Managing Director</option>
-          </select>
-        </div>
-
-        <button class="lf-btn" onclick="realSignUp()">Create Account →</button>
-
-        <div style="margin-top:1rem;text-align:center">
-          <button onclick="showLogin()" style="background:transparent;border:none;color:var(--am);cursor:pointer;text-decoration:underline;font-size:.85rem">Already have an account?</button>
-        </div>
+        <button class="lf-btn" onclick="submitNewPassword()">Save New Password →</button>
 
         <p class="login-form-foot">Trends Engineering Services (PTY) Ltd · © 2026</p>
       </div>
