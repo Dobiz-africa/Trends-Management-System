@@ -2232,6 +2232,10 @@ async function generateClaimDocs(){
   
   if(!batchJobs.length){toast('Selected jobs are missing data — please re-add them','rd');return;}
 
+  // Clear the checklist immediately so a future "Generate" click can never
+  // re-include a job that was already committed to this batch.
+  selClaimJobs.clear();
+
   // Set claimRef on all selected jobs FIRST before generating docs
   batchJobs.forEach(job=>{
     job.claimRef=certNo;
@@ -2866,17 +2870,18 @@ function docGISCert(job){
 function docAnnexure(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
   // Use provided batchJobs if available, otherwise fallback to claimRef query
-  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1);
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:(DB.batchDocs&&DB.batchDocs[certNo]&&DB.batchDocs[certNo].wos?DB.batchDocs[certNo].wos.map(wo=>DB.jobs[wo]).filter(j=>j&&j.vo1):Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1));
   const totalFinal=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const inL=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none">`;
   const inR=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;background:transparent;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none;text-align:right">`;
+  const inWrap=(val)=>`<div contenteditable="true" style="width:100%;min-height:1.2em;white-space:normal;word-break:break-word;overflow-wrap:anywhere;font-family:Arial,sans-serif;font-size:8.5pt;color:#000;padding:0 2px;outline:none">${(val||'').replace(/</g,'&lt;')}</div>`;
   const rows=claimJobs.map(j=>{
     const tVO1=jTotal(j,'vo1');
     const tVO2=(j.vo2&&j.vo2.items&&j.vo2.items.length)?jTotal(j,'vo2'):null;
     const amt=tVO2?BWP(tVO2.total):BWP((tVO1&&tVO1.total)||0);
     return`<tr>
       <td style="border:none;padding:3px 5px">${inL(j.wo,'70px')}</td>
-      <td style="border:none;padding:3px 5px">${inL(j.cust,'99%')}</td>
+      <td style="border:none;padding:3px 5px;white-space:normal;overflow:visible">${inWrap(j.cust)}</td>
       <td style="border:none;padding:3px 5px">${inL(j.meterNo||'','110px')}</td>
       <td style="border:none;padding:3px 5px;text-align:right">${inR(amt,'100px')}</td>
       <td style="border:none;padding:3px 5px;text-align:right">${inR('0.00','65px')}</td>
@@ -2923,13 +2928,13 @@ function docAnnexure(job, batchJobs){
   </table>
   <table style="width:100%;border-collapse:collapse;font-size:8.5pt;table-layout:auto">
     <colgroup>
-      <col style="width:80px">
-      <col style="width:220px">
-      <col style="width:90px">
-      <col style="width:100px">
       <col style="width:70px">
-      <col style="width:85px">
-      <col style="width:100px">
+      <col style="width:260px">
+      <col style="width:75px">
+      <col style="width:95px">
+      <col style="width:65px">
+      <col style="width:80px">
+      <col style="width:95px">
     </colgroup>
     <thead>
       <tr style="background:#f0f0f0">
@@ -2944,12 +2949,12 @@ function docAnnexure(job, batchJobs){
     </thead>
     <tbody>
       ${rows}
-      <tr style="font-weight:bold;border-top:2px solid #aaa">
-        <td style="border:none;border-top:1px solid #000;border-bottom:1.5px solid #000;padding:4px 6px" colspan="3"><strong>TOTAL</strong></td>
-        <td style="border:none;border-top:1px solid #000;border-bottom:1.5px solid #000;padding:4px 6px;text-align:right">${inR(BWP(totalFinal),'100px')}</td>
-        <td style="border:none;border-top:1px solid #000;border-bottom:1.5px solid #000;padding:4px 6px;text-align:right">0.00</td>
-        <td style="border:none;border-top:1px solid #000;border-bottom:1.5px solid #000;padding:4px 6px;text-align:right">0.00</td>
-        <td style="border:none;border-top:1px solid #000;border-bottom:1.5px solid #000;padding:4px 6px;text-align:right">${inR(BWP(totalFinal),'100px')}</td>
+      <tr style="font-weight:bold">
+        <td style="border:none;border-top:1px solid #ccc;padding:4px 6px" colspan="3"><strong>TOTAL</strong></td>
+        <td style="border:none;border-top:1px solid #ccc;padding:4px 6px;text-align:right">${inR(BWP(totalFinal),'100px')}</td>
+        <td style="border:none;border-top:1px solid #ccc;padding:4px 6px;text-align:right">0.00</td>
+        <td style="border:none;border-top:1px solid #ccc;padding:4px 6px;text-align:right">0.00</td>
+        <td style="border:none;border-top:1px solid #ccc;padding:4px 6px;text-align:right">${inR(BWP(totalFinal),'100px')}</td>
       </tr>
     </tbody>
   </table>
@@ -2975,7 +2980,7 @@ function recalcPC(){
 function docPaymentCert(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
   // Use provided batchJobs if available, otherwise fallback to claimRef query
-  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:(DB.batchDocs&&DB.batchDocs[certNo]&&DB.batchDocs[certNo].wos?DB.batchDocs[certNo].wos.map(wo=>DB.jobs[wo]).filter(Boolean):Object.values(DB.jobs).filter(j=>j.claimRef===certNo));
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const ret=gross*.05, wht=gross*.03, net=gross-ret-wht;
   const ef=(val,w,id)=>`<input class="ef ef-b" ${id?`id="${id}"`:''}  value="${val||''}" style="width:${w||'90%'}">`;
@@ -3044,7 +3049,7 @@ function docPaymentCert(job, batchJobs){
 function docInvoice(job, batchJobs){
   const certNo=job?.claimRef||'TES-001';
   // Use provided batchJobs if available, otherwise fallback to claimRef query
-  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:Object.values(DB.jobs).filter(j=>j.claimRef===certNo);
+  const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:(DB.batchDocs&&DB.batchDocs[certNo]&&DB.batchDocs[certNo].wos?DB.batchDocs[certNo].wos.map(wo=>DB.jobs[wo]).filter(Boolean):Object.values(DB.jobs).filter(j=>j.claimRef===certNo));
   const phase=job?.phase||claimJobs[0]?.phase||'46';
   const gross=claimJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
   const vat=gross*.14;
@@ -3282,7 +3287,7 @@ function addListJobRow(){
 function docListOfJobs(job, batchJobs){
   const allDoneJobs=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('work_complete'));
   const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:job&&job.claimRef
-    ?Object.values(DB.jobs).filter(j=>j.claimRef===job.claimRef)
+    ?(DB.batchDocs&&DB.batchDocs[job.claimRef]&&DB.batchDocs[job.claimRef].wos?DB.batchDocs[job.claimRef].wos.map(wo=>DB.jobs[wo]).filter(Boolean):Object.values(DB.jobs).filter(j=>j.claimRef===job.claimRef))
     :allDoneJobs;
   const displayJobs=claimJobs.length?claimJobs:allDoneJobs;
   const total=displayJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
