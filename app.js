@@ -4050,58 +4050,40 @@ async function resetDatabase(){
     }
   }
 }
-// Role cards set the hidden select, then defer to the original doLogin()
 // REAL LOGIN FUNCTIONS
 function showLogin(){
   document.getElementById('loginScreen').style.display='flex';
-  document.getElementById('signUpScreen').style.display='none';
+  document.getElementById('resetPasswordScreen').style.display='none';
 }
 
-function showSignUp(){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('signUpScreen').style.display='flex';
-}
-
-async function realSignUp(){
-  const name = document.getElementById('signupName').value.trim();
-  const email = document.getElementById('signupEmail').value.trim();
-  const password = document.getElementById('signupPassword').value;
-  const role = document.getElementById('signupRole').value;
-
-  if(!name || !email || !password || !role){
-    alert('Please fill all fields');
-    return;
-  }
-
-  if(password.length < 6){
-    alert('Password must be 6+ characters');
-    return;
-  }
-
+async function forgotPassword(){
+  const email = document.getElementById('loginEmail').value.trim();
+  if(!email){ alert('Type your email in the field above first, then click "Forgot password?"'); return; }
   try{
-    // Create Supabase auth user
-    const { data: authData, error: authError } = await SB.client.auth.signUp({
-      email, password
+    const { error } = await SB.client.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
     });
-
-    if(authError) throw authError;
-
-    // Create user record
-    const { error: dbError } = await SB.client.from('users').insert([{
-      id: authData.user.id,
-      email,
-      full_name: name,
-      role,
-      is_admin: false
-    }]);
-
-    if(dbError) throw dbError;
-
-    alert('Account created! Check your email to verify.');
-    showLogin();
-
+    if(error) throw error;
+    alert('Check your email for a password reset link.');
   }catch(e){
-    alert('Error: ' + (e.message || 'Sign up failed'));
+    alert('Error: ' + (e.message || 'Could not send reset email'));
+  }
+}
+
+async function submitNewPassword(){
+  const p1 = document.getElementById('resetPassword1').value;
+  const p2 = document.getElementById('resetPassword2').value;
+  if(!p1 || p1.length < 6){ alert('Password must be 6+ characters'); return; }
+  if(p1 !== p2){ alert('Passwords do not match'); return; }
+  try{
+    const { error } = await SB.client.auth.updateUser({ password: p1 });
+    if(error) throw error;
+    alert('Password updated! Please sign in with your new password.');
+    await SB.client.auth.signOut();
+    document.getElementById('resetPasswordScreen').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+  }catch(e){
+    alert('Error: ' + (e.message || 'Could not update password'));
   }
 }
 
@@ -4159,7 +4141,7 @@ function loginSuccess(){
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('act'));
 
   document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('signUpScreen').style.display = 'none';
+  document.getElementById('resetPasswordScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
   document.getElementById('sbRn').textContent = RN[CU];
 
@@ -4213,7 +4195,7 @@ async function doLogout(){
     detailWO = null;
     DB = {version:3, jobs:{}, notifs:{admin:[],finance:[],md:[]}, actLog:[], rates:[...RATES_SEED], certSeq:1, batchScans:{}, batchSaved:{}};
     document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('signUpScreen').style.display = 'none';
+    document.getElementById('resetPasswordScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'none';
     document.getElementById('loginEmail').value = '';
     document.getElementById('loginPassword').value = '';
@@ -4223,6 +4205,14 @@ async function doLogout(){
 
 async function restoreSession(){
   const boot = document.getElementById('bootLoader');
+
+  // If this page load came from a Supabase password-reset email link, show that screen instead
+  if(window.location.hash.includes('type=recovery')){
+    if(boot) boot.style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('resetPasswordScreen').style.display = 'flex';
+    return;
+  }
 
   if(!SB.enabled){
     if(boot) boot.style.display = 'none';
