@@ -28,14 +28,8 @@
     <h1>Manage Worker Accounts</h1>
     <p style="color:#aab3c5">Create a login for a linesman, finance, or managing director user. They'll sign in with the email/password you set here, then can change their password from the login screen's "Forgot password?" link.</p>
 
-    <label for="fullName">Full Name</label>
-    <input id="fullName" placeholder="e.g. Kabo Modise">
-
     <label for="email">Email</label>
     <input id="email" type="email" placeholder="worker@example.com">
-
-    <label for="tempPassword">Temporary Password</label>
-    <input id="tempPassword" type="text" placeholder="At least 6 characters">
 
     <label for="role">Role</label>
     <select id="role">
@@ -45,8 +39,9 @@
       <option value="md">Managing Director</option>
     </select>
 
-    <button id="createBtn" onclick="createAccount()">Create Account</button>
+    <button id="createBtn" onclick="generateInvite()">Generate Invite Link</button>
     <div id="msg"></div>
+    <div id="linkBox" style="display:none;margin-top:1rem;padding:.8rem;background:#11172a;border:1px solid #2a3350;border-radius:6px;word-break:break-all;font-size:.8rem"></div>
 
     <h1 style="font-size:1.1rem;margin-top:2.5rem">Existing Accounts</h1>
     <table id="userTable">
@@ -96,39 +91,30 @@ async function loadUsers(){
   });
 }
 
-async function createAccount(){
-  const full_name = document.getElementById('fullName').value.trim();
+async function generateInvite(){
   const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('tempPassword').value;
   const role = document.getElementById('role').value;
   const msg = document.getElementById('msg');
   const btn = document.getElementById('createBtn');
+  const linkBox = document.getElementById('linkBox');
 
-  if(!full_name || !email || !password || !role){ msg.textContent = 'Fill all fields.'; return; }
-  if(password.length < 6){ msg.textContent = 'Password must be 6+ characters.'; return; }
+  if(!email || !role){ msg.textContent = 'Fill in email and role.'; return; }
 
   btn.disabled = true;
-  msg.textContent = 'Creating…';
+  msg.textContent = 'Generating…';
+  linkBox.style.display = 'none';
 
   try{
-    const res = await fetch('/api/admin-create-user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + session.access_token
-      },
-      body: JSON.stringify({ full_name, email, password, role })
-    });
-    const out = await res.json();
-    if(!res.ok) throw new Error(out.error || 'Failed to create account');
+    const { data, error } = await sb.from('invites').insert([{ email, role, created_by: session.user.id }]).select('token').single();
+    if(error) throw error;
 
+    const link = window.location.origin + '/invite.html?token=' + data.token;
     msg.style.color = '#7fdc9a';
-    msg.textContent = `Account created for ${email}. Share the email + temporary password with them directly.`;
-    document.getElementById('fullName').value = '';
+    msg.textContent = 'Invite link created — copy it and send it to them:';
+    linkBox.style.display = 'block';
+    linkBox.textContent = link;
     document.getElementById('email').value = '';
-    document.getElementById('tempPassword').value = '';
     document.getElementById('role').value = '';
-    loadUsers();
   }catch(e){
     msg.style.color = '#e57373';
     msg.textContent = 'Error: ' + e.message;
