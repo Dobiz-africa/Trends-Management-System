@@ -69,8 +69,8 @@ async function init(){
     return;
   }
 
-  const { data: me } = await sb.from('users').select('is_admin').eq('id', session.user.id).single();
-  if(!me?.is_admin){
+  const { data: me } = await sb.from('users').select('is_admin,role').eq('id', session.user.id).single();
+  if(!(me?.is_admin || me?.role === 'admin')){
     document.getElementById('gate').textContent = 'This page is admin-only.';
     return;
   }
