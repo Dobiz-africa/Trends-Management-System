@@ -4233,6 +4233,12 @@ async function restoreSession(){
     return;
   }
 
+  // IMPORTANT: wait for Supabase to finish initializing (config fetch + client
+  // creation) before deciding anything. Without this, the login screen can
+  // flash on every reload, and a Google sign-in redirect can get missed,
+  // because this function used to run before SB.client even existed.
+  await SB_INIT_PROMISE;
+
   if(!SB.enabled){
     if(boot) boot.style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
@@ -4240,6 +4246,9 @@ async function restoreSession(){
   }
 
   try{
+    // SB.client.auth.getSession() internally waits for Supabase to finish
+    // parsing any auth tokens out of the URL (e.g. returning from a Google
+    // redirect), so by the time this resolves we have the real answer.
     const { data } = await SB.client.auth.getSession();
 
     if(data?.session){
@@ -4253,6 +4262,15 @@ async function restoreSession(){
         CU = userData.role;
         if(userData.is_admin) window.DEVELOPER_MODE = true;
         loginSuccess();
+      }else{
+        // A real Google account signed in, but there's no matching ClaimDesk
+        // user record — meaning they never went through an invite link.
+        // Do NOT let this create/keep an account. Sign them back out and
+        // send them to the login screen with an explanation.
+        await SB.client.auth.signOut();
+        if(boot) boot.style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        alert('No ClaimDesk account found for that Google account. Ask an admin for an invite link to sign up.');
       }
     }else{
       if(boot) boot.style.display = 'none';
