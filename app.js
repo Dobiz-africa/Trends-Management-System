@@ -4110,7 +4110,7 @@ async function realLogin(){
     if(!userData) throw new Error('User not found in database');
 
     CU = userData.role;
-    if(userData.is_admin) window.DEVELOPER_MODE = true;
+    window.DEVELOPER_MODE = !!userData.is_admin;
 
     // Login successful - show dashboard
     loginSuccess();
@@ -4211,6 +4211,9 @@ async function doLogout(){
     console.error('Logout error:', e);
   }finally{
     CU = '';
+    window.DEVELOPER_MODE = false;
+    const devPanel = document.getElementById('devControlPanel');
+    if(devPanel) devPanel.style.display = 'none';
     detailWO = null;
     DB = {version:3, jobs:{}, notifs:{admin:[],finance:[],md:[]}, actLog:[], rates:[...RATES_SEED], certSeq:1, batchScans:{}, batchSaved:{}};
     document.getElementById('loginScreen').style.display = 'flex';
@@ -4260,7 +4263,7 @@ async function restoreSession(){
 
       if(userData){
         CU = userData.role;
-        if(userData.is_admin) window.DEVELOPER_MODE = true;
+        window.DEVELOPER_MODE = !!userData.is_admin;
         loginSuccess();
       }else{
         // A real Google account signed in, but there's no matching ClaimDesk
