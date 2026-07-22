@@ -4120,27 +4120,15 @@ async function realLogin(){
   }
 }
 
-async function googleLogin(btn){
-  // Give the button instant visual feedback — signInWithOAuth still has to
-  // await Supabase init and build the redirect URL before the browser
-  // actually navigates, and on a slower connection that gap made the button
-  // look dead. This also stops a second click firing during that gap.
-  const el = btn || (typeof event!=='undefined' ? event?.target : null);
-  if(el && el.disabled) return;
-  if(el){ el.disabled = true; el.dataset.origText = el.textContent; el.textContent = 'Connecting to Google…'; }
+async function googleLogin(){
   try{
-    await SB_INIT_PROMISE;
-    if(!SB.enabled) throw new Error('Not connected to the server yet — please wait a moment and try again.');
     const { error } = await SB.client.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin }
     });
     if(error) throw error;
-    // On success the browser navigates away to Google immediately, so no
-    // need to restore the button here.
   }catch(e){
     alert('Google login failed: ' + e.message);
-    if(el){ el.disabled = false; el.textContent = el.dataset.origText || 'G Sign in with Google'; }
   }
 }
 
@@ -4234,39 +4222,6 @@ async function doLogout(){
   }
 }
 
-// CRITICAL FIX: look up the signed-in user's role and either drop them into
-// the app or reject the session. Shared by restoreSession() and the
-// onAuthStateChange listener below so both paths behave identically.
-async function applySession(session){
-  const boot = document.getElementById('bootLoader');
-  try{
-    const { data: userData } = await SB.client
-      .from('users')
-      .select('role, is_admin')
-      .eq('id', session.user.id)
-      .single();
-
-    if(userData){
-      CU = userData.role;
-      if(userData.is_admin) window.DEVELOPER_MODE = true;
-      loginSuccess();
-    }else{
-      // Signed in (e.g. via Google) but there's no ClaimDesk user row for this
-      // account — meaning they never went through an invite link. The Google
-      // button on the sign-in screen is sign-in only, not sign-up, so this
-      // session is rejected rather than silently creating access.
-      await SB.client.auth.signOut();
-      if(boot) boot.style.display = 'none';
-      document.getElementById('loginScreen').style.display = 'flex';
-      alert('No ClaimDesk account found for this Google account. Please use the invite link you were sent to create an account.');
-    }
-  }catch(e){
-    console.error('Failed to load user profile:', e);
-    if(boot) boot.style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
-  }
-}
-
 async function restoreSession(){
   const boot = document.getElementById('bootLoader');
 
@@ -4278,17 +4233,6 @@ async function restoreSession(){
     return;
   }
 
-  // CRITICAL FIX: wait for Supabase to actually finish initializing before
-  // deciding anything. initSupabase() fetches /api/config asynchronously
-  // (can take up to a few seconds), so SB.enabled was almost always still
-  // false at this point on a fresh page load — which meant restoreSession()
-  // fell straight into the "not enabled" branch and showed the login screen
-  // on EVERY reload, even for an already-logged-in user, and even right
-  // after a Google OAuth redirect handed the page a brand-new session. The
-  // boot spinner stays up (it's already showing) while we wait, so there's
-  // no flash of the login screen either way.
-  await SB_INIT_PROMISE;
-
   if(!SB.enabled){
     if(boot) boot.style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
@@ -4299,7 +4243,17 @@ async function restoreSession(){
     const { data } = await SB.client.auth.getSession();
 
     if(data?.session){
-      await applySession(data.session);
+      const { data: userData } = await SB.client
+        .from('users')
+        .select('role, is_admin')
+        .eq('id', data.session.user.id)
+        .single();
+
+      if(userData){
+        CU = userData.role;
+        if(userData.is_admin) window.DEVELOPER_MODE = true;
+        loginSuccess();
+      }
     }else{
       if(boot) boot.style.display = 'none';
       document.getElementById('loginScreen').style.display = 'flex';
@@ -4312,24 +4266,3 @@ async function restoreSession(){
 }
 
 window.addEventListener('DOMContentLoaded', restoreSession);
-
-// SAFETY NET: also listen for Supabase's own auth events. Google's redirect
-// flow parses the access token out of the URL hash asynchronously, which can
-// finish a beat after our getSession() call above already ran and returned
-// nothing. Without this listener, that race made the "Sign in with Google"
-// button look completely unresponsive — the session would land moments
-// later with nobody watching for it, and only a fresh page load (where the
-// session was by then already persisted to storage) would pick it up. This
-// catches that SIGNED_IN event directly instead of requiring a reload.
-let _authEventBusy = false;
-SB_INIT_PROMISE.then(() => {
-  if(!SB.enabled) return;
-  SB.client.auth.onAuthStateChange((event, session) => {
-    if(event !== 'SIGNED_IN' || !session || CU || _authEventBusy) return;
-    const loginScreenEl = document.getElementById('loginScreen');
-    const stillOnLogin = loginScreenEl && loginScreenEl.style.display !== 'none';
-    if(!stillOnLogin) return;
-    _authEventBusy = true;
-    applySession(session).finally(() => { _authEventBusy = false; });
-  });
-});
