@@ -251,6 +251,17 @@
     <div style="margin-top:16px;font-size:14px;font-weight:600;">Loading…</div>
   </div>
   <style>@keyframes cdspin{to{transform:rotate(360deg)}}</style>
+
+  <!-- DEV ROLE SWITCHER — only shown when window.DEVELOPER_MODE is true (is_admin accounts) -->
+  <div id="devControlPanel" style="display:none;position:fixed;bottom:16px;right:16px;z-index:9998;background:#11172a;border:1px solid #2a3350;border-radius:10px;padding:10px;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.4);font-family:inherit">
+    <div style="font-size:.7rem;color:#aab3c5;margin-bottom:6px;letter-spacing:.05em">DEV — VIEW AS</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;max-width:220px">
+      <button onclick="switchRole('admin')" style="padding:.4rem .6rem;background:#1a2138;border:1px solid #2a3350;color:#e8ecf3;border-radius:6px;cursor:pointer;font-size:.75rem">Admin</button>
+      <button onclick="switchRole('linesman')" style="padding:.4rem .6rem;background:#1a2138;border:1px solid #2a3350;color:#e8ecf3;border-radius:6px;cursor:pointer;font-size:.75rem">Linesman</button>
+      <button onclick="switchRole('finance')" style="padding:.4rem .6rem;background:#1a2138;border:1px solid #2a3350;color:#e8ecf3;border-radius:6px;cursor:pointer;font-size:.75rem">Finance</button>
+      <button onclick="switchRole('md')" style="padding:.4rem .6rem;background:#1a2138;border:1px solid #2a3350;color:#e8ecf3;border-radius:6px;cursor:pointer;font-size:.75rem">Managing Director</button>
+    </div>
+  </div>
   <div class="shell">
     <aside class="sb">
       <div class="sb-hd">
