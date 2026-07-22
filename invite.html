@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClaimDesk — Accept Invite</title>
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body{font-family:system-ui,sans-serif;background:#0a0f1c;color:#e8ecf3;margin:0;padding:2rem;display:flex;justify-content:center}
+  .card{max-width:420px;width:100%;margin-top:3rem}
+  h1{color:#f0a500;font-size:1.4rem}
+  label{display:block;margin-top:1rem;font-size:.85rem;color:#aab3c5}
+  input{width:100%;box-sizing:border-box;padding:.6rem;margin-top:.3rem;background:#11172a;border:1px solid #2a3350;border-radius:6px;color:#e8ecf3}
+  input[disabled]{opacity:.6}
+  button{width:100%;margin-top:1.5rem;padding:.7rem 1.4rem;background:#f0a500;border:none;border-radius:6px;color:#0a0f1c;font-weight:600;cursor:pointer}
+  button.google{background:transparent;border:1px solid #2a3350;color:#e8ecf3;margin-top:.6rem}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  #msg{margin-top:1rem;font-size:.85rem}
+  #status{padding:3rem 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="status">Checking your invite…</div>
+  <div id="form" style="display:none">
+    <h1>You've been invited to ClaimDesk</h1>
+    <p style="color:#aab3c5">Role: <b id="roleLabel"></b></p>
+
+    <label for="fullName">Full Name</label>
+    <input id="fullName" placeholder="Your full name">
+
+    <label for="email">Email</label>
+    <input id="email" disabled>
+
+    <label for="password">Choose a Password</label>
+    <input id="password" type="password" placeholder="At least 6 characters">
+
+    <button onclick="finishSignup()">Create Account →</button>
+    <button class="google" onclick="googleSignup()">G Sign up with Google instead</button>
+
+    <div id="msg"></div>
+  </div>
+</div>
+
+<script>
+let sb, invite, tokenParam;
+
+async function init(){
+  const params = new URLSearchParams(window.location.search);
+  tokenParam = params.get('token');
+
+  const cfgRes = await fetch('/api/config');
+  const cfg = await cfgRes.json();
+  sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+
+  if(!tokenParam){
+    document.getElementById('status').textContent = 'This link is missing its invite token.';
+    return;
+  }
+
+  // Returning from a Google redirect? Finish automatically if we already have a session.
+  const { data: sessionData } = await sb.auth.getSession();
+  if(sessionData?.session){
+    document.getElementById('status').textContent = 'Finishing your account…';
+    await completeInvite(sessionData.session.access_token, sessionData.session.user.user_metadata?.full_name || '');
+    return;
+  }
+
+  const invRes = await fetch('/api/get-invite?token=' + encodeURIComponent(tokenParam));
+  const invData = await invRes.json();
+  if(!invRes.ok){
+    document.getElementById('status').textContent = invData.error || 'This invite link is not valid.';
+    return;
+  }
+
+  invite = invData;
+  document.getElementById('status').style.display = 'none';
+  document.getElementById('form').style.display = 'block';
+  document.getElementById('email').value = invite.email;
+  document.getElementById('roleLabel').textContent = invite.role;
+}
+
+async function finishSignup(){
+  const full_name = document.getElementById('fullName').value.trim();
+  const password = document.getElementById('password').value;
+  const msg = document.getElementById('msg');
+
+  if(!full_name || !password){ msg.textContent = 'Fill in your name and a password.'; return; }
+  if(password.length < 6){ msg.textContent = 'Password must be 6+ characters.'; return; }
+
+  msg.style.color = '';
+  msg.textContent = 'Creating your account…';
+
+  try{
+    const { data, error } = await sb.auth.signUp({ email: invite.email, password });
+    if(error) throw error;
+
+    let session = data.session;
+    if(!session){
+      // Project has "Confirm email" on — sign in immediately instead of waiting on an email click
+      const signIn = await sb.auth.signInWithPassword({ email: invite.email, password });
+      if(signIn.error) throw signIn.error;
+      session = signIn.data.session;
+    }
+
+    await completeInvite(session.access_token, full_name);
+  }catch(e){
+    msg.style.color = '#e57373';
+    msg.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function googleSignup(){
+  // Keep the invite token attached so we can finish the invite once Google sends us back
+  await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/invite.html?token=' + encodeURIComponent(tokenParam) }
+  });
+}
+
+async function completeInvite(accessToken, full_name){
+  const msg = document.getElementById('msg');
+  try{
+    const res = await fetch('/api/accept-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
+      body: JSON.stringify({ token: tokenParam, full_name })
+    });
+    const out = await res.json();
+    if(!res.ok) throw new Error(out.error || 'Could not finish setting up your account');
+
+    document.getElementById('status').style.display = 'block';
+    document.getElementById('form').style.display = 'none';
+    document.getElementById('status').textContent = 'All set! Redirecting you to sign in…';
+    setTimeout(() => { window.location.href = 'index.html'; }, 1800);
+  }catch(e){
+    msg.style.color = '#e57373';
+    msg.textContent = 'Error: ' + e.message;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
