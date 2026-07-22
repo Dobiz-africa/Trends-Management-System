@@ -4178,6 +4178,25 @@ function loginSuccess(){
   });
 }
 
+function switchRole(role){
+  if(!window.DEVELOPER_MODE) return; // safety: only is_admin accounts can call this
+
+  CU = role;
+  document.getElementById('sbRn').textContent = RN[CU] + ' (viewing as ' + role + ')';
+
+  const show = id => {const e = document.getElementById(id); if(e) e.style.display = 'flex';};
+  const hide = id => {const e = document.getElementById(id); if(e) e.style.display = 'none';};
+  ['n-inbox','n-claims','n-rates','n-actlog','n-jobdetail'].forEach(hide);
+
+  if(CU === 'admin'){show('n-inbox'); show('n-rates'); show('n-actlog');}
+  if(CU === 'finance'){show('n-inbox'); show('n-claims');}
+  if(CU === 'md'){show('n-actlog'); show('n-jobs'); show('n-claims');}
+  if(CU === 'linesman'){show('n-inbox');}
+
+  nav('dashboard');
+  renderNotifs();
+}
+
 async function doLogout(){
   const loadOv = document.getElementById('loadOverlay');
   if(loadOv) loadOv.style.display = 'flex';
