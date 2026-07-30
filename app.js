@@ -288,7 +288,7 @@ function clearWOForm(){
 
 /* ═══════════════════════════════════════
    RATES DATABASE
-   Full 1,103 real BPC DSW rates (551 Phase 46 + 552 Phase 47) now live in
+   Full 1,680 real BPC DSW rates (551 Phase 46 + 552 Phase 47 + 577 Phase 48) now live in
    rates.js, which loads BEFORE this script and defines the global RATES_SEED.
    (Replaces the inline seed array from the original single-file build.)
 ═══════════════════════════════════════ */
@@ -2462,7 +2462,7 @@ function renderRates(q=''){
       <span class="tag">${r.u}</span>
       <span class="mono">${P(r.r)}</span>
       <span class="tag">${r.c}</span>
-      <span class="badge ${r.phase==='46'?'b-bl':'b-am'}">Ph ${r.phase}</span>
+      <span class="badge ${r.phase==='46'?'b-bl':r.phase==='47'?'b-am':'b-gn'}">Ph ${r.phase}</span>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
         <input type="checkbox" ${r.on?'checked':''} style="accent-color:var(--am);cursor:pointer;width:14px;height:14px" onchange="toggleRate('${r.id}',this.checked)">
         <span class="badge ${r.on?'b-gn':'b-gy'}">${r.on?'Active':'Off'}</span>
@@ -2512,7 +2512,7 @@ function buildDoc(docType,job){
 function docVO1(job){
   const t=jTotal(job,'vo1');
   const canEdit=CU==='admin'&&job.stage==='wo_received';
-  const phaseOpts=['46','47'].map(p=>`<option value="${p}" ${(job.vo1.phase||job.phase||'47')===p?'selected':''}'>Phase ${p}</option>`).join('');
+  const phaseOpts=['46','47','48'].map(p=>`<option value="${p}" ${(job.vo1.phase||job.phase||'47')===p?'selected':''}'>Phase ${p}</option>`).join('');
   const rows=job.vo1.items.map((it,i)=>`<tr>
     <td class="c">${i+1}</td>
     <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
@@ -2548,7 +2548,7 @@ function docVO1(job){
     <tr><td class="lbl">Wayleave Approval :</td><td>BPC</td><td class="lbl">Date Wayleave Available :</td><td><input class="ef ef-b" value="Not Required" style="width:98%"></td></tr>
   </table><hr>
   <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Details of BPC &nbsp; W/O No. : &nbsp; ${job.wo}</div>
-  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1 — Phase <select id="vo1phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt" onchange="DB.jobs['${job.wo}'].vo1.phase=this.value;toast('VO1 Phase updated to '+this.value)"><option value="46" ${(job.vo1.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo1.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option></select></div>
+  <div style="font-weight:bold;font-size:9pt;margin:4px 0">VO1 — Phase <select id="vo1phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt" onchange="DB.jobs['${job.wo}'].vo1.phase=this.value;toast('VO1 Phase updated to '+this.value)"><option value="46" ${(job.vo1.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo1.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option><option value="48" ${(job.vo1.phase||job.phase||'47')==='48'?'selected':''}>Phase 48</option></select></div>
   <table class="boq">
     <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
     <tbody id="vo1rows${job.wo}">${rows}</tbody>
@@ -2677,7 +2677,7 @@ function docVO2(job){
       <td class="lbl">Location Factor:</td><td><input class="ef ef-b" value="${job.vo2.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.lf=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td></tr>
     <tr><td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||''}" placeholder="0" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td><td></td><td></td></tr>
   </table><hr>
-  <span class="p-grey">VO2 — Actual Quantities After Field Inspection — Phase <select id="vo2phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt;background:#d9d9d9;border:none" onchange="DB.jobs['${job.wo}'].vo2.phase=this.value;toast('VO2 Phase updated to '+this.value)"><option value="46" ${(job.vo2.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo2.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option></select></span>
+  <span class="p-grey">VO2 — Actual Quantities After Field Inspection — Phase <select id="vo2phase${job.wo}" class="ef ef-b" style="width:80px;font-size:8.5pt;background:#d9d9d9;border:none" onchange="DB.jobs['${job.wo}'].vo2.phase=this.value;toast('VO2 Phase updated to '+this.value)"><option value="46" ${(job.vo2.phase||job.phase||'47')==='46'?'selected':''}>Phase 46</option><option value="47" ${(job.vo2.phase||job.phase||'47')==='47'?'selected':''}>Phase 47</option><option value="48" ${(job.vo2.phase||job.phase||'47')==='48'?'selected':''}>Phase 48</option></select></span>
   <table class="boq">
     <thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:46px">QTY</th><th class="r" style="width:78px">UNIT COST</th><th class="r" style="width:90px">TOTAL (BWP)</th></tr></thead>
     <tbody>${rows}</tbody>
