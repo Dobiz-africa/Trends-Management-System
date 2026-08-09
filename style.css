@@ -94,7 +94,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 @keyframes lc-in{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
 .lc-brand{display:flex;align-items:center;gap:14px;margin-bottom:2rem}
 .lc-logo{width:48px;height:48px;flex-shrink:0;position:relative}
-.lc-logo svg{width:48px;height:48px;filter:drop-shadow(0 0 12px rgba(240,165,0,.5))}
+.lc-logo img{width:48px;height:48px;filter:drop-shadow(0 0 12px rgba(240,165,0,.5))}
 .lc-brand h1{font-family:var(--font-display);font-size:1rem;font-weight:700;color:var(--tx);line-height:1.2;letter-spacing:-.01em}
 .lc-brand p{font-size:.6rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.14em;margin-top:2px}
 .lc-divider{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
@@ -123,7 +123,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 .sb-hd{padding:1.1rem 1.2rem .9rem;border-bottom:1px solid var(--bd);background:linear-gradient(135deg,rgba(240,165,0,.04),transparent)}
 .sb-brand{display:flex;align-items:center;gap:11px}
 .sb-logo{width:34px;height:34px;flex-shrink:0}
-.sb-logo svg{width:34px;height:34px;filter:drop-shadow(0 0 6px rgba(240,165,0,.4))}
+.sb-logo img{width:34px;height:34px;filter:drop-shadow(0 0 6px rgba(240,165,0,.4))}
 .sb-brand h1{font-family:var(--font-display);font-size:.82rem;font-weight:700;color:var(--tx);line-height:1.2;letter-spacing:-.01em}
 .sb-brand p{font-size:.55rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em;margin-top:1px}
 
@@ -201,7 +201,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 .nbell svg{width:15px;height:15px}
 .npip{position:absolute;top:3px;right:3px;width:7px;height:7px;background:var(--rd);border-radius:50%;border:2px solid var(--sf);display:none}
 .npip.on{display:block}
-.npanel{position:absolute;top:calc(100% + 8px);right:0;width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:200;display:none}
+.npanel{position:absolute;top:calc(100% + 8px);right:0;width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:9999;display:none}
 .npanel.open{display:block}
 .npanel-hd{padding:.65rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
 .npanel-hd span{font-size:.75rem;font-weight:600;color:var(--tx)}
@@ -458,7 +458,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
           mask-image:radial-gradient(ellipse 75% 75% at 50% 50%,#000 25%,transparent 100%)}
 .lc{position:relative;z-index:2}
 .login-bg-lines{position:relative;z-index:1}
-.lc-logo svg{filter:drop-shadow(0 0 14px rgba(240,165,0,.45))}
+.lc-logo img{filter:drop-shadow(0 0 14px rgba(240,165,0,.45))}
 
 /* ============================================================
    WORKFLOW PIPELINE — horizontal stepped timeline
@@ -523,7 +523,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
   justify-content:space-between;padding:3rem 3.2rem;width:100%}
 .login-hero-brand{display:flex;align-items:center;gap:14px}
 .login-hero-brand .lc-logo{width:46px;height:46px;flex-shrink:0}
-.login-hero-brand .lc-logo svg{width:46px;height:46px;filter:drop-shadow(0 0 14px rgba(240,165,0,.5))}
+.login-hero-brand .lc-logo img{width:46px;height:46px;filter:drop-shadow(0 0 14px rgba(240,165,0,.5))}
 .login-hero-name{font-family:var(--font-display);font-weight:800;font-size:1.05rem;color:#fff;letter-spacing:-.01em}
 .login-hero-loc{font-size:.7rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.16em;margin-top:2px}
 
