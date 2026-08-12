@@ -3024,7 +3024,7 @@ function docPaymentCert(job, batchJobs){
   <div style="font-size:8pt;font-style:italic;margin:4px 5px" id="pc_words">(${numWords(net)})</div>
   <div style="margin:5px;font-size:8.5pt">Remarks: <input class="ef ef-b" value="" placeholder="________________________________________" style="width:82%"></div>
   <div style="margin:5px;font-size:8.5pt">________________________________________</div>
-  <div style="margin:5px 5px 8px;font-size:8pt">We hereby certify that the value of work shown is correct and recommend payment in full of the amount shown</div>
+  <div style="margin:5px 5px 8px;font-size:8.5pt">We hereby certify that the value of work shown is correct and recommend payment in full of the amount shown</div>
   <table style="width:100%;border-collapse:collapse;margin-top:10px">
     <tr>
       <td style="width:50%;vertical-align:top;padding-right:12px">
