@@ -2616,7 +2616,7 @@ function docWorksValuation(job){
   </table><hr>
   <div style="font-weight:bold;font-size:9pt;margin-bottom:4px">Details of BPC W/O No. : ${job.wo}</div>
 
-  <div style="font-weight:bold;font-size:9pt;margin:6px 0 3px;background:#d9d9d9;padding:2px 5px">VO1 — Phase ${phase}</div>
+  <div style="font-weight:bold;font-size:9pt;margin:6px 0 3px;background:#d9d9d9;padding:2px 5px">VO1</div>
   <table class="boq">
     <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
     <tbody>${vo1rows}</tbody>
@@ -2628,7 +2628,7 @@ function docWorksValuation(job){
     <tr style="background:#d9d9d9;font-weight:bold"><td style="text-align:right;padding:3px 5px;border-top:2px solid #000">VO1 TOTAL (BWP)</td><td style="text-align:right;padding:3px 5px;border-top:2px solid #000;border:2px solid #000">${t1.total.toFixed(2)}</td></tr>
   </table>
 
-  <div style="font-weight:bold;font-size:9pt;margin:10px 0 3px;background:#d9d9d9;padding:2px 5px">VO2 — Phase ${job.vo2.phase||phase}</div>
+  <div style="font-weight:bold;font-size:9pt;margin:10px 0 3px;background:#d9d9d9;padding:2px 5px">VO2</div>
   <table class="boq">
     <thead><tr><th class="c" style="width:28px">ITEM</th><th>DESCRIPTION</th><th class="c" style="width:44px">UNIT</th><th class="r" style="width:55px">QUANTITY</th><th class="r" style="width:80px">RATE/UNIT</th><th class="r" style="width:90px">VALUE</th></tr></thead>
     <tbody>${vo2rows||'<tr><td colspan="6" style="text-align:center;padding:6px;color:#999">No VO2 items</td></tr>'}</tbody>
