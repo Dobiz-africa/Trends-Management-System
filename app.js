@@ -3028,15 +3028,13 @@ function docPaymentCert(job, batchJobs){
   <table style="width:100%;border-collapse:collapse;margin-top:10px">
     <tr>
       <td style="width:50%;vertical-align:top;padding-right:12px">
-        <div style="font-size:8.5pt;margin-bottom:20px">Certificate Prepared by:</div>
-        <div style="border-bottom:1px solid #000;margin-bottom:3px;height:18px"></div>
-        <div style="font-size:8.5pt">Name: <input class="ef ef-b" value="" style="width:70%"></div>
+        <div style="font-size:8.5pt;margin-bottom:5px">Certificate Prepared by:</div>
+        <div style="border-bottom:1px solid #000;margin-bottom:15px;height:20px"></div>
         <div style="font-size:7.5pt;color:#555">for Botswana Power Corporation</div>
       </td>
       <td style="width:50%;vertical-align:top;padding-left:12px">
-        <div style="font-size:8.5pt;margin-bottom:20px">Certificate Approved by:</div>
-        <div style="border-bottom:1px solid #000;margin-bottom:3px;height:18px"></div>
-        <div style="font-size:8.5pt">Name: <input class="ef ef-b" value="" style="width:70%"></div>
+        <div style="font-size:8.5pt;margin-bottom:5px">Certificate Approved by:</div>
+        <div style="border-bottom:1px solid #000;margin-bottom:15px;height:20px"></div>
         <div style="font-size:7.5pt;color:#555">for Botswana Power Corporation</div>
       </td>
     </tr>
