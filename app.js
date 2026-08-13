@@ -2232,7 +2232,11 @@ function completeBatch(certNo){
     toast(`✅ Batch ${certNo} completed. Selection cleared. Ready for new batch.`);
   }
 }
-async function generateClaimDocs(){
+async function generateClaimDocs(certNo, mode='final'){
+  if(mode==='preview') {
+    toast('Preview mode: Review documents. Click Finalize to lock them.','gn');
+    return;
+  }
   if(!selClaimJobs.size){toast('Select at least one job','am');return;}
   const certNo=document.getElementById('certInput').value.trim()||`TES-0${String(DB.certSeq).padStart(2,'0')}`;
   const batchWOs=Array.from(selClaimJobs);
