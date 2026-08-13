@@ -1481,7 +1481,8 @@ function renderJobDetail(wo){
         }
         if(st.id==='field_received') {
           actBtns+=`<button class="btn btn-am btn-sm" onclick="showLinesmanDocumentsModal('${wo}')">📄 View Linesman Documents</button>`;
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo2')">Create VO2</button>`;
+          const hasGIS=job.gisCerts&&job.gisCerts.length>0&&job.gisDocs&&job.gisDocs.length>0;
+actBtns+=`<button class="btn btn-${hasGIS?'am':'gy'} btn-sm" onclick="${hasGIS?`openDocForAction('${wo}','vo2')`:`alert('Upload GIS Certificate & GIS Map first')`}" ${hasGIS?'':'disabled'}>Create VO2</button>`;
         }
         if(st.id==='vo2_created') actBtns+=`<button class="btn btn-am" onclick="createWorksValuation('${wo}')">Create Works Valuation</button>`;
         if(st.id==='works_valuation_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">Confirm & Proceed</button>`;
