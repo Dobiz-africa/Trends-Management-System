@@ -3508,7 +3508,7 @@ ${innerHtml}
    This is more reliable than any canvas-screenshot approach. */
 function openPrintWindow(innerHtml, title, docType){
   const html=buildPrintableHTML(innerHtml, title, docType);
-  const w=window.open('','_blank','width=900,height=700,menubar=yes,toolbar=yes,scrollbars=yes');
+  const w=window.open('','_blank','width=screen.width,height=screen.height,left=0,top=0,menubar=yes,toolbar=yes,scrollbars=yes');
   if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
   w.document.open(); w.document.write(html); w.document.close();
   // Small delay lets images/fonts settle before print dialog opens
