@@ -1504,6 +1504,15 @@ function renderJobDetail(wo){
       if((canEdit||CU==='finance')&&docKey) docKey.split(',').forEach(dk=>{actBtns+=`<span style="margin-left:2px">${scanWidget(wo,dk.trim(),true)}</span>`;});
     }
     const mdStepDocs={vo1_created:['vo1'],field_received:[...LN_DOC_KEYS],vo2_created:['vo2'],works_valuation_created:['works_valuation'],work_complete:['works_instruction'],gis_complete:['gis_report','gis_cert'],claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']};
+
+const docsRequireSignature=['works_instruction','works_valuation','payment_cert'];
+const docsAutoComplete=['annexure','invoice','gis_cert','list_of_jobs','bpc_spreadsheet'];
+
+function setDocumentStatus(docType, jobComplete=false) {
+  if(docsRequireSignature.includes(docType)) return 'PENDING_SIGNATURE';
+  if(docsAutoComplete.includes(docType) && jobComplete) return 'COMPLETE';
+  return 'GENERATED';
+}
     const docLabelMap={vo1:'VO1',vo2:'VO2',...LN_DOC_SHORT,works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'GIS Map',gis_cert:'GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
     const isDone=job.stage==='job_complete';
     const nextCard=isDone
