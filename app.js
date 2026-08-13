@@ -3228,22 +3228,22 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
     </colgroup>
     <thead>
       <tr style="background:#d9d9d9">
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Item No.</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">WO No.</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Project No.</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Meter No.</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Vendor Name</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Vendor No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Vendor Number</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Amount (BWP)</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">%</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">WO Date</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Phase</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Invoice No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Complete %</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Date</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Phase Description</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Invoice Number</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Location</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Start Date</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Completion</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Internal Responsible</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">External Responsible</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Planned Start Date</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Actual Completeness Date</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Internal Responsible Person</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">External Responsible Person</th>
       </tr>
     </thead>
     <tbody>
