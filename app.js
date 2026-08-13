@@ -927,7 +927,7 @@ function renderAdminDash(){
   document.getElementById('a-val').textContent=P(val);
 
   const taskIcons={wo_received:'📋',vo1_created:'📤',field_received:'📝',vo2_created:'👷',work_instruction_ready:'📄',work_complete:'📍',gis_notified:'📋',claim_docs_ready:'✅'};
-  const taskLabels={wo_received:'Create VO1 — Review uploaded WO',vo1_created:'Notify Linesman (external) — Record in system',field_received:'Create VO2 — field documents received from Linesman',vo2_created:'Prepare Works Instruction document',work_instruction_ready:'Send Works Instruction to Teams (external) — Record',work_complete:'Notify GIS Consultant (external)',claim_docs_ready:'Review Finance Docs — Record Job as Complete'};
+  const taskLabels={wo_received:'Create VO1 — Review uploaded WO',vo1_created:'Notify Linesman (external) — Record in system',field_received:'Create VO2 — field documents received from Linesman',vo2_created:'Works Valuation',work_complete:'Notify GIS Consultant (external)',claim_docs_ready:'Review Finance Docs — Record Job as Complete'};
   const taskBadges={wo_received:'b-rd',vo1_created:'b-am',field_received:'b-am',vo2_created:'b-am',work_instruction_ready:'b-am',work_complete:'b-am',gis_notified:'b-am',claim_docs_ready:'b-gn'};
   const tasksEl=document.getElementById('a-tasks');
   if(!needsAction.length){tasksEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--gn);font-size:.82rem">✓ No pending actions right now</div>';}
@@ -1020,7 +1020,7 @@ function renderMDDash(){
   document.getElementById('m-val').textContent=P(val);
 
   const MD_STEPS=[{sid:'vo1_created',dt:'vo1',lbl:'VO1'},{sid:'vo2_created',dt:'vo2',lbl:'VO2'},{sid:'works_valuation_created',dt:'works_valuation',lbl:'WV'},{sid:'work_instruction_ready',dt:'works_instruction',lbl:'WI'},{sid:'gis_complete',dt:'gis_report',lbl:'GIS'}];
-  const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Notifying Teams',teams_notified:'Teams On Site',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
+  const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
 
   function dpills(j){
     const saved=j.savedDocs||{},scans=j.scans||{};
@@ -1037,7 +1037,7 @@ function renderMDDash(){
     const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');
     const isDone=j.stage==='job_complete';
     const isReady=['gis_complete','claim_docs_ready'].includes(j.stage);
-    const isBusy=['teams_notified','gis_notified','work_complete'].includes(j.stage);
+    const isBusy=['gis_notified','work_complete'].includes(j.stage);
     const pct=stagePct(j.stage);
     const acc=isDone?'#1a8a56':isReady?'#1a50b0':isBusy?'#c47000':'#888';
     const accBg=isDone?'#E4F5EA':isReady?'#E4EEFB':isBusy?'#FAF0DB':'#ECEFF1';
@@ -1230,7 +1230,7 @@ function renderJobs(){
   document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
   const jobs=getFilteredJobs();
   if(!jobs.length){document.getElementById('jobsList').innerHTML='<div style="padding:2rem;text-align:center;color:var(--tx3)">No work orders yet. Click Add Work Order to begin.</div>';return;}
-  const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Notifying Teams',teams_notified:'Teams On Site',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
+  const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Creating VO2',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_complete:'GIS Notification',gis_notified:'GIS On Site',gis_complete:'Awaiting Claim Docs',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
   const GRADS=[
     'linear-gradient(145deg,#0a4a28 0%,#1a8a56 100%)',
     'linear-gradient(145deg,#6b3600 0%,#c47000 100%)',
@@ -1246,7 +1246,7 @@ function renderJobs(){
     const pct=stagePct(j.stage);
     const isDone=j.stage==='job_complete';
     const isReady=['gis_complete','claim_docs_ready'].includes(j.stage);
-    const isBusy=['teams_notified','gis_notified','work_complete'].includes(j.stage);
+    const isBusy=['gis_notified','work_complete'].includes(j.stage);
     const bl=isDone?'Complete':isReady?'Ready to Claim':isBusy?'In Progress':'Active';
     return`<div class="wo-sc" style="background:${GRADS[idx%GRADS.length]}" onclick="openJobDetail('${j.wo}')">
       <span class="wo-sc-arrow">↗</span>
