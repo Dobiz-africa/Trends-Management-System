@@ -3704,6 +3704,20 @@ function addVO2Row(wo){
   const newInput=document.getElementById(`vo2d${wo}${newIdx}`);
   if(newInput)setTimeout(()=>newInput.focus(),10);
 }
+
+// DELETE ROW FUNCTIONS
+function deleteVO1Row(wo,idx){
+  DB.jobs[wo].vo1.items.splice(idx,1);
+  saveDB();
+  recalcVO1(wo);
+}
+
+function deleteVO2Row(wo,idx){
+  DB.jobs[wo].vo2.items.splice(idx,1);
+  saveDB();
+  recalcVO2(wo);
+}
+
 async function createWorksValuation(wo){
   const job=DB.jobs[wo];
   if(!job||!job.vo2.items.length){toast('VO2 must be created first','am');return;}
