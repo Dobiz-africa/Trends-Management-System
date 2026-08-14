@@ -306,15 +306,11 @@
             <span id="themeLabel">Dark</span>
           </button>
           <div class="notif-wrap">
-  <button class="nbell" onclick="toggleNotif()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-    <div class="npip" id="npip"></div>
-  </button>
-  <div class="npanel" id="npanel">
-    <div class="npanel-hd"><span>Notifications</span><button onclick="markAllRead()">Mark all read</button></div>
-    <div id="nlist"><div class="n-empty">No notifications</div></div>
-  </div>
-</div>
+            <button class="nbell" onclick="toggleNotif()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              <div class="npip" id="npip"></div>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -696,6 +692,12 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- NOTIFICATION PANEL - MOVED OUTSIDE MC TO AVOID OVERFLOW:HIDDEN CLIPPING -->
+<div class="npanel" id="npanel">
+  <div class="npanel-hd"><span>Notifications</span><button onclick="markAllRead()">Mark all read</button></div>
+  <div id="nlist"><div class="n-empty">No notifications</div></div>
 </div>
 
 <!-- Rates database (defines global RATES_SEED) loads before app logic -->
