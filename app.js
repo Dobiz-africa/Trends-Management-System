@@ -2530,6 +2530,7 @@ function docVO1(job){
     <td class="r"><input class="ef ef-b" id="vo1q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
     <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
     <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO1Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
   </tr>`).join('');
   const custPayDate=job.paymentDate||job.date||job.actions.wo_received?.date||'';
   return`<div class="paper">
@@ -2676,6 +2677,7 @@ function docVO2(job){
     <td class="r"><input class="ef ef-b" id="vo2q${job.wo}${i}" value="${it.q||0}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].q=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
     <td class="r"><input class="ef ef-b" id="vo2r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].r=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
     <td class="r" id="vo2v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO2Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
   </tr>`).join('');
   return`<div class="paper">
   ${lh('Variation Order')}
@@ -2973,6 +2975,68 @@ function docAnnexure(job, batchJobs){
 
 
 /* ── PAYMENT CERTIFICATE (exact match to CLAIM xlsx PAYMENT CERTIFICATE sheet) ── */
+/* DELETE ROW FUNCTIONS */
+function deleteVO1Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
+  if(DB.jobs[wo].vo1.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo1.items.splice(index, 1);
+    refreshDoc('vo1', wo);
+    recalcVO1(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
+function deleteVO2Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
+  if(DB.jobs[wo].vo2.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo2.items.splice(index, 1);
+    refreshDoc('vo2', wo);
+    recalcVO2(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
+/* DELETE ROW FUNCTIONS */
+function deleteVO1Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
+  if(DB.jobs[wo].vo1.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo1.items.splice(index, 1);
+    refreshDoc('vo1', wo);
+    recalcVO1(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
+function deleteVO2Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
+  if(DB.jobs[wo].vo2.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo2.items.splice(index, 1);
+    refreshDoc('vo2', wo);
+    recalcVO2(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
 function recalcPC(){
   try{
     const g=id=>parseFloat((document.getElementById(id)||{}).value||'0')||0;
