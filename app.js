@@ -1623,6 +1623,7 @@ function openDocForAction(wo,docType){
   const job=wo?DB.jobs[wo]:null;
   const titles={vo1:'Works Valuation (VO1)'+(wo?' · WO '+wo:''),vo2:'Variation Order (VO2)'+(wo?' · WO '+wo:''),works_valuation:'Works Valuation Document'+(wo?' · WO '+wo:''),field_report:'Linesman Field Findings'+(wo?' · WO '+wo:''),works_instruction:'Works Instruction'+(wo?' · WO '+wo:''),gis_report:'GIS Map'+(wo?' · WO '+wo:''),bpc_wo:'BPC Work Order'+(wo?' · WO '+wo:''),annexure:'Annexure to Payment Certificate'+(wo?' · WO '+wo:''),payment_cert:'Payment Certificate'+(wo?' · WO '+wo:''),invoice:'Tax Invoice'+(wo?' · WO '+wo:''),list_of_jobs:'List of Jobs Done — Trends Engineering Services',bpc_spreadsheet:'BPC Spreadsheet — Batch Claim Document'};
   document.getElementById('docModalTitle').textContent=titles[docType]||docType;
+  CURRENT_DOC_TYPE=docType; // ← ADD THIS LINE to ensure docType is tracked
 
   // For claim docs, try to find the Finance-saved version first
   const claimDocTypes=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
@@ -4063,6 +4064,7 @@ function printDocFS(){
   }
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
+  // IMPORTANT: Pass CURRENT_DOC_TYPE so buildPrintableHTML can detect landscape types (list_of_jobs, bpc_spreadsheet)
   openPrintWindow(innerHtml, title, CURRENT_DOC_TYPE);
 }
 
