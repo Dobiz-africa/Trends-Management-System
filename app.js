@@ -2984,75 +2984,19 @@ function deleteVO1Row(wo, index){
   }
   if(confirm('Delete this row?')){
     DB.jobs[wo].vo1.items.splice(index, 1);
-    refreshDoc('vo1', wo);
-    recalcVO1(wo);
-    saveDB();
-    toast('Row deleted','gn');
-  }
-}
-
-function deleteVO2Row(wo, index){
-  if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
-  if(DB.jobs[wo].vo2.items.length <= 1){
-    toast('Cannot delete the last row','am');
-    return;
-  }
-  if(confirm('Delete this row?')){
-    DB.jobs[wo].vo2.items.splice(index, 1);
-    refreshDoc('vo2', wo);
-    recalcVO2(wo);
-    saveDB();
-    toast('Row deleted','gn');
-  }
-}
-
-/* DELETE ROW FUNCTIONS */
-function deleteVO1Row(wo, index){
-  if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
-  if(DB.jobs[wo].vo1.items.length <= 1){
-    toast('Cannot delete the last row','am');
-    return;
-  }
-  if(confirm('Delete this row?')){
-    DB.jobs[wo].vo1.items.splice(index, 1);
-    refreshDoc('vo1', wo);
-    recalcVO1(wo);
-    saveDB();
-    toast('Row deleted','gn');
-  }
-}
-
-function deleteVO2Row(wo, index){
-  if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
-  if(DB.jobs[wo].vo2.items.length <= 1){
-    toast('Cannot delete the last row','am');
-    return;
-  }
-  if(confirm('Delete this row?')){
-    DB.jobs[wo].vo2.items.splice(index, 1);
-    refreshDoc('vo2', wo);
-    recalcVO2(wo);
-    saveDB();
-    toast('Row deleted','gn');
-  }
-}
-
-/* DELETE ROW FUNCTIONS */
-function deleteVO1Row(wo, index){
-  if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
-  if(DB.jobs[wo].vo1.items.length <= 1){
-    toast('Cannot delete the last row','am');
-    return;
-  }
-  if(confirm('Delete this row?')){
-    // Remove the row from DOM immediately
+    // Re-render the entire table to make the row disappear
+    const job = DB.jobs[wo];
+    const rows = job.vo1.items.map((it, i) => `<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo1u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo1q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO1Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
+  </tr>`).join('');
     const tbody = document.getElementById('vo1rows' + wo);
-    if(tbody){
-      const rows = tbody.querySelectorAll('tr');
-      if(rows[index]) rows[index].remove();
-    }
-    // Remove from database
-    DB.jobs[wo].vo1.items.splice(index, 1);
+    if(tbody) tbody.innerHTML = rows;
     recalcVO1(wo);
     saveDB();
     toast('Row deleted','gn');
@@ -3066,14 +3010,129 @@ function deleteVO2Row(wo, index){
     return;
   }
   if(confirm('Delete this row?')){
-    // Remove the row from DOM immediately
-    const tbody = document.querySelector('.boq tbody');
-    if(tbody){
-      const rows = tbody.querySelectorAll('tr');
-      if(rows[index]) rows[index].remove();
-    }
-    // Remove from database
     DB.jobs[wo].vo2.items.splice(index, 1);
+    // Re-render the entire table to make the row disappear
+    const job = DB.jobs[wo];
+    const rows = job.vo2.items.map((it, i) => `<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo2',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo2u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo2q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].q=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo2r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].r=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r ef-c" id="vo2v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO2Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
+  </tr>`).join('');
+    const tbody = document.querySelector('.boq tbody');
+    if(tbody) tbody.innerHTML = rows;
+    recalcVO2(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
+/* DELETE ROW FUNCTIONS */
+function deleteVO1Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
+  if(DB.jobs[wo].vo1.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo1.items.splice(index, 1);
+    // Re-render the entire table to make the row disappear
+    const job = DB.jobs[wo];
+    const rows = job.vo1.items.map((it, i) => `<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo1u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo1q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO1Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
+  </tr>`).join('');
+    const tbody = document.getElementById('vo1rows' + wo);
+    if(tbody) tbody.innerHTML = rows;
+    recalcVO1(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
+function deleteVO2Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
+  if(DB.jobs[wo].vo2.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo2.items.splice(index, 1);
+    // Re-render the entire table to make the row disappear
+    const job = DB.jobs[wo];
+    const rows = job.vo2.items.map((it, i) => `<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo2',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo2u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo2q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].q=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo2r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].r=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r ef-c" id="vo2v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO2Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
+  </tr>`).join('');
+    const tbody = document.querySelector('.boq tbody');
+    if(tbody) tbody.innerHTML = rows;
+    recalcVO2(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
+function deleteVO1Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
+  if(DB.jobs[wo].vo1.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo1.items.splice(index, 1);
+    // Re-render the entire table to make the row disappear
+    const job = DB.jobs[wo];
+    const rows = job.vo1.items.map((it, i) => `<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo1u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo1q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO1Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
+  </tr>`).join('');
+    const tbody = document.getElementById('vo1rows' + wo);
+    if(tbody) tbody.innerHTML = rows;
+    recalcVO1(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
+function deleteVO2Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
+  if(DB.jobs[wo].vo2.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo2.items.splice(index, 1);
+    // Re-render the entire table to make the row disappear
+    const job = DB.jobs[wo];
+    const rows = job.vo2.items.map((it, i) => `<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo2',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo2u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo2q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].q=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo2r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].r=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r ef-c" id="vo2v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO2Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
+  </tr>`).join('');
+    const tbody = document.querySelector('.boq tbody');
+    if(tbody) tbody.innerHTML = rows;
     recalcVO2(wo);
     saveDB();
     toast('Row deleted','gn');
@@ -3823,15 +3882,57 @@ function addVO2Row(wo){
 
 // DELETE ROW FUNCTIONS
 function deleteVO1Row(wo,idx){
-  DB.jobs[wo].vo1.items.splice(idx,1);
-  saveDB();
-  recalcVO1(wo);
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
+  if(DB.jobs[wo].vo1.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo1.items.splice(idx, 1);
+    // Re-render the entire table to make the row disappear
+    const job = DB.jobs[wo];
+    const rows = job.vo1.items.map((it, i) => `<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo1',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo1u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo1q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
+    <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO1Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
+  </tr>`).join('');
+    const tbody = document.getElementById('vo1rows' + wo);
+    if(tbody) tbody.innerHTML = rows;
+    recalcVO1(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
 }
 
 function deleteVO2Row(wo,idx){
-  DB.jobs[wo].vo2.items.splice(idx,1);
-  saveDB();
-  recalcVO2(wo);
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
+  if(DB.jobs[wo].vo2.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    DB.jobs[wo].vo2.items.splice(idx, 1);
+    // Re-render the entire table to make the row disappear
+    const job = DB.jobs[wo];
+    const rows = job.vo2.items.map((it, i) => `<tr>
+    <td class="c">${i+1}</td>
+    <td style="min-width:200px">${acInput(job.wo,'vo2',i)}</td>
+    <td class="c"><input class="ef ef-b" id="vo2u${job.wo}${i}" value="${it.u||'Ea'}" style="width:38px" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].u=this.value"></td>
+    <td class="r"><input class="ef ef-b" id="vo2q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].q=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r"><input class="ef ef-b" id="vo2r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].r=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
+    <td class="r ef-c" id="vo2v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO2Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
+  </tr>`).join('');
+    const tbody = document.querySelector('.boq tbody');
+    if(tbody) tbody.innerHTML = rows;
+    recalcVO2(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
 }
 
 async function createWorksValuation(wo){
