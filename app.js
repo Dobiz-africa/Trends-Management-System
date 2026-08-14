@@ -2014,27 +2014,38 @@ function showLinesmanDocumentsModal(wo) {
   const job = DB.jobs[wo];
   if (!job) return;
 
+  const mergedKey = 'ln_merged_pdf';
+  const mergedPDF = job.scans && job.scans[mergedKey];
   const ct = linesmanDocsUploadedCount(job);
+  
   document.getElementById('docModalTitle').textContent = `📋 Linesman Field Documents — WO ${wo}`;
   document.getElementById('docModalBody').innerHTML = `
     <div style="padding:1rem">
       <div style="margin-bottom:1rem;font-size:.9rem;color:var(--tx2)">
-        ${ct} of ${LINESMAN_DOCS.length} documents uploaded by the Linesman:
+        ${ct > 0 ? `✅ All ${LINESMAN_DOCS.length} documents uploaded by the Linesman` : `⏳ Awaiting documents from Linesman`}
       </div>
-      ${LINESMAN_DOCS.map(d=>{
-        const key='ln_'+d.id;
-        const s=job.scans && job.scans[key];
-        return `<div style="display:flex;gap:10px;padding:.75rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem">
-          <span style="font-size:1.3rem">${d.icon}</span>
+      ${mergedPDF ? `
+        <div style="display:flex;gap:10px;padding:1rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem;flex-direction:column;align-items:flex-start">
+          <span style="font-size:1.8rem;margin-bottom:.5rem">📄</span>
           <span style="flex:1">
-            <div style="font-weight:600;font-size:.88rem">${d.label}</div>
-            ${s?`<div style="font-size:.75rem;color:var(--tx3)">${s.filename} · ${fd(s.uploadedAt)}</div>`:`<div style="font-size:.75rem;color:var(--tx3)">Not yet uploaded</div>`}
+            <div style="font-weight:600;font-size:.95rem">Merged PDF - All 6 Documents</div>
+            <div style="font-size:.75rem;color:var(--tx3);margin:.25rem 0">${mergedPDF.filename}</div>
+            <div style="font-size:.72rem;color:var(--tx3)">Uploaded ${fd(mergedPDF.uploadedAt)}</div>
+            <div style="font-size:.75rem;color:var(--tx3);margin-top:.5rem;line-height:1.4">
+              Contains: Handover Form · E21 Test Sheet · E22 Checklist · E23 Test Sheet · As-Built Drawing · Inspection Certificate
+            </div>
           </span>
-          ${s?`<button class="btn btn-gy btn-sm" onclick="viewScanFile('${wo}','${key}')">👁 View</button>
-               <button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${key}')">⬇ Download</button>`
-             :`<span class="badge b-gy">Pending</span>`}
-        </div>`;
-      }).join('')}
+          <div style="display:flex;gap:6px;margin-top:.75rem;align-self:flex-end">
+            <button class="btn btn-gy btn-sm" onclick="viewScanFile('${wo}','${mergedKey}')">👁 View</button>
+            <button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${mergedKey}')">⬇ Download</button>
+          </div>
+        </div>
+      ` : `
+        <div style="padding:1rem;background:var(--sf2);border-radius:var(--rs);text-align:center;color:var(--tx3)">
+          <div style="font-size:2rem;margin-bottom:.5rem">⏳</div>
+          <div style="font-size:.9rem">Waiting for Linesman to upload merged PDF with all 6 documents</div>
+        </div>
+      `}
     </div>
   `;
   document.getElementById('docModalFoot').innerHTML = `
