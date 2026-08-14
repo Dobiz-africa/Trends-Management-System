@@ -195,18 +195,22 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
   color: #b87200 !important;
 }
 /* NOTIF */
-.notif-wrap{position:relative;overflow:visible}
+.notif-wrap{position:relative}
 .nbell{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.3rem .52rem;cursor:pointer;display:flex;align-items:center;color:var(--tx2);transition:.12s;position:relative}
 .nbell:hover{border-color:var(--am);color:var(--am)}
 .nbell svg{width:15px;height:15px}
 .npip{position:absolute;top:3px;right:3px;width:7px;height:7px;background:var(--rd);border-radius:50%;border:2px solid var(--sf);display:none}
 .npip.on{display:block}
-.npanel{position:fixed;top:65px;right:20px;width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:99999;display:none;max-height:70vh;overflow-y:auto}
-.npanel.open{display:block}
-.npanel-hd{padding:.65rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.npanel{position:absolute;top:calc(100% + 8px);right:0;width:340px;max-height:80vh;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:9999;display:none;overflow:hidden;display:flex;flex-direction:column}
+.npanel.open{display:flex}
+.npanel-hd{padding:.65rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .npanel-hd span{font-size:.75rem;font-weight:600;color:var(--tx)}
 .npanel-hd button{font-size:.65rem;color:var(--tx3);background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif}
 .npanel-hd button:hover{color:var(--am)}
+#nlist{overflow-y:auto;flex:1;max-height:60vh;padding:0;scrollbar-width:thin}
+#nlist::-webkit-scrollbar{width:4px}
+#nlist::-webkit-scrollbar-track{background:transparent}
+#nlist::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
 .nitem{padding:.6rem 1rem;border-bottom:1px solid var(--bd);cursor:pointer;transition:.1s;display:flex;gap:8px}
 .nitem:last-child{border-bottom:none}
 .nitem:hover{background:var(--sf2)}
@@ -790,4 +794,4 @@ body,button,input,select,textarea{font-family:'Inter',system-ui,sans-serif;-webk
   h1{font-size:1.5rem}
   h2{font-size:1.2rem}
   h3{font-size:1rem}
-} 
+}
