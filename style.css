@@ -195,7 +195,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
   color: #b87200 !important;
 }
 /* NOTIF */
-.notif-wrap{position:relative}
+.notif-wrap{position:relative;overflow:visible}
 .nbell{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.3rem .52rem;cursor:pointer;display:flex;align-items:center;color:var(--tx2);transition:.12s;position:relative}
 .nbell:hover{border-color:var(--am);color:var(--am)}
 .nbell svg{width:15px;height:15px}
