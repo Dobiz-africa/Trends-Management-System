@@ -156,7 +156,7 @@
 
 <!-- ADD WORK ORDER MODAL -->
 <div id="addWOModal" class="overlay">
-  <div class="modal" style="width:640px">
+  <div class="modal" style="width:98vw;max-width:900px;height:90vh;max-height:90vh;overflow-y:auto">
     <h3>Add New Work Order</h3>
     <p>Upload the BPC Work Order PDF for auto-population, or enter details manually</p>
     
@@ -211,7 +211,7 @@
 
 <!-- RECORD ACTION MODAL -->
 <div id="recordModal" class="overlay">
-  <div class="modal">
+  <div class="modal" style="width:98vw;max-width:600px;height:auto">
     <h3 id="rec-title">Record Action</h3>
     <p id="rec-desc">Record this external step</p>
     <div class="fg"><label>Date *</label><input type="date" id="rec-date"></div>
@@ -226,7 +226,7 @@
 
 <!-- VIEW DOCUMENT MODAL (paper doc viewer) -->
 <div id="docModal" class="overlay" onclick="if(event.target===this){closeModal('docModal');refreshDetail();}">
-  <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;width:min(860px,95vw);max-height:90vh;display:flex;flex-direction:column">
+  <div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;width:98vw;height:95vh;max-width:1400px;display:flex;flex-direction:column">
     <div style="padding:.8rem 1.25rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <span style="font-size:.9rem;font-weight:600;color:var(--tx)" id="docModalTitle">Document</span>
       <div style="display:flex;gap:7px;align-items:center">
