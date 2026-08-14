@@ -4041,6 +4041,50 @@ function openDocFullscreen(){
   const title=document.getElementById('docModalTitle')?.textContent||'Document';
   if(!body)return;
   document.getElementById('docFSTitle').textContent=title;
+  const fsBody=document.getElementById('docFSBody');
+  fsBody.innerHTML=body.innerHTML;
+  document.getElementById('docFullscreenModal').style.display='flex';
+  document.body.style.overflow='hidden';
+  // Scale content to fill screen
+  setTimeout(()=>{scaleDocToFit();},100);
+}
+
+function closeDocFullscreen(){
+  document.getElementById('docFullscreenModal').style.display='none';
+  document.body.style.overflow='auto';
+}
+
+function printDocFS(){
+  const body=document.getElementById('docFSBody');
+  if(!body)return;
+  const title=document.getElementById('docFSTitle')?.textContent||'Document';
+  const innerHtml=serializeToHTML(body);
+  openPrintWindow(innerHtml,title,CURRENT_DOC_TYPE);
+}
+
+function scaleDocToFit(){
+  const fsBody=document.getElementById('docFSBody');
+  const modal=document.getElementById('docFullscreenModal');
+  if(!fsBody||!modal)return;
+  const content=fsBody.querySelector('*');
+  if(!content)return;
+  const availHeight=window.innerHeight-80;
+  const contentHeight=content.scrollHeight;
+  if(contentHeight>0){
+    const scale=Math.min(availHeight/contentHeight,2);
+    if(scale>0.8){
+      content.style.transform=`scale(${scale})`;
+      content.style.transformOrigin='top center';
+    }
+  }
+}
+
+/* FULLSCREEN DOCUMENT VIEWER */
+function openDocFullscreen(){
+  const body=document.getElementById('docModalBody');
+  const title=document.getElementById('docModalTitle')?.textContent||'Document';
+  if(!body)return;
+  document.getElementById('docFSTitle').textContent=title;
   document.getElementById('docFSBody').innerHTML=body.innerHTML;
   document.getElementById('docFullscreenModal').style.display='flex';
   document.body.style.overflow='hidden';
