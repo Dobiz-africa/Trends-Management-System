@@ -2906,7 +2906,6 @@ function docAnnexure(job, batchJobs){
       </td>
     </tr>
   </table>
-  <div style="border-top:2.5px solid #e07b00;margin:4px 0 2px"></div>
   <div style="border-top:1px solid #bbb;margin:3px 0 8px"></div>
   <div style="text-align:center;font-weight:bold;font-size:11pt;margin-bottom:10px">ANNEXURE TO PAYMENT CERTIFICATE</div>
   <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8px">
@@ -3072,7 +3071,6 @@ function docInvoice(job, batchJobs){
       </td>
     </tr>
   </table>
-  <div style="border-top:2.5px solid #e07b00;margin:4px 0 2px"></div>
   <div style="border-top:1px solid #bbb;margin:3px 0 8px"></div>
   <div style="background:#1a3a8f;padding:7px 12px;margin-bottom:10px;text-align:center">
     <span style="color:#fff;font-size:13pt;font-weight:bold;font-family:Arial,sans-serif;letter-spacing:1px">INVOICE</span>
