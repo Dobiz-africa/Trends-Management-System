@@ -2530,7 +2530,7 @@ function docVO1(job){
     <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
     <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
   </tr>`).join('');
-  const custPayDate=job.date||job.actions.wo_received?.date||'';
+  const custPayDate=job.paymentDate||job.date||job.actions.wo_received?.date||'';
   return`<div class="paper">
   <table style="width:100%;border-collapse:collapse;margin-bottom:6px">
     <tr>
@@ -2577,7 +2577,7 @@ function docVO1(job){
 function docWorksValuation(job){
   const t1=jTotal(job,'vo1');
   const t2=jTotal(job,'vo2');
-  const custPayDate=job.actions.wo_received?.date||job.date||'';
+  const custPayDate=job.paymentDate||job.actions.wo_received?.date||job.date||'';
   const phase=job.vo1.phase||job.phase||'47';
 
   const vo1rows=job.vo1.items.map((it,i)=>`<tr>
@@ -2667,7 +2667,7 @@ function docWorksValuation(job){
 function docVO2(job){
   if(!(job.vo2&&job.vo2.items&&job.vo2.items.length)) job.vo2.items=(job.vo1&&job.vo1.items||[]).map(i=>({...i}));
   const t=jTotal(job,'vo2'), t1=jTotal(job,'vo1');
-  const custPayDate=job.date||job.actions.wo_received?.date||'';
+  const custPayDate=job.paymentDate||job.date||job.actions.wo_received?.date||'';
   const rows=job.vo2.items.map((it,i)=>`<tr>
     <td>${i+1}.0</td>
     <td style="min-width:190px"><div class="ac-wrap"><input class="ac-in" id="vo2d${job.wo}${i}" value="${(it.d||'').replace(/"/g,'&quot;')}" placeholder="Search rates..." oninput="acS('${job.wo}','vo2',${i},this.value)" onfocus="acS('${job.wo}','vo2',${i},this.value)" onblur="setTimeout(()=>acC('acd-vo2-${job.wo}-${i}'),180)" onkeydown="acK(event,'${job.wo}','vo2',${i})"><div class="ac-dd" id="acd-vo2-${job.wo}-${i}" style="display:none"></div></div></td>
@@ -2762,7 +2762,7 @@ function docWorksInstruction(job){
     <tr><td class="lbl">Project Title :</td><td>${ef('wi_title',job.cust,'98%')}</td>
       <td class="lbl" style="white-space:nowrap">Location Factor :</td><td>${ef('wi_lf',String(job.vo1.lf||29.25),'50px')}</td></tr>
     <tr><td class="lbl">Location :</td><td>${ef('wi_loc',job.loc,'98%')}</td>
-     <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td>${ef('wi_custdate',job.actions.wo_received?.date||job.date||'','110px','date')}</td></tr>
+     <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td>${ef('wi_custdate',job.paymentDate||job.actions.wo_received?.date||job.date||'','110px','date')}</td></tr>
     <tr><td class="lbl">Drawings :</td><td>${ef('wi_drawings','Attached','80px')}</td>
       <td class="lbl" style="white-space:nowrap">Date Wayleave Available :</td><td>${ef('wi_wayleave','','110px')}</td></tr>
     <tr><td class="lbl">Wayleave Approval :</td><td>${ef('wi_wayleaveapproval','BPC','60px')}</td><td></td><td></td></tr>
