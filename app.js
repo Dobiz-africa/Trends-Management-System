@@ -3037,6 +3037,49 @@ function deleteVO2Row(wo, index){
   }
 }
 
+/* DELETE ROW FUNCTIONS */
+function deleteVO1Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
+  if(DB.jobs[wo].vo1.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    // Remove the row from DOM immediately
+    const tbody = document.getElementById('vo1rows' + wo);
+    if(tbody){
+      const rows = tbody.querySelectorAll('tr');
+      if(rows[index]) rows[index].remove();
+    }
+    // Remove from database
+    DB.jobs[wo].vo1.items.splice(index, 1);
+    recalcVO1(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
+function deleteVO2Row(wo, index){
+  if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
+  if(DB.jobs[wo].vo2.items.length <= 1){
+    toast('Cannot delete the last row','am');
+    return;
+  }
+  if(confirm('Delete this row?')){
+    // Remove the row from DOM immediately
+    const tbody = document.querySelector('.boq tbody');
+    if(tbody){
+      const rows = tbody.querySelectorAll('tr');
+      if(rows[index]) rows[index].remove();
+    }
+    // Remove from database
+    DB.jobs[wo].vo2.items.splice(index, 1);
+    recalcVO2(wo);
+    saveDB();
+    toast('Row deleted','gn');
+  }
+}
+
 function recalcPC(){
   try{
     const g=id=>parseFloat((document.getElementById(id)||{}).value||'0')||0;
@@ -3747,6 +3790,7 @@ function addVO1Row(wo){
     <td class="r"><input class="ef ef-b" id="vo1q${job.wo}${i}" value="${it.q||1}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].q=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
     <td class="r"><input class="ef ef-b" id="vo1r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo1.items[${i}].r=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td>
     <td class="r ef-c" id="vo1v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO1Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
   </tr>`).join('');
   const tbody=document.getElementById(`vo1rows${wo}`);
   if(tbody)tbody.innerHTML=rows;
@@ -3767,6 +3811,7 @@ function addVO2Row(wo){
     <td class="r"><input class="ef ef-b" id="vo2q${job.wo}${i}" value="${it.q||0}" style="width:38px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].q=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
     <td class="r"><input class="ef ef-b" id="vo2r${job.wo}${i}" value="${(it.r||0).toFixed(2)}" style="width:76px;text-align:right" onchange="DB.jobs['${job.wo}'].vo2.items[${i}].r=parseFloat(this.value)||0;recalcVO2('${job.wo}')"></td>
     <td class="r" id="vo2v${job.wo}${i}">${((it.q||0)*(it.r||0)).toFixed(2)}</td>
+    <td class="c" style="width:50px"><button onclick="deleteVO2Row('${job.wo}',${i})" style="font-size:7pt;padding:2px 6px;cursor:pointer;background:#ff6b6b;color:#fff;border:none;border-radius:3px">Delete</button></td>
   </tr>`).join('');
   const tbody=document.querySelector(`table.boq tbody`);
   if(tbody)tbody.innerHTML=rows;
