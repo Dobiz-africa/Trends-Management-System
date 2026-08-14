@@ -86,11 +86,13 @@ function linesmanDocsUploadedCount(job){
   // mode) OR a Supabase Storage url/storagePath (normal online mode) — the
   // old check only accepted dataUrl, which would have hidden any document
   // uploaded straight to Storage.
+  // UPDATED: Also recognize merged PDF uploads (isMergedReference flag)
   return LINESMAN_DOCS.filter(d => {
     if(!job || !job.scans) return false;
     const scan = job.scans['ln_' + d.id];
     if(!scan || !scan.filename || !scan.uploadedAt) return false;
-    return !!(scan.dataUrl || (scan.storagePath && scan.url));
+    // Accept traditional uploads (dataUrl or storagePath+url) OR merged references
+    return !!(scan.isMergedReference || scan.dataUrl || (scan.storagePath && scan.url));
   }).length;
 }
 function linesmanDocsAllUploaded(job){
@@ -4094,6 +4096,22 @@ function selectLinesmanFile(wo,key){
   input.click();
 }
 
+function selectLinesmanMergedFile(wo){
+  // CRITICAL FIX: Prevent opening file dialog if upload already in progress
+  if(_linesmanUploadInProgress){
+    toast('Upload in progress — please wait','am');
+    return;
+  }
+  const input=document.createElement('input');
+  input.type='file';
+  input.accept='application/pdf';
+  input.onchange=(e)=>{
+    if(!e.target.files[0])return;
+    uploadLinesmanMergedPDF(wo,e.target.files[0]);
+  };
+  input.click();
+}
+
 async function uploadLinesmanScan(wo,key,file){
   if(file.size>10*1024*1024){toast('File too large — max 10MB','am');return;}
 
@@ -4155,6 +4173,84 @@ async function uploadLinesmanScan(wo,key,file){
     renderLinesmanUploadModalContent();
 
     toast(`✓ Uploaded: ${file.name}`);
+  } catch(err) {
+    console.error('Upload error:', err);
+    toast('Upload failed — please try again','rd');
+  } finally {
+    // CRITICAL: Clear upload flag AFTER everything completes
+    _linesmanUploadInProgress = false;
+    renderLinesmanDash();
+  }
+}
+
+async function uploadLinesmanMergedPDF(wo, file){
+  if(file.size>25*1024*1024){toast('File too large — max 25MB','am');return;}
+
+  // CRITICAL FIX: Prevent simultaneous uploads
+  if(_linesmanUploadInProgress){
+    toast('Please wait for current upload to complete','am');
+    return;
+  }
+  _linesmanUploadInProgress = true;
+
+  const job=DB.jobs[wo];
+  if(!job){
+    _linesmanUploadInProgress = false;
+    return;
+  }
+
+  try {
+    if(!job.scans)job.scans={};
+
+    const mergedKey = 'ln_merged_pdf';
+
+    if(SB.enabled){
+      const ext=(file.name.split('.').pop()||'pdf').toLowerCase();
+      const path=`${wo}/${mergedKey}_${Date.now()}.${ext}`;
+      const {error:upErr}=await SB.client.storage.from(SB.bucket).upload(path,file,{upsert:true,contentType:file.type||undefined});
+      if(upErr) throw upErr;
+      const url=SB.client.storage.from(SB.bucket).getPublicUrl(path).data.publicUrl;
+      job.scans[mergedKey]={storagePath:path,url,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
+      await SB.client.from('documents').insert({
+        wo, doc_type:mergedKey, is_signed:true, storage_path:path, filename:file.name, uploaded_role:CU,
+      });
+    } else {
+      // Offline mode
+      const dataUrl = await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=ev=>resolve(ev.target.result);
+        reader.onerror=()=>reject(new Error('File read failed'));
+        reader.readAsDataURL(file);
+      });
+      job.scans[mergedKey]={dataUrl,filename:file.name,uploadedAt:new Date().toISOString(),role:CU};
+    }
+
+    // CRITICAL: Mark all 6 linesman documents as "uploaded" by creating entries for each
+    // This allows the existing linesmanDocsUploadedCount() function to recognize completion
+    LINESMAN_DOCS.forEach(doc=>{
+      const key = 'ln_' + doc.id;
+      if(!job.scans[key]){
+        // Create a reference to the merged PDF for tracking purposes
+        job.scans[key]={
+          isMergedReference:true,
+          mergedFileName:file.name,
+          uploadedAt:new Date().toISOString(),
+          role:CU,
+          filename:file.name
+        };
+      }
+    });
+
+    addLog(wo,`All 6 field documents uploaded by Linesman as merged PDF: ${file.name}`);
+    markJobDirty(wo);
+
+    // CRITICAL: Save to database with proper wait
+    await saveDBAndWait();
+
+    // CRITICAL FIX: Refresh modal to show updated state
+    renderLinesmanUploadModalContent();
+
+    toast(`✓ All documents uploaded: ${file.name}`);
   } catch(err) {
     console.error('Upload error:', err);
     toast('Upload failed — please try again','rd');
