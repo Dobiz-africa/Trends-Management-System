@@ -2891,7 +2891,7 @@ function docAnnexure(job, batchJobs){
     const amt=tVO2?BWP(tVO2.total):BWP((tVO1&&tVO1.total)||0);
     return`<tr>
       <td style="border:none;padding:3px 5px">${inL(j.wo,'70px')}</td>
-      <td style="border:none;padding:3px 5px;white-space:normal;overflow:visible">${inWrap(j.cust)}</td>
+      <td style="border:none;padding:3px 5px;white-space:nowrap;overflow:visible">${inL(j.cust,'98%')}</td>
       <td style="border:none;padding:3px 5px">${inL(j.meterNo||'','110px')}</td>
       <td style="border:none;padding:3px 5px;text-align:right">${inR(amt,'100px')}</td>
       <td style="border:none;padding:3px 5px;text-align:right">${inR('0.00','65px')}</td>
