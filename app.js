@@ -4047,25 +4047,28 @@ function renderLinesmanUploadModalContent(){
 
   const btnEl=document.getElementById('linesmanUploadButtons');
   if(btnEl){
-    btnEl.innerHTML = LINESMAN_DOCS.map(doc=>{
-      const key='ln_'+doc.id;
-      const s=job.scans && job.scans[key];
-      if(s){
-        return `<div class="btn btn-gn" style="flex-direction:column;align-items:flex-start;text-align:left;cursor:default;gap:2px">
-          <div style="font-size:1.3rem">${doc.icon} ✓</div>
-          <div style="font-size:.83rem;font-weight:600;word-break:break-word">${doc.label}</div>
-          <div style="font-size:.7rem;opacity:.85;word-break:break-all">${s.filename}</div>
-          <div style="display:flex;gap:6px;margin-top:4px">
-            <button class="btn btn-gy btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${key}')">⬇ Download</button>
-            <button class="btn btn-am btn-sm" onclick="event.stopPropagation();selectLinesmanFile('${wo}','${key}')">↻ Replace</button>
-          </div>
-        </div>`;
-      }
-      return `<button class="btn btn-am" style="flex-direction:column" onclick="selectLinesmanFile('${wo}','${key}')">
-        <div style="font-size:1.5rem;margin-bottom:.5rem">${doc.icon}</div>
-        <div style="word-break:break-word;font-size:.85rem">${doc.label}</div>
+    // Check if ANY linesman document is already uploaded (merged PDF state)
+    const allDocsKey = 'ln_merged_pdf';
+    const mergedUpload = job.scans && job.scans[allDocsKey];
+    
+    if(mergedUpload){
+      // Merged PDF already uploaded — show it and allow replace
+      btnEl.innerHTML = `<div class="btn btn-gn" style="flex-direction:column;align-items:flex-start;text-align:left;cursor:default;gap:2px;padding:1rem">
+        <div style="font-size:1.5rem;margin-bottom:.5rem">📄 ✓</div>
+        <div style="font-size:.95rem;font-weight:600;word-break:break-word">All Documents (Merged PDF)</div>
+        <div style="font-size:.75rem;opacity:.85;word-break:break-all;margin-top:.25rem">${mergedUpload.filename}</div>
+        <div style="display:flex;gap:6px;margin-top:.75rem">
+          <button class="btn btn-gy btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${allDocsKey}')">⬇ Download</button>
+          <button class="btn btn-am btn-sm" onclick="event.stopPropagation();selectLinesmanMergedFile('${wo}')">↻ Replace</button>
+        </div>
+      </div>`;
+    } else {
+      // No upload yet — show single upload button
+      btnEl.innerHTML = `<button class="btn btn-am" style="flex-direction:column;padding:1.5rem;font-size:1rem" onclick="selectLinesmanMergedFile('${wo}')">
+        <div style="font-size:2rem;margin-bottom:.5rem">📄</div>
+        <div style="word-break:break-word">Upload All 6 Documents (Merged PDF)</div>
       </button>`;
-    }).join('');
+    }
   }
 
   const ct=linesmanDocsUploadedCount(job);
