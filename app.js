@@ -3839,10 +3839,7 @@ function renderLinesmanUploadModalContent(){
 
   const btnEl=document.getElementById('linesmanUploadButtons');
   if(btnEl){
-    // Add merged PDF button at top
-    let html = `<button class="btn btn-am" style="width:100%;margin-bottom:10px" onclick="selectLinesmanMergedPDF('${wo}')"><div style="font-size:1.5rem;margin-bottom:.5rem">📎</div><div>Upload All Documents (Merged PDF)</div></button>`;
-    
-    html += LINESMAN_DOCS.map(doc=>{
+    btnEl.innerHTML = LINESMAN_DOCS.map(doc=>{
       const key='ln_'+doc.id;
       const s=job.scans && job.scans[key];
       if(s){
@@ -3861,7 +3858,6 @@ function renderLinesmanUploadModalContent(){
         <div style="word-break:break-word;font-size:.85rem">${doc.label}</div>
       </button>`;
     }).join('');
-    btnEl.innerHTML = html;
   }
 
   const ct=linesmanDocsUploadedCount(job);
@@ -3869,40 +3865,6 @@ function renderLinesmanUploadModalContent(){
   if(progEl) progEl.textContent = `${ct} of ${LINESMAN_DOCS.length} documents uploaded`;
   const completeBtn=document.getElementById('linesmanCompleteBtn');
   if(completeBtn) completeBtn.disabled = ct < LINESMAN_DOCS.length;
-}
-
-async function selectLinesmanMergedPDF(wo){
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.pdf';
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if(!file) return;
-    
-    if(file.size > 10*1024*1024) {
-      toast('File too large - max 10MB','am');
-      return;
-    }
-    
-    const job = DB.jobs[wo];
-    if(!job.scans) job.scans = {};
-    
-    // Mark ALL linesman docs as uploaded from merged PDF
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const merged = { dataUrl: evt.target.result, filename: file.name, uploadedAt: new Date().toISOString(), role: 'linesman' };
-      
-      LINESMAN_DOCS.forEach(doc => {
-        job.scans['ln_' + doc.id] = merged;
-      });
-      
-      saveDB();
-      renderLinesmanUploadModalContent();
-      toast('✅ All documents uploaded from merged PDF!','gn');
-    };
-    reader.readAsDataURL(file);
-  };
-  input.click();
 }
 
 function selectLinesmanFile(wo,key){
