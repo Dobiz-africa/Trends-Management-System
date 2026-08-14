@@ -2913,8 +2913,9 @@ function docAnnexure(job, batchJobs){
     <tr>
       <td style="padding:2px 4px;width:170px;font-weight:bold">Payment Certificate:</td>
       <td style="padding:2px 4px;width:180px">${inL(certNo,'130px')}</td>
-      <td style="padding:2px 4px;width:50px;font-weight:bold">Ref:</td>
-      <td style="padding:2px 4px">${inL(certNo,'110px')}</td>
+      <td style="padding:2px 4px;flex:1"></td>
+      <td style="padding:2px 4px;width:80px;font-weight:bold;text-align:right">Ref:</td>
+      <td style="padding:2px 4px;width:110px;text-align:right">${inL(certNo,'110px')}</td>
     </tr>
     <tr>
       <td style="padding:2px 4px;font-weight:bold">Contract:</td>
