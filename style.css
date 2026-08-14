@@ -201,7 +201,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 .nbell svg{width:15px;height:15px}
 .npip{position:absolute;top:3px;right:3px;width:7px;height:7px;background:var(--rd);border-radius:50%;border:2px solid var(--sf);display:none}
 .npip.on{display:block}
-.npanel{position:fixed;top:70px;right:20px;width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:9999;display:none;max-height:70vh;overflow-y:auto}
+.npanel{position:fixed;top:65px;right:20px;width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:99999;display:none;max-height:70vh;overflow-y:auto}
 .npanel.open{display:block}
 .npanel-hd{padding:.65rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
 .npanel-hd span{font-size:.75rem;font-weight:600;color:var(--tx)}
