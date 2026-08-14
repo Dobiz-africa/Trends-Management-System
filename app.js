@@ -4054,11 +4054,16 @@ function closeDocFullscreen(){
 }
 
 function printDocFS(){
-  const body=document.getElementById('docFSBody');
+  // Use the SAME structure as printModal() to ensure consistent output
+  const body=document.getElementById('docModalBody');
   if(!body)return;
-  const title=document.getElementById('docFSTitle')?.textContent||'Document';
+  // Persist whatever is currently on screen so the Documents section stays in sync with Print
+  if(CURRENT_CERT_NO && CURRENT_DOC_TYPE && typeof saveBatchDocAttach==='function'){
+    saveBatchDocAttach(CURRENT_CERT_NO, CURRENT_DOC_TYPE);
+  }
+  const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
-  openPrintWindow(innerHtml,title,CURRENT_DOC_TYPE);
+  openPrintWindow(innerHtml, title, CURRENT_DOC_TYPE);
 }
 
 function scaleDocToFit(){
@@ -4095,11 +4100,16 @@ function closeDocFullscreen(){
 }
 
 function printDocFS(){
-  const body=document.getElementById('docFSBody');
+  // Use the SAME structure as printModal() to ensure consistent output
+  const body=document.getElementById('docModalBody');
   if(!body)return;
-  const title=document.getElementById('docFSTitle')?.textContent||'Document';
+  // Persist whatever is currently on screen so the Documents section stays in sync with Print
+  if(CURRENT_CERT_NO && CURRENT_DOC_TYPE && typeof saveBatchDocAttach==='function'){
+    saveBatchDocAttach(CURRENT_CERT_NO, CURRENT_DOC_TYPE);
+  }
+  const title=document.getElementById('docModalTitle')?.textContent||'Document';
   const innerHtml=serializeToHTML(body);
-  openPrintWindow(innerHtml,title,CURRENT_DOC_TYPE);
+  openPrintWindow(innerHtml, title, CURRENT_DOC_TYPE);
 }
 
 /* ═══════════════════════════════════════
