@@ -533,10 +533,14 @@
         <!-- LINESMAN UPLOAD MODAL -->
         <div id="linesmanUploadModal" class="overlay">
           <div class="modal" style="width:640px">
-            <h3>Upload Field Documents (6 Required)</h3>
+            <h3>Upload Field Documents (Merged PDF)</h3>
             <div id="linesmanUploadModalSub" style="font-size:.85rem;color:var(--tx3);margin-top:-.25rem;margin-bottom:.25rem"></div>
+            <div style="font-size:.8rem;color:var(--tx3);margin:.5rem 0;line-height:1.4">
+              <strong>Required documents in one PDF:</strong><br>
+              1. Handover Form · 2. E21 Test Sheet · 3. E22 Checklist · 4. E23 Test Sheet · 5. As-Built Drawing · 6. Inspection Certificate
+            </div>
             <div id="linesmanUploadProgress" style="font-size:.8rem;color:var(--am);font-weight:600;margin-bottom:.5rem"></div>
-            <div id="linesmanUploadButtons" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0"></div>
+            <div id="linesmanUploadButtons" style="display:flex;flex-direction:column;gap:1rem;margin:1rem 0;align-items:stretch"></div>
             <div class="modal-btns">
               <button class="btn btn-gy" onclick="closeModal('linesmanUploadModal')">Close</button>
               <button class="btn btn-gn" id="linesmanCompleteBtn" onclick="markLinesmanDocsComplete()">✅ Mark as Complete</button>
