@@ -3312,7 +3312,6 @@ function docListOfJobs(job, batchJobs){
       <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(invNo,'98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(j.loc,'98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.date||j.actions.wo_received?.date||'')}</td>
-      <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.teams_notified?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.actions.work_complete?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL('Kagiso Jeff Kewagamang','98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL('Poloko Moiseraela','98%')}</td>
