@@ -4035,6 +4035,30 @@ function closeModal(id){
   document.getElementById(id).classList.remove('open');
 }
 
+/* FULLSCREEN DOCUMENT VIEWER */
+function openDocFullscreen(){
+  const body=document.getElementById('docModalBody');
+  const title=document.getElementById('docModalTitle')?.textContent||'Document';
+  if(!body)return;
+  document.getElementById('docFSTitle').textContent=title;
+  document.getElementById('docFSBody').innerHTML=body.innerHTML;
+  document.getElementById('docFullscreenModal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+
+function closeDocFullscreen(){
+  document.getElementById('docFullscreenModal').style.display='none';
+  document.body.style.overflow='auto';
+}
+
+function printDocFS(){
+  const body=document.getElementById('docFSBody');
+  if(!body)return;
+  const title=document.getElementById('docFSTitle')?.textContent||'Document';
+  const innerHtml=serializeToHTML(body);
+  openPrintWindow(innerHtml,title,CURRENT_DOC_TYPE);
+}
+
 /* ═══════════════════════════════════════
    NAVIGATION
 ═══════════════════════════════════════ */
