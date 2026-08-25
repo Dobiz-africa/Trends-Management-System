@@ -129,3 +129,10 @@ test('production role switcher is restricted to configured admin accounts',()=>{
   assert.match(source,/DEV_ROLE_SWITCH_EMAILS\.includes\(email\)/);
   assert.doesNotMatch(source,/DEVELOPER_MODE&&!IS_PRODUCTION_HOST/);
 });
+
+test('legacy deleted work orders are classified into the recycle bin',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  assert.match(source,/row\.stage==='work_order_deleted'/);
+  assert.match(source,/isRecycled=Boolean\(row\.deleted_at\|\|j\.deletedAt\|\|isLegacyDeleted\)/);
+  assert.match(source,/if\(job\.stage==='work_order_deleted'\)/);
+});

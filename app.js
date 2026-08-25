@@ -508,7 +508,13 @@ async function syncFromSupabase(){
       j._updatedAt = row.updated_at;
       preserveVOData(DB.jobs[row.wo], j);
       hydrateJob(j);
-      if(row.deleted_at)recycleBin[row.wo]=j;else jobs[row.wo] = j;
+      const isLegacyDeleted=row.stage==='work_order_deleted'||Boolean(j.actions?.work_order_deleted);
+      const isRecycled=Boolean(row.deleted_at||j.deletedAt||isLegacyDeleted);
+      if(isRecycled){
+        j.deletedAt=row.deleted_at||j.deletedAt||j.actions?.work_order_deleted?.date||row.updated_at||new Date().toISOString();
+        j.deletionReason=row.deletion_reason||j.deletionReason||(isLegacyDeleted?'Deleted before the Recycle Bin upgrade':'');
+        recycleBin[row.wo]=j;
+      }else jobs[row.wo] = j;
     });
     console.log('syncFromSupabase: fetched', Object.keys(jobs).length, 'jobs from Supabase:', jobs);
     DB.jobs = jobs;
@@ -4613,6 +4619,10 @@ async function restoreWorkOrder(wo){
   const job=DB.recycleBin?.[wo];if(!job)return;
   try{
     if(SB.enabled&&API_ROUTES_ENABLED){const {data}=await SB.client.auth.getSession();const response=await fetch('/api/work-orders',{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${data?.session?.access_token||''}`},body:JSON.stringify({wo,action:'restore'})});if(!response.ok)throw new Error((await response.json()).error||'Restore failed');}
+    if(job.stage==='work_order_deleted'){
+      const completedStages=STAGE_IDS.filter(stage=>job.actions?.[stage]);
+      job.stage=completedStages.at(-1)||'wo_received';
+    }
     delete job.deletedAt;delete job.deletedBy;delete job.deletionReason;DB.jobs[wo]=job;delete DB.recycleBin[wo];addLog(wo,'Work Order restored from recycle bin');saveDB();refreshAll();toast(`Work Order ${wo} restored`);
   }catch(error){toast(error.message||'Restore failed','rd');}
 }

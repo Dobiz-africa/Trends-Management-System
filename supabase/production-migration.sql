@@ -43,6 +43,17 @@ alter table public.jobs add column if not exists deleted_by uuid references publ
 alter table public.jobs add column if not exists deletion_reason text;
 create index if not exists jobs_active_stage_idx on public.jobs(stage) where deleted_at is null;
 
+-- Work orders deleted by the legacy application used a terminal stage instead
+-- of the recycle-bin columns. Preserve them, but move them out of active lists.
+update public.jobs
+set deleted_at=coalesce(
+      case when coalesce(data->>'deletedAt','') ~ '^\d{4}-\d{2}-\d{2}' then (data->>'deletedAt')::timestamptz end,
+      updated_at,
+      now()
+    ),
+    deletion_reason=coalesce(deletion_reason,data->>'deletionReason','Deleted before the Recycle Bin upgrade')
+where stage='work_order_deleted' and deleted_at is null;
+
 alter table public.documents add column if not exists status text not null default 'generated'
   check (status in ('draft','generated','pending_signature','signed','complete'));
 alter table public.documents add column if not exists metadata jsonb not null default '{}';
