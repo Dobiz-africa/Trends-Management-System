@@ -255,17 +255,18 @@
               <div style="background:var(--sf2);padding:1rem;border-radius:var(--rs);margin-bottom:1rem;border-left:3px solid #ff6b6b">
                 <strong style="color:#ff6b6b">⚠️ WARNING:</strong>
                 <div style="font-size:.9rem;margin-top:.5rem">
-                  This will permanently delete this work order from the system. This action cannot be undone. All associated documents and data will be removed.
+                  This work order will be hidden from active views and retained for 90 days so an administrator can restore it.
                 </div>
               </div>
               <div style="font-size:.85rem;color:var(--tx3)">
                 Type the work order number below to confirm deletion:
               </div>
               <input type="text" id="deleteWOConfirmInput" placeholder="Enter WO number to confirm" style="width:100%;padding:.5rem;margin-top:.5rem;border:1px solid var(--bd);border-radius:var(--rs);background:var(--sf1);color:var(--tx1)">
+              <textarea id="deleteWOReason" placeholder="Reason for recycling (required)" style="width:100%;padding:.5rem;margin-top:.65rem;border:1px solid var(--bd);border-radius:var(--rs);background:var(--sf1);color:var(--tx1)"></textarea>
             </div>
             <div class="modal-btns">
               <button class="btn btn-gy" onclick="closeModal('deleteWOModal')">✕ Cancel</button>
-              <button class="btn btn-rd" id="deleteWOConfirmBtn" onclick="deleteWorkOrder()" style="background:#dc3545" disabled>🗑 Permanently Delete</button>
+              <button class="btn btn-rd" id="deleteWOConfirmBtn" onclick="deleteWorkOrder()" style="background:#dc3545" disabled>Move to Recycle Bin</button>
             </div>
           </div>
         </div>
@@ -280,7 +281,7 @@
 
   <!-- DEV ROLE SWITCHER — only shown when window.DEVELOPER_MODE is true (is_admin accounts) -->
   <div id="devControlPanel" style="display:none;position:fixed;bottom:16px;right:16px;z-index:9998;background:#11172a;border:1px solid #2a3350;border-radius:10px;padding:10px;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,.4);font-family:inherit">
-    <div style="font-size:.7rem;color:#aab3c5;margin-bottom:6px;letter-spacing:.05em">DEV — VIEW AS</div>
+    <div id="devControlDragHandle" title="Drag to move" style="font-size:.7rem;color:#aab3c5;margin:-4px -4px 6px;padding:4px;letter-spacing:.05em;cursor:move;user-select:none;touch-action:none">⠿ DEV — VIEW AS <span style="float:right;font-size:.58rem;color:#65708a">DRAG</span></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;max-width:220px">
       <button onclick="switchRole('admin')" style="padding:.4rem .6rem;background:#1a2138;border:1px solid #2a3350;color:#e8ecf3;border-radius:6px;cursor:pointer;font-size:.75rem">Admin</button>
       <button onclick="switchRole('linesman')" style="padding:.4rem .6rem;background:#1a2138;border:1px solid #2a3350;color:#e8ecf3;border-radius:6px;cursor:pointer;font-size:.75rem">Linesman</button>
@@ -335,7 +336,7 @@
             <span id="themeLabel">Dark</span>
           </button>
           <div class="notif-wrap">
-            <button class="nbell" onclick="toggleNotif()">
+            <button class="nbell" onclick="toggleNotif()" aria-label="Notifications" aria-controls="npanel" aria-expanded="false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               <div class="npip" id="npip"></div>
             </button>
@@ -405,6 +406,10 @@
               <div class="crd-hd"><div class="crd-hd-l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Waiting on External Parties</div></div>
               <div id="a-waiting"></div>
             </div>
+            <div class="crd">
+              <div class="crd-hd"><div class="crd-hd-l">Recycle Bin <span class="badge b-gy">90 days</span></div></div>
+              <div id="a-recycle"></div>
+            </div>
           </div>
 
           <!-- FINANCE DASHBOARD -->
@@ -440,7 +445,7 @@
               </div>
             </div>
             <div class="srow">
-              <div class="sc"><div class="sc-l">Ready for Claim Docs</div><div class="sc-v" style="color:var(--am)" id="f-ready">0</div><div class="sc-s">GIS report received</div></div>
+              <div class="sc"><div class="sc-l">Ready for Claim Docs</div><div class="sc-v" style="color:var(--am)" id="f-ready">0</div><div class="sc-s">Final GIS documents received</div></div>
               <div class="sc"><div class="sc-l">Docs Generated</div><div class="sc-v" style="color:var(--gn)" id="f-done">0</div><div class="sc-s">Sent to admin</div></div>
               <div class="sc"><div class="sc-l">Total Net Payable</div><div class="sc-v" style="font-size:1.1rem" id="f-net">P 0</div><div class="sc-s">After retention &amp; WHT</div></div>
               <div class="sc"><div class="sc-l">Submitted to BPC</div><div class="sc-v" style="color:var(--bl)" id="f-sub">0</div><div class="sc-s">Claims closed</div></div>
@@ -599,10 +604,9 @@
               <option value="vo2_created">👷 VO2 Created</option>
               <option value="works_valuation_created">📄 Works Valuation</option>
               <option value="work_instruction_ready">📄 Work Instruction</option>
-              <option value="teams_notified">🔨 Teams Notified</option>
-              <option value="work_complete">📍 Work Complete</option>
-              <option value="gis_notified">📋 GIS Notified</option>
-              <option value="gis_complete">✅ GIS Complete</option>
+              <option value="gis_ready">GIS Documents Ready</option>
+              <option value="final_gis_pending">Final GIS Required</option>
+              <option value="finance_draft">Finance Draft</option>
               <option value="claim_docs_ready">✅ Claim Docs Ready</option>
               <option value="job_complete">✅ Complete</option>
             </select>
@@ -624,11 +628,11 @@
         <!-- CLAIM BATCH (Finance) -->
         <div id="sc-claims" class="screen">
           <div class="ua ua-bl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Select completed jobs to include in this claim. Then generate Annexure, Payment Certificate, and Invoice as a batch.
+            Select any claim-eligible work orders — fresh, previously claimed, or complete — then generate them together as a new batch.
           </div>
           <div class="crd">
             <div class="crd-hd" style="justify-content:space-between">
-              <div class="crd-hd-l">Completed Jobs — Ready for Claim</div>
+              <div class="crd-hd-l">Claim-Eligible Work Orders — New &amp; Previously Claimed</div>
               <div style="display:flex;gap:7px;align-items:center">
                 <input id="certInput" placeholder="Cert No. e.g. TES-001" style="background:var(--sf2);border:1px solid var(--bd2);border-radius:var(--rs);padding:.3rem .65rem;color:var(--tx);font-family:'Inter',sans-serif;font-size:.78rem;outline:none;width:130px">
                 <button class="btn btn-am btn-sm" onclick="generateClaimDocs()">Generate Claim Documents</button>
@@ -640,10 +644,11 @@
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Customer</span>
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Town</span>
               <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">VO2 Value</span>
-              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Completed</span>
+              <span style="font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);font-weight:600">Status</span>
             </div>
             <div id="claimsList"></div>
           </div>
+          <div id="claimDrafts" style="margin-top:.75rem"></div>
           <div id="claimSummary" style="margin-top:.5rem"></div>
         </div>
 
@@ -734,10 +739,10 @@
 </div>
 
 <!-- FULLSCREEN DOCUMENT VIEWER -->
-<div id="docFullscreenModal" class="overlay" style="display:none;z-index:10000">
+<div id="docFullscreenModalLegacy" class="overlay" style="display:none;z-index:10000" aria-hidden="true">
   <div style="background:var(--sf);width:100vw;height:100vh;display:flex;flex-direction:column;border-radius:0">
     <div style="padding:0.8rem 1.25rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--sf2)">
-      <span style="font-size:.9rem;font-weight:600;color:var(--tx)" id="docFSTitle">Document</span>
+      <span style="font-size:.9rem;font-weight:600;color:var(--tx)" id="docFSTitleLegacy">Document</span>
       <div style="display:flex;gap:7px;align-items:center">
         <button class="btn btn-print btn-sm" onclick="printDocFS()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF
@@ -745,7 +750,7 @@
         <button class="btn btn-gy btn-sm" onclick="closeDocFullscreen()">✕ Close Fullscreen</button>
       </div>
     </div>
-    <div style="flex:1;overflow:auto;padding:2rem;background:var(--bg)" id="docFSBody"></div>
+    <div style="flex:1;overflow:auto;padding:2rem;background:var(--bg)" id="docFSBodyLegacy"></div>
   </div>
 </div>
 
@@ -805,6 +810,7 @@
 <!-- jsPDF + AutoTable for proper PDF generation (no blank page issues) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="core.js"></script>
 <script src="rates.js"></script>
 <script src="app.js"></script>
 </body>

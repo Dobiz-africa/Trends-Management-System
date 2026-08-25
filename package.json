@@ -1,0 +1,11 @@
+{
+  "name": "trendsdesk",
+  "private": true,
+  "version": "2.0.0",
+  "scripts": {
+    "dev": "node dev-server.cjs",
+    "dev:api": "node dev-server.cjs",
+    "test": "node --test",
+    "check": "node --check app.js && node --check api/notifications.js && node --check api/resend-webhook.js && node --test"
+  }
+}

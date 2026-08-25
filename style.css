@@ -2,10 +2,10 @@
   --bg:#080c14;--sf:#0f1520;--sf2:#161e2e;--sf3:#1d2638;
   --bd:#243044;--bd2:#2e3d58;
   --tx:#e8eef8;--tx2:#8a9ab8;--tx3:#4a5a78;
-  --am:#f0a500;--am-bg:rgba(240,165,0,.1);--am-b:rgba(240,165,0,.25);
+  --am:#f58220;--am-bg:rgba(245,130,32,.12);--am-b:rgba(245,130,32,.3);
   --gn:#1db87a;--gn-bg:rgba(29,184,122,.1);--gn-b:rgba(29,184,122,.25);
   --rd:#e84545;--rd-bg:rgba(232,69,69,.1);--rd-b:rgba(232,69,69,.25);
-  --bl:#3d8ef0;--bl-bg:rgba(61,142,240,.1);--bl-b:rgba(61,142,240,.25);
+  --bl:#0877bd;--bl-bg:rgba(8,119,189,.1);--bl-b:rgba(8,119,189,.25);
   --r:8px;--rs:6px;
   --font-display:'Sora',sans-serif;
   --font-body:'DM Sans',sans-serif;
@@ -201,7 +201,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 .nbell svg{width:15px;height:15px}
 .npip{position:absolute;top:3px;right:3px;width:7px;height:7px;background:var(--rd);border-radius:50%;border:2px solid var(--sf);display:none}
 .npip.on{display:block}
-.npanel{position:fixed;top:65px;right:22px;width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:9999;display:none;max-height:70vh;overflow-y:auto}
+.npanel{position:fixed;top:65px;right:22px;width:320px;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:11000;display:none;max-height:70vh;overflow-y:auto}
 .npanel.open{display:block}
 .npanel-hd{padding:.65rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
 .npanel-hd span{font-size:.75rem;font-weight:600;color:var(--tx)}
@@ -310,6 +310,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 .pipe-lbl.done{color:var(--tx2)}.pipe-lbl.active{color:var(--tx);font-weight:600}.pipe-lbl.pending{color:var(--tx3)}
 .pipe-date{font-size:.67rem;color:var(--tx3);margin-top:1px}
 .pipe-actions{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+
+.job-management{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:.8rem 1rem 0;padding:.75rem .85rem;background:var(--rd-bg);border:1px solid var(--rd-b);border-radius:var(--rs)}
+.job-management-copy{min-width:0;flex:1}
+.job-management-title{font-family:var(--font-display);font-size:.72rem;font-weight:700;color:var(--rd);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.job-management-help{font-size:.7rem;line-height:1.45;color:var(--tx2);max-width:560px}
+.job-management .btn{flex-shrink:0;white-space:nowrap}
+@media(max-width:680px){.job-management{align-items:stretch;flex-direction:column}.job-management .btn{justify-content:center;width:100%}}
 
 /* DOCUMENT CARDS (in job detail) */
 .doc-card{background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:.75rem 1rem;margin-bottom:.6rem}

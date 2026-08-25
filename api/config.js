@@ -16,5 +16,7 @@ export default function handler(req, res) {
     SUPABASE_URL: process.env.SUPABASE_URL || '',
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || '',
     SCANS_BUCKET: process.env.SCANS_BUCKET || 'claimdesk-scans',
+    API_ROUTES_ENABLED: true,
+    EMAIL_ROUTES_ENABLED: true,
   });
 }

@@ -2,6 +2,10 @@
 
 # Local Supabase config (contains your keys). Production uses /api/config.
 config.js
+.env
+.env.local
+.env.*.local
+!.env.example
 
 # OS / editor junk
 .DS_Store
@@ -12,4 +16,6 @@ Thumbs.db
 
 # Node (only if you ever add tooling)
 node_modules/
+.vercel
+
 .vercel
