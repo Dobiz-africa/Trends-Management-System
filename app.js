@@ -366,6 +366,14 @@ const SB = { client:null, enabled:false, bucket:'claimdesk-scans', ready:false }
 const IS_PRODUCTION_HOST=/^(desk|claims)\.trendsengineering\.com$/i.test(location.hostname);
 let API_ROUTES_ENABLED=IS_PRODUCTION_HOST;
 let EMAIL_ROUTES_ENABLED=IS_PRODUCTION_HOST;
+let DEV_ROLE_SWITCH_EMAILS=[];
+
+function canUseDeveloperRoleSwitcher(user,profile){
+  if(!profile?.is_admin)return false;
+  if(!IS_PRODUCTION_HOST)return true;
+  const email=String(user?.email||'').trim().toLowerCase();
+  return DEV_ROLE_SWITCH_EMAILS.includes(email);
+}
 
 async function initSupabase(){
   try{
@@ -391,6 +399,7 @@ async function initSupabase(){
     const cfg = (window.CLAIMDESK_CONFIG)||{};
     API_ROUTES_ENABLED=cfg.API_ROUTES_ENABLED===undefined?IS_PRODUCTION_HOST:cfg.API_ROUTES_ENABLED===true;
     EMAIL_ROUTES_ENABLED=cfg.EMAIL_ROUTES_ENABLED===undefined?API_ROUTES_ENABLED:cfg.EMAIL_ROUTES_ENABLED===true;
+    DEV_ROLE_SWITCH_EMAILS=String(cfg.DEV_ROLE_SWITCH_EMAILS||'').split(',').map(email=>email.trim().toLowerCase()).filter(Boolean);
     if(cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY && window.supabase){
       SB.client  = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
       SB.bucket  = cfg.SCANS_BUCKET || 'claimdesk-scans';
@@ -4886,7 +4895,7 @@ async function realLogin(){
     if(!userData) throw new Error('User not found in database');
 
     CU = userData.role;
-    window.DEVELOPER_MODE = !!userData.is_admin;
+    window.DEVELOPER_MODE = canUseDeveloperRoleSwitcher(data.user,userData);
 
     // Login successful - show dashboard
     loginSuccess();
@@ -4934,7 +4943,7 @@ function loginSuccess(){
   if(CU === 'md'){show('n-actlog'); show('n-jobs'); show('n-claims');}
   if(CU === 'linesman'){show('n-inbox');}
 
-  if(window.DEVELOPER_MODE&&!IS_PRODUCTION_HOST){
+  if(window.DEVELOPER_MODE){
     const devPanel = document.getElementById('devControlPanel');
     if(devPanel){devPanel.style.display = 'flex';restoreDevPanelPosition();}
   }
@@ -4956,7 +4965,7 @@ function loginSuccess(){
 }
 
 function switchRole(role){
-  if(!window.DEVELOPER_MODE||IS_PRODUCTION_HOST) return;
+  if(!window.DEVELOPER_MODE) return;
 
   CU = role;
   document.getElementById('sbRn').textContent = RN[CU] + ' (viewing as ' + role + ')';
@@ -5084,7 +5093,7 @@ async function restoreSession(){
 
       if(userData){
         CU = userData.role;
-        window.DEVELOPER_MODE = !!userData.is_admin;
+        window.DEVELOPER_MODE = canUseDeveloperRoleSwitcher(data.session.user,userData);
         loginSuccess();
       }else{
         // A real Google account signed in, but there's no matching ClaimDesk

@@ -34,7 +34,7 @@ const server=http.createServer(async(req,res)=>{
   const requestUrl=new URL(req.url,'http://localhost');
   if(requestUrl.pathname==='/api/config'){
     res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
-    return res.end(JSON.stringify({SUPABASE_URL:process.env.SUPABASE_URL||'',SUPABASE_ANON_KEY:process.env.SUPABASE_ANON_KEY||'',SCANS_BUCKET:process.env.SCANS_BUCKET||'claimdesk-scans',API_ROUTES_ENABLED:false,EMAIL_ROUTES_ENABLED:true}));
+    return res.end(JSON.stringify({SUPABASE_URL:process.env.SUPABASE_URL||'',SUPABASE_ANON_KEY:process.env.SUPABASE_ANON_KEY||'',SCANS_BUCKET:process.env.SCANS_BUCKET||'claimdesk-scans',DEV_ROLE_SWITCH_EMAILS:process.env.DEV_ROLE_SWITCH_EMAILS||'',API_ROUTES_ENABLED:false,EMAIL_ROUTES_ENABLED:true}));
   }
   if(requestUrl.pathname==='/api/notifications'){
     if(req.method!=='POST')return sendJson(res,405,{error:'Method not allowed'});

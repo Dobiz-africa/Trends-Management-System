@@ -122,3 +122,10 @@ test('local env loading accepts later local overrides without replacing OS varia
   assert.match(source,/const inheritedEnvKeys=new Set\(Object\.keys\(process\.env\)\)/);
   assert.match(source,/if\(!inheritedEnvKeys\.has\(key\)\)process\.env\[key\]=value/);
 });
+
+test('production role switcher is restricted to configured admin accounts',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  assert.match(source,/if\(!profile\?\.is_admin\)return false/);
+  assert.match(source,/DEV_ROLE_SWITCH_EMAILS\.includes\(email\)/);
+  assert.doesNotMatch(source,/DEVELOPER_MODE&&!IS_PRODUCTION_HOST/);
+});
