@@ -11,6 +11,15 @@ create table if not exists public.users (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+-- Older ClaimsDesk installations already have this table with fewer columns.
+alter table public.users add column if not exists full_name text;
+alter table public.users add column if not exists role text default 'linesman';
+alter table public.users add column if not exists is_admin boolean not null default false;
+alter table public.users add column if not exists is_active boolean not null default true;
+alter table public.users add column if not exists created_at timestamptz not null default now();
+alter table public.users add column if not exists updated_at timestamptz not null default now();
+update public.users set role='linesman' where role is null;
+alter table public.users alter column role set not null;
 alter table public.users alter column role set default 'linesman';
 
 create table if not exists public.invites (
