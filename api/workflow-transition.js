@@ -5,11 +5,14 @@ const transitions={wo_received:'vo1_created',vo1_created:'linesman_notified',lin
 export default async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
   try{
-    const {profile,config}=await authenticate(req,['admin','finance']);
+    const {profile,config}=await authenticate(req,['admin','finance','md']);
     const {wo,to,notes=''}=req.body||{};
     if(!wo||!to)return res.status(400).json({error:'wo and to are required'});
     const rows=await rest(config,`jobs?wo=eq.${encodeURIComponent(wo)}&select=*`);
     const row=rows?.[0];if(!row||row.deleted_at)return res.status(404).json({error:'Active work order not found'});
+    const devEmails=String(process.env.DEV_ROLE_SWITCH_EMAILS||'').split(',').map(email=>email.trim().toLowerCase()).filter(Boolean);
+    if(to==='job_complete'&&profile.role!=='md'&&!devEmails.includes(String(profile.email||'').toLowerCase()))return res.status(403).json({error:'Only the Manager can record a job as complete'});
+    if(to!=='job_complete'&&profile.role==='md')return res.status(403).json({error:'Manager access is read-only at this workflow stage'});
     if(transitions[row.stage]!==to)return res.status(409).json({error:`Invalid transition from ${row.stage} to ${to}`});
     if(to==='vo2_created'){
       const docs=await rest(config,`documents?wo=eq.${encodeURIComponent(wo)}&doc_type=in.(gis_report,gis_cert)&select=doc_type`);

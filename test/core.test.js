@@ -45,6 +45,7 @@ test('Payment Certificate uses the requested Annexure wording and original foote
   assert.match(payment,/Value of Work Completed \(see Annexure\)<\/td>/);
   assert.doesNotMatch(payment,/Value of Work Completed \(see Annexure \$\{/);
   for(const marker of ['Amount Due','Remarks line 1','Remarks line 2','Certificate Prepared by','Certificate Approved by','Transmission &amp; Distribution:'])assert.match(payment,new RegExp(marker));
+  assert.match(payment,/correct and recommended of payment in full of the amount shown/);
 });
 test('Finance revisions reopen saved HTML, save before print, and can replace generated copies',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
@@ -88,7 +89,7 @@ test('Finance claim pool permanently includes fresh, finalized, and completed wo
 });
 test('Finance output documents use required currency, phase, location, date, and BPC columns',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
-  const bpc=source.slice(source.indexOf('function docBPCSpreadsheet('),source.indexOf('function addListJobRow(',source.indexOf('function docBPCSpreadsheet(')));
+  const bpc=source.slice(source.indexOf('function docBPCSpreadsheet('),source.indexOf('function docListOfJobs(',source.indexOf('function docBPCSpreadsheet(')));
   const list=source.slice(source.indexOf('function docListOfJobs('),source.indexOf('function doc',source.indexOf('function docListOfJobs(')+20));
   assert.doesNotMatch(bpc,/>WO No\.<\/th>/);
   assert.match(bpc,/eid\(j\.date\|\|j\.woDate\|\|j\.actions\?\.wo_received\?\.date/);
@@ -97,6 +98,43 @@ test('Finance output documents use required currency, phase, location, date, and
   assert.match(list,/inL\('Phase '\+String\(j\.phase/);
   assert.match(list,/inL\(jobClaimLocation\(j\)/);
   assert.match(list,/<strong>P\$\{BWP\(total\)\}<\/strong>/);
+});
+test('finalizing a batch advances every selected Finance Draft work order',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','api','claims.js'),'utf8');
+  const finalize=source.slice(source.indexOf("if(action==='finalize')"),source.indexOf("return res.status(400)",source.indexOf("if(action==='finalize')")));
+  assert.match(finalize,/for\(const row of rows\)/);
+  assert.match(finalize,/row\.stage==='finance_draft'/);
+  assert.match(finalize,/stage:'claim_docs_ready'/);
+  assert.match(finalize,/if\(!updated\?\.length\).*retry the batch/);
+  assert.match(finalize,/wos:advancedWOs/);
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const clientFinalize=app.slice(app.indexOf('async function finalizeClaim('),app.indexOf('/**',app.indexOf('async function finalizeClaim(')));
+  assert.match(clientFinalize,/batchJobs\.forEach\(job=>\{/);
+  assert.match(clientFinalize,/job\.stage='claim_docs_ready'/);
+});
+test('follow-up document requirements are enforced',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  for(const marker of [
+    'value="${jobClaimLocation(job)}"',
+    '>${jobClaimLocation(job)}</td>',
+    "ef('wi_loc',jobClaimLocation(job),'98%')"
+  ])assert.match(source,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+  assert.doesNotMatch(source,/addListJobRow/);
+  assert.match(source,/function downloadBPCSpreadsheetXLSX\(certNo\)/);
+  assert.match(source,/XLSX\.writeFile\(workbook,`BPC_Spreadsheet_/);
+  assert.match(source,/docType==='bpc_spreadsheet'[\s\S]{0,500}Download Excel/);
+  assert.match(source,/docType==='bpc_spreadsheet'\?'Print \/ PDF':'Print'/);
+  const printModal=source.slice(source.indexOf('function printModal('),source.indexOf('/*',source.indexOf('function printModal(')));
+  assert.doesNotMatch(printModal,/downloadBPCSpreadsheetXLSX/);
+  assert.match(source,/class="invoice-meta"/);
+  assert.match(source,/invoice-meta td:last-child input\{display:inline-block;text-align:right;margin-left:auto\}/);
+  assert.match(source,/\{id:'job_complete',[^\n]+role:'md'\}/,'Manager owns the completion stage');
+  assert.match(source,/recordStage==='job_complete'&&CU!=='md'/);
+  assert.match(source,/if\(isMD&&st\.id==='claim_docs_ready'\)/);
+  assert.match(source,/fullscreen\?\.style\.display==='flex'[\s\S]{0,100}syncFullscreenToModal/);
+  const finalize=source.slice(source.indexOf('async function finalizeClaim('),source.indexOf('/**',source.indexOf('async function finalizeClaim(')));
+  assert.match(finalize,/passedPreGIS=stageIdx\(job\.stage\)>=stageIdx\('vo2_created'\)/);
+  assert.match(finalize,/passedFinalGIS=stageIdx\(job\.stage\)>=stageIdx\('finance_draft'\)/);
 });
 test('fullscreen printing serializes and persists the fullscreen editor',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
@@ -135,4 +173,19 @@ test('legacy deleted work orders are classified into the recycle bin',()=>{
   assert.match(source,/row\.stage==='work_order_deleted'/);
   assert.match(source,/isRecycled=Boolean\(row\.deleted_at\|\|j\.deletedAt\|\|isLegacyDeleted\)/);
   assert.match(source,/if\(job\.stage==='work_order_deleted'\)/);
+});
+
+test('documents panels use one merged Linesman document and attach the parsed BPC file',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  assert.match(source,/const LINESMAN_MERGED_DOC_KEY='ln_merged_pdf'/);
+  assert.match(source,/field_received:\[LINESMAN_MERGED_DOC_KEY\]/);
+  assert.match(source,/const allDocTypes=\['bpc_wo','vo1',LINESMAN_MERGED_DOC_KEY/);
+  assert.match(source,/visibleDocTypes = \[LINESMAN_MERGED_DOC_KEY\]/);
+  assert.match(source,/\[LINESMAN_MERGED_DOC_KEY\]:LINESMAN_MERGED_DOC_LABEL/);
+  const documentsPanel=source.slice(source.indexOf('// Documents panel - FILTERED BY ROLE'),source.indexOf('// Summary',source.indexOf('// Documents panel - FILTERED BY ROLE')));
+  assert.doesNotMatch(documentsPanel,/\.\.\.LN_DOC_KEYS/);
+  const create=source.slice(source.indexOf('async function saveNewWO('),source.indexOf('function resetAddWOForm(',source.indexOf('async function saveNewWO(')));
+  assert.match(create,/await saveDBAndWait\(\)/);
+  assert.match(create,/await _uploadScanToSupabase\(num,'bpc_wo',fileToUpload\)/);
+  assert.ok(create.indexOf('await saveDBAndWait()')<create.indexOf("await _uploadScanToSupabase(num,'bpc_wo',fileToUpload)"),'job is persisted before its BPC document row is attached');
 });

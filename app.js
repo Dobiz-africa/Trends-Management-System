@@ -80,6 +80,8 @@ const LINESMAN_DOCS = [
 const LN_DOC_KEYS = LINESMAN_DOCS.map(d => 'ln_' + d.id);
 const LN_DOC_LABELS = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.label]));
 const LN_DOC_SHORT = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.short]));
+const LINESMAN_MERGED_DOC_KEY='ln_merged_pdf';
+const LINESMAN_MERGED_DOC_LABEL='Linesman Merged Field Documents';
 function linesmanDocsUploadedCount(job){
   if(job?.scans?.ln_merged_pdf)return LINESMAN_DOCS.length;
   // CRITICAL FIX: Only count documents that have COMPLETE data. A document
@@ -313,7 +315,7 @@ const STAGES = [
   {id:'final_gis_pending',        lbl:'Final GIS Map & Certificate Required',       role:'admin'},
   {id:'finance_draft',            lbl:'Finance Claim Draft',                       role:'finance'},
   {id:'claim_docs_ready',         lbl:'Claim Finalized by Finance',                role:'finance'},
-  {id:'job_complete',             lbl:'Job Recorded as Complete',                  role:'admin'},
+  {id:'job_complete',             lbl:'Job Recorded as Complete',                  role:'md'},
 ];
 const STAGE_IDS = STAGES.map(s=>s.id);
 const WORKFLOW_TRANSITIONS = window.TrendsCore.TRANSITIONS;
@@ -914,9 +916,11 @@ async function _uploadScanToSupabase(wo,docType,file){
     notify(['md'],`New signed document uploaded for WO ${wo}: ${docType}`,wo);
     saveDB();refreshDetail();
     toast('✓ Scan uploaded: '+file.name);
+    return true;
   }catch(e){
     console.error(e);
     toast('Upload failed: '+(e.message||'check connection'),'rd');
+    return false;
   }
 }
 function removeScan(wo,docType){
@@ -1371,7 +1375,7 @@ function renderJobs(){
 /* ═══════════════════════════════════════
    ADD WORK ORDER
 ═══════════════════════════════════════ */
-function saveNewWO(){
+async function saveNewWO(){
   const rawNum=document.getElementById('nw-num').value.trim();
   const num=rawNum&&/^\d+$/.test(rawNum)?'0000'+(rawNum.replace(/^0+/,'')||'0'):rawNum;
   const cust=document.getElementById('nw-cust').value.trim();
@@ -1407,32 +1411,38 @@ function saveNewWO(){
   // Priority 2: Use manual file selection in scan input
   let fileToUpload = _lastParsedBPCFile || (document.getElementById('nw-scan')?.files[0] || null);
   
-  if(fileToUpload){
-    const f=fileToUpload;
-    const reader=new FileReader();
-    reader.onload=e=>{
-      job.scans.bpc_wo={dataUrl:e.target.result,filename:f.name,uploadedAt:new Date().toISOString(),role:CU};
-      DB.jobs[num]=job;
-      addLog(num,`Work order created with BPC scan uploaded: ${f.name}`);
-      saveDB();
-      notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system. Document: ${f.name}`,num);
-      closeModal('addWOModal');
-      clearWOForm();
-      _lastParsedBPCFile = null; // Clear after use
-      refreshAll();
-      toast(`Work Order WO ${num} added with document: ${f.name}`);
-    };
-    reader.readAsDataURL(f);
-  } else {
+  try{
     DB.jobs[num]=job;
-    addLog(num,'Work order created from BPC email (no PDF uploaded)');
-    saveDB();
-    notify(['finance','gis','md'],`New WO ${num} — ${cust} added to system`,num);
+    markJobDirty(num);
+    addLog(num,fileToUpload?`Creating work order with BPC document: ${fileToUpload.name}`:'Work order created from BPC email (no PDF uploaded)');
+    // The jobs row must exist before the documents row can reference it.
+    await saveDBAndWait();
+    if(fileToUpload){
+      if(SB.enabled){
+        const attached=await _uploadScanToSupabase(num,'bpc_wo',fileToUpload);
+        if(!attached)throw new Error('The work order was saved, but its BPC document could not be attached');
+      }else{
+        const dataUrl=await new Promise((resolve,reject)=>{
+          const reader=new FileReader();
+          reader.onload=e=>resolve(e.target.result);
+          reader.onerror=()=>reject(new Error('Could not read the BPC work-order file'));
+          reader.readAsDataURL(fileToUpload);
+        });
+        job.scans.bpc_wo={dataUrl,filename:fileToUpload.name,uploadedAt:new Date().toISOString(),role:CU};
+        markJobDirty(num);
+        await saveDBAndWait();
+      }
+      addLog(num,`BPC work order attached automatically: ${fileToUpload.name}`);
+    }
+    notify(['finance','md'],`New WO ${num} — ${cust} added to system${fileToUpload?`. Original BPC document: ${fileToUpload.name}`:''}`,num);
     closeModal('addWOModal');
     clearWOForm();
     _lastParsedBPCFile = null;
     refreshAll();
-    toast(`Work Order WO ${num} added`);
+    toast(`Work Order WO ${num} added${fileToUpload?' with its original BPC document':''}`);
+  }catch(error){
+    console.error('Work order creation failed:',error);
+    toast('Work order could not be created completely: '+(error.message||'check connection'),'rd');
   }
 }
 function resetAddWOForm(){
@@ -1510,6 +1520,12 @@ async function confirmRecord(){
   const extra=document.getElementById('rec-extra').value.trim();
   if(!date){toast('Please select a date','am');return;}
   const job=DB.jobs[recordWO];if(!job)return;
+  if(recordStage==='job_complete'&&CU!=='md'){toast('Only the Manager can record a job as complete','rd');return;}
+  if(recordStage==='job_complete'&&SB.enabled&&API_ROUTES_ENABLED){
+    const {data}=await SB.client.auth.getSession();
+    const response=await fetch('/api/workflow-transition',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${data?.session?.access_token||''}`},body:JSON.stringify({wo:recordWO,to:'job_complete',notes})});
+    if(!response.ok){toast((await response.json()).error||'Could not complete the job','rd');return;}
+  }
   job.actions[recordStage]={date,notes,extra};
   job.stage=recordStage;
   addLog(recordWO,stageLabel(recordStage)+' — recorded by '+RN[CU]);
@@ -1520,7 +1536,7 @@ async function confirmRecord(){
   if(recordStage==='gis_notified'){notify(['md'],`GIS consultant notified for WO ${recordWO} — ${job.cust}. Awaiting GIS report.`,recordWO);}
   if(recordStage==='job_complete'){
     addLog(recordWO,'Job added to List of Jobs Done');
-    notify(['md'],`Job complete: WO ${recordWO} — ${job.cust}. Added to List of Jobs Done.`,recordWO);
+    notify(['admin','finance'],`Job complete: WO ${recordWO} — ${job.cust}. Added to List of Jobs Done.`,recordWO);
   }
   markJobDirty(recordWO);
   await saveDBAndWait();
@@ -1573,7 +1589,7 @@ function renderJobDetail(wo){
       gis_ready:'Create VO2 from field findings',
       vo2_created:'Create Works Valuation document',works_valuation_created:'Prepare Works Instruction',
       work_instruction_ready:'Complete Works Instruction',final_gis_pending:'Upload the final GIS Map and Certificate before Finance',finance_draft:'Finance prepares and reviews draft claim',
-      claim_docs_ready:'Record job as complete',
+      claim_docs_ready:'Manager records job as complete',
       job_complete:'Job is fully complete',
     };
     let actBtns='';
@@ -1608,13 +1624,16 @@ function renderJobDetail(wo){
           if(hasFinalMap&&hasFinalCert)actBtns+=`<button class="btn btn-gn" onclick="markFinalGISComplete('${wo}')">✓ Confirm Final GIS & Send to Finance</button>`;
         }
         if(st.id==='finance_draft') actBtns+=`<span class="badge b-am">Finance drafting claim</span>`;
-        if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
+        if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><span class="badge b-am">Awaiting Manager completion</span>`;
         if(st.id==='job_complete') actBtns+=`<span class="badge b-gn">Job complete — ${action?.date||''}</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs</button>`;
       }
       if(CU==='finance'&&st.id==='finance_draft') actBtns+=`<button class="btn btn-am" onclick="nav('claims')">Go to Claim Drafts</button>`;
       if((canEdit||CU==='finance')&&docKey) docKey.split(',').forEach(dk=>{actBtns+=`<span style="margin-left:2px">${scanWidget(wo,dk.trim(),true)}</span>`;});
     }
-    const mdStepDocs={vo1_created:['vo1'],field_received:[...LN_DOC_KEYS],gis_ready:['gis_report','gis_cert'],vo2_created:['vo2'],works_valuation_created:['works_valuation'],work_instruction_ready:['works_instruction'],final_gis_pending:['final_gis_report','final_gis_cert'],claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']};
+    if(isMD&&st.id==='claim_docs_ready'){
+      actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
+    }
+    const mdStepDocs={vo1_created:['vo1'],field_received:[LINESMAN_MERGED_DOC_KEY],gis_ready:['gis_report','gis_cert'],vo2_created:['vo2'],works_valuation_created:['works_valuation'],work_instruction_ready:['works_instruction'],final_gis_pending:['final_gis_report','final_gis_cert'],claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']};
 
 const docsRequireSignature=['works_instruction','works_valuation','payment_cert'];
 const docsAutoComplete=['annexure','invoice','gis_cert','list_of_jobs','bpc_spreadsheet'];
@@ -1624,7 +1643,7 @@ function setDocumentStatus(docType, jobComplete=false) {
   if(docsAutoComplete.includes(docType)) return 'COMPLETE';
   return 'GENERATED';
 }
-    const docLabelMap={vo1:'VO1',vo2:'VO2',...LN_DOC_SHORT,works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',final_gis_report:'Final GIS Map',final_gis_cert:'Final GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
+    const docLabelMap={vo1:'VO1',vo2:'VO2',[LINESMAN_MERGED_DOC_KEY]:LINESMAN_MERGED_DOC_LABEL,works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',final_gis_report:'Final GIS Map',final_gis_cert:'Final GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
     const isDone=job.stage==='job_complete';
     const jobManagement=CU==='admin'
       ?`<div class="job-management"><div class="job-management-copy"><div class="job-management-title">Job management</div><div class="job-management-help">Move this entire work order, including its workflow and documents, out of active lists. You can restore it later from the Recycle Bin on the Work Orders page.</div></div><button class="btn btn-rd btn-sm" onclick="confirmDeleteWorkOrder('${wo}')">🗑 Move entire job to Recycle Bin</button></div>`
@@ -1646,26 +1665,26 @@ function setDocumentStatus(docType, jobComplete=false) {
   })();
 
   // Documents panel - FILTERED BY ROLE
-  const allDocTypes=['bpc_wo','vo1',...LN_DOC_KEYS,'gis_report','gis_cert','vo2','works_valuation','works_instruction','final_gis_report','final_gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  const allDocTypes=['bpc_wo','vo1',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert','vo2','works_valuation','works_instruction','final_gis_report','final_gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   let visibleDocTypes = [...allDocTypes];
   if(CU === 'finance') {
     // Finance only sees generated claim documents
     visibleDocTypes = ['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   }
-  // CRITICAL FIX: Linesman only sees their 6 field documents, NOT system documents
+  // Linesman sees the single merged upload, not six artificial placeholders.
   else if(CU === 'linesman') {
-    visibleDocTypes = [...LN_DOC_KEYS]; // Only: ln_handover, ln_e21, ln_e22, ln_e23, ln_drawing, ln_cert
+    visibleDocTypes = [LINESMAN_MERGED_DOC_KEY];
   }
   // MD sees everything
   if(CU === 'md') {
     visibleDocTypes = [...allDocTypes];
   }
   
-  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',...LN_DOC_LABELS,vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',final_gis_report:'Final GIS Map',final_gis_cert:'Final GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
+  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',[LINESMAN_MERGED_DOC_KEY]:LINESMAN_MERGED_DOC_LABEL,vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',final_gis_report:'Final GIS Map',final_gis_cert:'Final GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
   const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]||(job.savedDocs&&job.savedDocs[d])).length;
   document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} ready`;
   document.getElementById('jdDocsList').innerHTML=visibleDocTypes.map(d=>{
-    const isLinesmanDoc=LN_DOC_KEYS.includes(d);
+    const isLinesmanDoc=d===LINESMAN_MERGED_DOC_KEY;
     const scan=job.scans[d];
     const saved=job.savedDocs&&job.savedDocs[d];
     const hasGenerated=['vo1','vo2','works_valuation','works_instruction','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(d);
@@ -1722,7 +1741,7 @@ function setDocumentStatus(docType, jobComplete=false) {
         </div>`).join('')
       :'<div style="font-size:.78rem;color:var(--tx3);padding:.5rem 0">No activity yet</div>';
   } else {
-    document.getElementById('jdActivity').innerHTML='<div style="font-size:.78rem;color:var(--tx3);padding:.5rem 0">Activity log restricted to Managing Director only.</div>';
+    document.getElementById('jdActivity').innerHTML='<div style="font-size:.78rem;color:var(--tx3);padding:.5rem 0">Activity log restricted to Manager only.</div>';
   }
 }
 
@@ -2516,8 +2535,13 @@ async function finalizeClaim(certNo){
   const problems=[];
   batchJobs.forEach(job=>{
     if(!job.cust||!job.loc)problems.push(`WO ${job.wo}: customer and location are required`);
-    if(!hasGISPrerequisites(job))problems.push(`WO ${job.wo}: Pre-VO2 GIS Map and Certificate are required`);
-    if(!hasFinalGISPrerequisites(job))problems.push(`WO ${job.wo}: Final GIS Map and Certificate are required`);
+    // Current jobs carry the uploaded scans. Older jobs may have reached these
+    // checkpoints before the standardized scan keys existed; their completed
+    // workflow stage is authoritative evidence that the checkpoint was passed.
+    const passedPreGIS=stageIdx(job.stage)>=stageIdx('vo2_created');
+    const passedFinalGIS=stageIdx(job.stage)>=stageIdx('finance_draft');
+    if(!hasGISPrerequisites(job)&&!passedPreGIS)problems.push(`WO ${job.wo}: Pre-VO2 GIS Map and Certificate are required`);
+    if(!hasFinalGISPrerequisites(job)&&!passedFinalGIS)problems.push(`WO ${job.wo}: Final GIS Map and Certificate are required`);
     if(!job.vo2?.items?.length)problems.push(`WO ${job.wo}: VO2 requires at least one item`);
     if(!isFinite(bestTotal(job).total)||bestTotal(job).total<=0)problems.push(`WO ${job.wo}: claim total must be positive`);
   });
@@ -2606,7 +2630,8 @@ function viewBatchDoc(certNo,docType){
         ${nextDoc?`<button class="btn btn-am btn-sm" onclick="saveAndViewBatchDoc('${certNo}','${docType}','${nextDoc}')">${docTitleShort[nextDoc]} →</button>`:'<span style="width:80px"></span>'}
       </div>
       <div style="display:flex;gap:5px;flex-wrap:wrap">
-        <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print</button>
+        <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>${docType==='bpc_spreadsheet'?'Print / PDF':'Print'}</button>
+        ${docType==='bpc_spreadsheet'?`<button class="btn btn-gn btn-sm" onclick="downloadBPCSpreadsheetXLSX('${certNo}')">⬇ Download Excel</button>`:''}
         ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Replace</button>`:''}
         ${CU==='finance'?`<button class="btn btn-am btn-sm" onclick="regenerateBatchDoc('${certNo}','${docType}')">↻ Regenerate &amp; Replace</button>`:''}
         ${CU==='finance'&&batch?.status==='draft'?`<button class="btn btn-gn btn-sm" onclick="saveAndFinalizeClaim('${certNo}','${docType}')">✓ Finalize Claim</button>`:''}
@@ -2657,7 +2682,7 @@ function docBatchSummary(batchJobs,certNo){
       ${batchJobs.map(j=>{const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');return`<tr>
         <td style="border:1px solid #bbb;padding:3px 6px">${j.wo}</td>
         <td style="border:1px solid #bbb;padding:3px 6px">${j.cust}</td>
-        <td style="border:1px solid #bbb;padding:3px 6px">${j.loc}</td>
+        <td style="border:1px solid #bbb;padding:3px 6px">${jobClaimLocation(j)}</td>
         <td style="border:1px solid #bbb;padding:3px 6px;text-align:right">${P(t.total)}</td>
       </tr>`;}).join('')}
       <tr style="background:#d9d9d9;font-weight:bold">
@@ -2794,7 +2819,7 @@ function docVO1(job){
     <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
     <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" onchange="DB.jobs['${job.wo}'].cust=this.value" style="width:98%"></td>
       <td class="lbl" style="white-space:nowrap">Location Factor :</td><td><input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo1.lf=parseFloat(this.value)||0;recalcVO1('${job.wo}')"></td></tr>
-    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${job.loc}" onchange="DB.jobs['${job.wo}'].loc=this.value" style="width:98%"></td>
+    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${jobClaimLocation(job)}" style="width:98%"></td>
       <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td><input class="ef ef-b" type="date" value="${custPayDate}" style="width:110px"></td></tr>
     <tr><td class="lbl">Wayleave Approval :</td><td>BPC</td><td class="lbl">Date Wayleave Available :</td><td><input class="ef ef-b" value="Not Required" style="width:98%"></td></tr>
   </table><hr>
@@ -2861,7 +2886,7 @@ function docWorksValuation(job){
     <tr><td class="lbl">Contractor :</td><td colspan="3">${CO.name}</td></tr>
     <tr><td class="lbl">Project Title :</td><td><input class="ef ef-b" value="${job.cust}" style="width:98%"></td>
       <td class="lbl" style="white-space:nowrap">Location Factor :</td><td><input class="ef ef-b" value="${job.vo1.lf||29.25}" style="width:40px">%</td></tr>
-    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${job.loc}" style="width:98%"></td>
+    <tr><td class="lbl">Location :</td><td><input class="ef ef-b" value="${jobClaimLocation(job)}" style="width:98%"></td>
       <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td><input class="ef ef-b" type="date" value="${custPayDate}" style="width:110px"></td></tr>
     <tr><td class="lbl">Wayleave Approval :</td><td>BPC</td><td class="lbl">Date Wayleave Available :</td><td><input class="ef ef-b" value="Not Required" style="width:98%"></td></tr>
   </table><hr>
@@ -2924,7 +2949,7 @@ function docVO2(job){
   <table class="hdt">
     <tr><td class="lbl">Contract :</td><td colspan="3"><input class="ef ef-b" value="FREE CONNECTIONS PHASE ${job.phase} PROJECT" style="width:235px"> &nbsp; BPC Project No.: <input class="ef ef-b" value="${job.bpcProjNo||job.wo}" style="width:90px"></td></tr>
     <tr><td class="lbl">PROJECT TITLE:</td><td>${job.cust}</td><td class="lbl">PHASE:</td><td>${job.phase}</td></tr>
-    <tr><td class="lbl">LOCATION:</td><td>${job.loc}</td><td class="lbl">BPC W/O No.:</td><td>${job.wo}</td></tr>
+    <tr><td class="lbl">LOCATION:</td><td>${jobClaimLocation(job)}</td><td class="lbl">BPC W/O No.:</td><td>${job.wo}</td></tr>
     <tr><td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td><input class="ef ef-b" type="date" value="${custPayDate}" style="width:120px"></td>
       <td class="lbl">Location Factor:</td><td><input class="ef ef-b" value="${job.vo2.lf||29.25}" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.lf=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td></tr>
     <tr><td class="lbl">Markup:</td><td><input class="ef ef-b" value="${job.vo2.mk||''}" placeholder="0" style="width:40px" onchange="DB.jobs['${job.wo}'].vo2.mk=parseFloat(this.value)||0;recalcVO2('${job.wo}')">%</td><td></td><td></td></tr>
@@ -2952,7 +2977,7 @@ function docFieldReport(job){
   <div style="font-size:11pt;font-weight:bold;text-align:center;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:8px">FIELD MEASUREMENT REPORT</div>
   <table class="hdt">
     <tr><td class="lbl">BPC W/O No. :</td><td>${job.wo}</td><td class="lbl">Customer :</td><td>${job.cust}</td></tr>
-    <tr><td colspan="4"><span class="lbl">Location :</span> ${job.loc}</td></tr>
+    <tr><td colspan="4"><span class="lbl">Location :</span> ${jobClaimLocation(job)}</td></tr>
   </table><hr>
   ${f.submitted?`<div style="background:#d9f7e8;border:1px solid #4caf50;padding:5px 8px;margin-bottom:8px;font-size:8pt">✓ Field findings recorded on ${f.recordedDate||'—'}</div>`:''}
   <table class="boq"><tbody>
@@ -3004,7 +3029,7 @@ function docWorksInstruction(job){
   <table class="hdt">
     <tr><td class="lbl">Project Title :</td><td>${ef('wi_title',job.cust,'98%')}</td>
       <td class="lbl" style="white-space:nowrap">Location Factor :</td><td>${ef('wi_lf',String(job.vo1.lf||29.25),'50px')}</td></tr>
-    <tr><td class="lbl">Location :</td><td>${ef('wi_loc',job.loc,'98%')}</td>
+    <tr><td class="lbl">Location :</td><td>${ef('wi_loc',jobClaimLocation(job),'98%')}</td>
      <td class="lbl" style="white-space:nowrap">Customer Payment Date :</td><td>${ef('wi_custdate',job.paymentDate||job.actions.wo_received?.date||job.date||'','110px','date')}</td></tr>
     <tr><td class="lbl">Drawings :</td><td>${ef('wi_drawings','Attached','80px')}</td>
       <td class="lbl" style="white-space:nowrap">Date Wayleave Available :</td><td>${ef('wi_wayleave','','110px')}</td></tr>
@@ -3067,7 +3092,7 @@ function docGISReport(job){
   <table class="hdt">
     <tr><td class="lbl">BPC W/O No. :</td><td><strong>${job.wo}</strong></td><td class="lbl">Phase :</td><td>${job.phase}</td></tr>
     <tr><td class="lbl">Customer :</td><td>${job.cust}</td><td class="lbl">Survey Date :</td><td>${ef('g_date',g.date,'YYYY-MM-DD')}</td></tr>
-    <tr><td class="lbl">Location :</td><td colspan="3">${job.loc}</td></tr>
+    <tr><td class="lbl">Location :</td><td colspan="3">${jobClaimLocation(job)}</td></tr>
   </table><hr>
   <span class="p-grey">1. SITE INFORMATION</span>
   <table class="boq"><tbody>
@@ -3101,7 +3126,7 @@ function docGISCert(job){
   <table class="hdt">
     <tr><td class="lbl">BPC W/O No. :</td><td><strong>${job.wo}</strong></td><td class="lbl">Phase :</td><td>${job.phase}</td></tr>
     <tr><td class="lbl">Customer :</td><td>${job.cust}</td><td class="lbl">Date :</td><td>${ef('gc_date','','YYYY-MM-DD')}</td></tr>
-    <tr><td class="lbl">Location :</td><td colspan="3">${job.loc}</td></tr>
+    <tr><td class="lbl">Location :</td><td colspan="3">${jobClaimLocation(job)}</td></tr>
   </table><hr>
   <span class="p-grey">CERTIFICATION</span>
   <table class="boq"><tbody>
@@ -3478,7 +3503,7 @@ function docPaymentCert(job, batchJobs){
     <tr><td style="width:80px;padding:2px 5px;font-weight:bold;text-decoration:underline;vertical-align:top">Remarks</td><td style="padding:2px 5px"><input class="ef ef-b" aria-label="Remarks line 1" value="" style="width:100%;border-bottom:1px solid #000"></td></tr>
     <tr><td></td><td style="padding:2px 5px"><input class="ef ef-b" aria-label="Remarks line 2" value="" style="width:100%;border-bottom:1px solid #000"></td></tr>
   </table>
-  <div style="margin:15px 5px 16px;font-size:8.5pt">We hereby certify that the value of work shown is correct and recommend payment in full of the amount shown</div>
+  <div style="margin:15px 5px 16px;font-size:8.5pt">We hereby certify that the value of work shown is correct and recommended of payment in full of the amount shown</div>
   <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-top:5px">
     <tr><td style="width:145px;padding:5px">Certificate Prepared by:</td><td style="width:290px;padding:5px"><input class="ef ef-b" aria-label="Certificate Prepared by" value="" style="width:100%;border-bottom:1px solid #000"></td><td></td></tr>
     <tr><td></td><td style="padding:0 5px 13px;font-size:7.5pt;font-weight:bold">for Botswana Power Corporation</td><td></td></tr>
@@ -3503,6 +3528,7 @@ function docInvoice(job, batchJobs){
   const invNo=`INV_${certNo}.${new Date().getFullYear()}`;
   const ef=(val,w)=>`<input class="ef ef-b" value="${val||''}" style="width:${w||'90%'}">`;
   return`<div class="paper">
+  <style>.invoice-meta td:last-child{text-align:right}.invoice-meta td:last-child input{display:inline-block;text-align:right;margin-left:auto}</style>
   <table style="width:100%;border-collapse:collapse;margin-bottom:0">
     <tr>
       <td style="padding:4px 0">
@@ -3522,8 +3548,8 @@ function docInvoice(job, batchJobs){
         <div>P.O. Box 48</div>
         <div>Gaborone</div>
       </td>
-      <td style="vertical-align:top;font-size:8.5pt">
-        <table style="font-size:8.5pt;border-collapse:collapse;width:100%">
+      <td style="vertical-align:top;font-size:8.5pt;width:52%;text-align:right">
+        <table class="invoice-meta" style="font-size:8.5pt;border-collapse:collapse;width:100%;margin-left:auto">
           <tr><td style="padding:1px 3px;white-space:nowrap;font-weight:bold;width:130px">Invoice Number:</td><td style="padding:1px 3px">${ef(invNo,'140px')}</td></tr>
           <tr><td style="padding:1px 3px;font-weight:bold">Project No:</td><td style="padding:1px 3px">${ef('DSW/TRENDS/ ZERO CONNECTION','170px')}</td></tr>
           <tr><td style="padding:1px 3px;font-weight:bold">Reference:</td><td style="padding:1px 3px">${ef(certNo,'100px')}</td></tr>
@@ -3701,29 +3727,7 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
   </div>`;
 }
 
-/* ── LIST OF JOBS DONE — Admin creates ── */
-function addListJobRow(){
-  const tb=document.getElementById('loj_tbody');if(!tb)return;
-  const i=tb.rows.length;
-  const inL=(val,w)=>`<input type="text" value="${val||''}" style="width:${w||'98%'};border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:6.5pt;color:#000;padding:0 1px;outline:none;box-sizing:border-box">`;
-  const inD=(val)=>`<input type="date" value="${val||''}" style="width:98%;border:none;border-bottom:1px solid #aaa;background:transparent;font-family:Arial,sans-serif;font-size:6pt;color:#000;padding:0;outline:none;box-sizing:border-box">`;
-  const tr=document.createElement('tr');
-  tr.innerHTML=`
-    <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${i+1}.0</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inL('Trends Engineering Services (PTY) Ltd','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inL('103913','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px;text-align:right">${inL('P0.00','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${inL('100','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inD('')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inD('')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>
-    <td style="border:1px solid #bbb;padding:1px 3px">${inL('','98%')}</td>`;
-  tb.appendChild(tr);
-}
+/* ── LIST OF JOBS DONE ── */
 function docListOfJobs(job, batchJobs){
   const allDoneJobs=Object.values(DB.jobs).filter(j=>stageIdx(j.stage)>=stageIdx('finance_draft'));
   const claimJobs=batchJobs&&batchJobs.length>0?batchJobs:job&&job.claimRef
@@ -3798,8 +3802,24 @@ function docListOfJobs(job, batchJobs){
     </tbody>
   </table>
   </div>
-  <button onclick="addListJobRow()" style="margin-top:6px;font-size:8pt;padding:3px 10px;cursor:pointer;border:1px solid #bbb;border-radius:3px;background:#f8f8f8;font-family:Arial,sans-serif">+ Add Row</button>
   </div>`;
+}
+
+function downloadBPCSpreadsheetXLSX(certNo){
+  if(typeof XLSX==='undefined'){toast('Excel export library did not load. Check the internet connection and try again.','rd');return;}
+  const jobs=(DB.batchDocs?.[certNo]?.wos||[]).map(wo=>DB.jobs[wo]).filter(Boolean);
+  if(!jobs.length){toast('No work orders found for this claim batch','rd');return;}
+  const year=new Date().getFullYear();
+  const headers=['Item No.','Project No.','Meter No.','Vendor Name','Vendor Number','Amount (BWP)','% Completion','Work Order Date','Phase Description','Invoice Number','Location','Start Date','Completion Date','Internal Responsible Person','External Responsible Person'];
+  const data=jobs.map((job,index)=>[index+1,job.projNo||job.bpcProjNo||job.wo,job.meterNo||'',CO.name,CO.vendor,bestTotal(job).total,100,job.date||job.woDate||job.actions?.wo_received?.date||'',`Ph ${job.phase}-Free Con`,`INV_${certNo}.${year}`,jobClaimLocation(job),job.startDate||job.actions?.vo2_created?.date||'',job.completionDate||job.actions?.finance_draft?.date||'',CO.name,'BPC Engineer']);
+  data.push(['','','','','TOTAL',jobs.reduce((sum,job)=>sum+bestTotal(job).total,0),'','','','','','','','','']);
+  const sheet=XLSX.utils.aoa_to_sheet([headers,...data]);
+  sheet['!cols']=[7,14,12,32,14,14,13,16,20,22,30,14,16,30,28].map(w=>({wch:w}));
+  for(let row=2;row<=data.length+1;row++)if(sheet[`F${row}`])sheet[`F${row}`].z='P #,##0.00';
+  const workbook=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook,sheet,'BPC Spreadsheet');
+  XLSX.writeFile(workbook,`BPC_Spreadsheet_${String(certNo).replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`);
+  toast('Excel spreadsheet downloaded','gn');
 }
 
 function numWords(n){
@@ -4014,6 +4034,8 @@ function serializeFormValues(container){
 
 function saveBatchDocAttach(certNo,docType,options={}){
   // Save the current edited state of the doc and attach to all jobs in this batch
+  const fullscreen=document.getElementById('docFullscreenModal');
+  if(fullscreen?.style.display==='flex'&&typeof syncFullscreenToModal==='function')syncFullscreenToModal();
   const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
   if(!batchJobs.length){toast('No jobs found for this batch','rd');return;}
   // Serialize all input values into attributes before capturing HTML

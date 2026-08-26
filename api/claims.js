@@ -44,11 +44,17 @@ export default async function handler(req,res){
       const rows=await rest(config,`jobs?wo=in.(${draft.wos.map(encodeURIComponent).join(',')})&select=*`);
       const problems=validateJobs(rows||[],batchId);
       if(problems.length)return res.status(422).json({error:'Finalization validation failed',problems});
-      await rest(config,`claim_versions?id=eq.${draft.id}&status=eq.draft`,{method:'PATCH',body:{status:'finalized',finalized_by:profile.id,finalized_at:new Date().toISOString(),validation:{valid:true,problems:[]}}});
+      const advancedWOs=[];
       for(const row of rows){
-        await rest(config,`jobs?wo=eq.${encodeURIComponent(row.wo)}&stage=eq.finance_draft`,{method:'PATCH',body:{stage:'claim_docs_ready',claim_ref:batchId}});
+        if(row.stage==='finance_draft'){
+          const updated=await rest(config,`jobs?wo=eq.${encodeURIComponent(row.wo)}&stage=eq.finance_draft`,{method:'PATCH',body:{stage:'claim_docs_ready',claim_ref:batchId}});
+          if(!updated?.length)throw Object.assign(new Error(`WO ${row.wo} changed while finalizing; retry the batch`),{status:409});
+        }
+        advancedWOs.push(row.wo);
       }
-      return res.status(200).json({batchId,version:draft.version,status:'finalized'});
+      const finalized=await rest(config,`claim_versions?id=eq.${draft.id}&status=eq.draft`,{method:'PATCH',body:{status:'finalized',finalized_by:profile.id,finalized_at:new Date().toISOString(),validation:{valid:true,problems:[]}}});
+      if(!finalized?.length)throw Object.assign(new Error('Claim draft changed while finalizing; reload and retry'),{status:409});
+      return res.status(200).json({batchId,version:draft.version,status:'finalized',wos:advancedWOs});
     }
     return res.status(400).json({error:'Unknown action'});
   }catch(error){return fail(res,error);}

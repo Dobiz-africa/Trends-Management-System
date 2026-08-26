@@ -121,9 +121,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 .shell{display:grid;grid-template-columns:252px 1fr;min-height:100vh}
 .sb{background:linear-gradient(180deg,var(--sf) 0%,rgba(8,12,20,.98) 100%);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
 .sb-hd{padding:1.1rem 1.2rem .9rem;border-bottom:1px solid var(--bd);background:linear-gradient(135deg,rgba(240,165,0,.04),transparent)}
-.sb-brand{display:flex;align-items:center;gap:11px}
-.sb-logo{width:34px;height:34px;flex-shrink:0}
-.sb-logo img{width:34px;height:34px;filter:drop-shadow(0 0 6px rgba(240,165,0,.4))}
+.sb-brand{display:flex;align-items:center;gap:10px}
+.sb-logo{width:68px;height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  padding:4px 5px;background:#fff;border:1px solid rgba(240,165,0,.35);border-radius:7px;
+  box-shadow:0 5px 16px rgba(0,0,0,.25),0 0 14px rgba(240,165,0,.12);overflow:hidden}
+.sb-logo img{width:100%;height:100%;object-fit:contain;display:block;filter:none}
 .sb-brand h1{font-family:var(--font-display);font-size:.82rem;font-weight:700;color:var(--tx);line-height:1.2;letter-spacing:-.01em}
 .sb-brand p{font-size:.55rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.12em;margin-top:1px}
 
@@ -528,9 +530,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--tx);min-heigh
 @keyframes lhflow{to{stroke-dashoffset:-24}}
 .login-hero-content{position:relative;z-index:1;display:flex;flex-direction:column;
   justify-content:space-between;padding:3rem 3.2rem;width:100%}
-.login-hero-brand{display:flex;align-items:center;gap:14px}
-.login-hero-brand .lc-logo{width:46px;height:46px;flex-shrink:0}
-.login-hero-brand .lc-logo img{width:46px;height:46px;filter:drop-shadow(0 0 14px rgba(240,165,0,.5))}
+.login-hero-brand{display:flex;align-items:center;gap:12px}
+.login-hero-brand .lc-logo{width:76px;height:49px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  padding:4px 6px;background:#fff;border:1px solid rgba(240,165,0,.38);border-radius:8px;
+  box-shadow:0 7px 22px rgba(0,0,0,.28),0 0 18px rgba(240,165,0,.14);overflow:hidden}
+.login-hero-brand .lc-logo img{width:100%;height:100%;object-fit:contain;display:block;filter:none}
 .login-hero-name{font-family:var(--font-display);font-weight:800;font-size:1.05rem;color:#fff;letter-spacing:-.01em}
 .login-hero-loc{font-size:.7rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.16em;margin-top:2px}
 
