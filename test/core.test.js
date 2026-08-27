@@ -146,7 +146,7 @@ test('fullscreen printing serializes and persists the fullscreen editor',()=>{
 });
 test('email notifications are role-targeted, idempotent, and delivery-tracked',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','api','notifications.js'),'utf8');
-  assert.match(source,/notificationId=`\$\{id\}_\$\{recipient\.role\}`/);
+  assert.match(source,/notificationId=`\$\{id\}_\$\{recipient\.isTestCopy\?'test':recipient\.role\}`/);
   assert.match(source,/'Idempotency-Key':key/);
   assert.match(source,/RESEND_API_KEY is not configured/);
   assert.match(source,/status:'failed',attempts:1,last_error:lastError/);
@@ -154,6 +154,37 @@ test('email notifications are role-targeted, idempotent, and delivery-tracked',(
   const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   assert.match(app,/result\.deliveries\|\|\[\]\)\.filter\(d=>d\.status==='failed'/);
   assert.match(app,/Email delivery failed:/);
+});
+test('configured test inbox receives one copy without changing its Supabase role',()=>{
+  for(const filename of ['notifications.js','notifications-local.cjs']){
+    const source=fs.readFileSync(path.join(__dirname,'..','api',filename),'utf8');
+    assert.match(source,/process\.env\.NOTIFICATION_TEST_EMAIL/);
+    assert.match(source,/process\.env\.NOTIFICATION_TEST_ONLY/);
+    assert.match(source,/users\?email=eq\.\$\{encodeURIComponent\(testEmail\)\}/);
+    assert.match(source,/recipients\.some\(recipient=>String\(recipient\.email\|\|''\)\.toLowerCase\(\)===testEmail\)/);
+    assert.match(source,/isTestCopy:true/);
+    assert.match(source,/recipients=testOnly\?\[/);
+    assert.match(source,/recipient\.id\|\|recipient\.email/);
+  }
+  const example=fs.readFileSync(path.join(__dirname,'..','.env.example'),'utf8');
+  assert.match(example,/NOTIFICATION_TEST_EMAIL=dev@dobusiness\.africa/);
+  assert.match(example,/NOTIFICATION_TEST_ONLY=true/);
+});
+test('email delivery is limited to role handoffs and uses a neutral greeting',()=>{
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const notifyFn=app.slice(app.indexOf('function notify(roles'),app.indexOf('function addLog(',app.indexOf('function notify(roles')));
+  assert.doesNotMatch(notifyFn.slice(0,notifyFn.indexOf('function notifyWithEmail')),/dispatchServerNotification/);
+  assert.match(notifyFn,/function notifyWithEmail\([\s\S]*dispatchServerNotification/);
+  assert.match(app,/notifyWithEmail\('linesman',[^\n]+single merged field document/);
+  assert.match(app,/notifyWithEmail\(\['admin'\],[^\n]+Linesman field reports/);
+  assert.match(app,/notifyWithEmail\(\['finance'\],[^\n]+waiting for Finance/);
+  assert.match(app,/notifyWithEmail\(\['md'\],[^\n]+Claim batch documents are in process/);
+  assert.match(app,/notifyWithEmail\(\['md'\],[^\n]+Finance team has completed Claim/);
+  for(const filename of ['notifications.js','notifications-local.cjs']){
+    const email=fs.readFileSync(path.join(__dirname,'..','api',filename),'utf8');
+    assert.match(email,/<p>Hello,<\/p>/);
+    assert.doesNotMatch(email,/Hello \$\{escapeHtml\(recipient/);
+  }
 });
 test('local env loading accepts later local overrides without replacing OS variables',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','dev-server.cjs'),'utf8');

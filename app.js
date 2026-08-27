@@ -801,6 +801,10 @@ function notify(roles,msg,wo=''){
     DB.notifs[r].unshift({id:Date.now()+'_'+Math.random(),msg,wo,ts:new Date().toISOString(),read:false});
     if(DB.notifs[r].length>40)DB.notifs[r]=DB.notifs[r].slice(0,40);
   });
+}
+function notifyWithEmail(roles,msg,wo=''){
+  const arr=Array.isArray(roles)?roles:[roles];
+  notify(arr,msg,wo);
   dispatchServerNotification(arr,msg,wo);
 }
 async function dispatchServerNotification(roles,message,wo){
@@ -1434,7 +1438,7 @@ async function saveNewWO(){
       }
       addLog(num,`BPC work order attached automatically: ${fileToUpload.name}`);
     }
-    notify(['finance','md'],`New WO ${num} — ${cust} added to system${fileToUpload?`. Original BPC document: ${fileToUpload.name}`:''}`,num);
+    notifyWithEmail(['md'],`A new work order, WO ${num} — ${cust}, has been loaded into TrendsDesk and is ready for Admin processing.`,num);
     closeModal('addWOModal');
     clearWOForm();
     _lastParsedBPCFile = null;
@@ -2129,10 +2133,10 @@ async function notifyExternalRole(wo, role) {
     addLog(wo, 'Linesman notified — awaiting field documents');
     
     // CREATE NOTIFICATION FOR LINESMAN
-    notify('linesman', `📋 WO ${wo} (${job.cust}): Please upload the 6 required field documents.`, wo);
+    notifyWithEmail('linesman', `WO ${wo} — ${job.cust} has been assigned to the Linesman. Please upload the single merged field document containing all required field reports.`, wo);
     
     // NOTIFY ADMIN
-    notify(['md'], `Linesman notified for WO ${wo} — ${job.cust}. Awaiting field documents.`, wo);
+    notifyWithEmail(['md'], `The Linesman is currently attending to field work for WO ${wo} — ${job.cust}.`, wo);
     toast('✅ Linesman notified. They will upload documents from their dashboard.');
   } else if (role === 'gis') {
     job.stage = 'gis_notified';
@@ -2273,7 +2277,8 @@ async function markFinalGISComplete(wo){
   job.stage='finance_draft';
   job.actions.finance_draft={date:new Date().toISOString().slice(0,10),notes:'Final GIS documents confirmed',extra:''};
   addLog(wo,'Final GIS Map and Certificate confirmed — sent to Finance');
-  notify(['finance','md'],`WO ${wo} — ${job.cust} passed final GIS and is ready for Finance claim drafting.`,wo);
+  notifyWithEmail(['finance'],`WO ${wo} — ${job.cust} is now waiting for Finance. Please prepare the claim batch documents.`,wo);
+  notifyWithEmail(['md'],`WO ${wo} — ${job.cust} is now with Finance. Claim batch documents are in process.`,wo);
   markJobDirty(wo);
   await saveDBAndWait();refreshDetail();refreshAll();
   toast('Final GIS confirmed — sent to Finance','gn');
@@ -2569,7 +2574,8 @@ async function finalizeClaim(certNo){
   DB.certSeq++;
   selClaimJobs.clear();
   await saveDBAndWait();
-  notify(['admin','md'],`Claim ${certNo} v${batch.version} finalized and ready for completion`,batchJobs[0]?.wo||'');
+  notify(['admin'],`Claim ${certNo} v${batch.version} finalized and ready for completion`,batchJobs[0]?.wo||'');
+  notifyWithEmail(['md'],`The Finance team has completed Claim ${certNo}. Please review the claim documents and record the included work order${batchJobs.length===1?'':'s'} as complete.`,batchJobs[0]?.wo||'');
   closeModal('docModal');renderClaims();refreshAll();toast(`Claim ${certNo} finalized`);
 }
 
@@ -4660,8 +4666,9 @@ async function markLinesmanDocsComplete(){
   }
   job.stage='field_received';
   job.actions['field_received']={date:new Date().toISOString().slice(0,10),notes:'',extra:''};
-  addLog(wo,'All 6 field documents uploaded by Linesman — marked complete');
-  notify(['admin','md'],`✅ Linesman completed all field documents for WO ${wo} — ${job.cust}. Ready to create VO2.`,wo);
+  addLog(wo,'Merged Linesman field document uploaded — marked complete');
+  notifyWithEmail(['admin'],`The Linesman field reports for WO ${wo} — ${job.cust} have been uploaded. Please review them and continue the work order.`,wo);
+  notifyWithEmail(['md'],`The Linesman field reports for WO ${wo} — ${job.cust} have been uploaded and are available for review.`,wo);
   markJobDirty(wo);
   await saveDBAndWait();
   closeModal('linesmanUploadModal');

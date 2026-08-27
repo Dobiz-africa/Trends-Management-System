@@ -32,18 +32,25 @@ async function handleNotification({headers,body}){
   if(!targets.length||!String(message||'').trim())throw Object.assign(new Error('Valid roles and message are required'),{status:400});
   const id=crypto.randomUUID();
   await rest(config,'notifications',{method:'POST',body:targets.map(role=>({id:`${id}_${role}`,role,msg:String(message),wo:wo||null,is_read:false}))});
-  const recipients=await rest(config,`users?role=in.(${targets.map(encodeURIComponent).join(',')})&is_active=eq.true&select=id,email,full_name,role`);
+  let recipients=await rest(config,`users?role=in.(${targets.map(encodeURIComponent).join(',')})&is_active=eq.true&select=id,email,full_name,role`);
+  const testEmail=String(process.env.NOTIFICATION_TEST_EMAIL||'').trim().toLowerCase();
+  const testOnly=String(process.env.NOTIFICATION_TEST_ONLY||'').trim().toLowerCase()==='true';
+  if(testEmail&&(testOnly||!recipients.some(recipient=>String(recipient.email||'').toLowerCase()===testEmail))){
+    const testProfiles=await rest(config,`users?email=eq.${encodeURIComponent(testEmail)}&is_active=eq.true&select=id,email,full_name,role`);
+    const testRecipient=testProfiles?.[0]||{id:null,email:testEmail,full_name:'',role:'test'};
+    recipients=testOnly?[{...testRecipient,isTestCopy:true}]:[...recipients,{...testRecipient,isTestCopy:true}];
+  }
   const deliveries=[];
   for(const recipient of recipients||[]){
     if(!recipient.email)continue;
-    const key=crypto.createHash('sha256').update(`${event}|${wo}|${recipient.id}|${message}`).digest('hex');
+    const key=crypto.createHash('sha256').update(`${event}|${wo}|${recipient.id||recipient.email}|${message}`).digest('hex');
     const existing=await rest(config,`notification_deliveries?idempotency_key=eq.${key}&select=id,status`);
     if(existing?.length){deliveries.push(existing[0]);continue;}
-    const delivery=(await rest(config,'notification_deliveries',{method:'POST',body:{notification_id:`${id}_${recipient.role}`,recipient_id:recipient.id,recipient_email:recipient.email,idempotency_key:key,status:'queued',attempts:0}}))?.[0];
+    const delivery=(await rest(config,'notification_deliveries',{method:'POST',body:{notification_id:`${id}_${recipient.isTestCopy?'test':recipient.role}`,recipient_id:recipient.id,recipient_email:recipient.email,idempotency_key:key,status:'queued',attempts:0}}))?.[0];
     if(!process.env.RESEND_API_KEY){deliveries.push({...delivery,status:'queued',last_error:'RESEND_API_KEY is not configured'});continue;}
     try{
       const appUrl=(process.env.APP_URL||'http://127.0.0.1:4173').trim();
-      const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify({from:process.env.NOTIFICATION_FROM||'TrendsDesk Test <onboarding@resend.dev>',to:[recipient.email],subject:wo?`TrendsDesk action required — WO ${wo}`:'TrendsDesk notification',html:`<div style="font-family:Arial,sans-serif;max-width:560px"><h2 style="color:#075ca8">TrendsDesk</h2><p>Hello ${escapeHtml(recipient.full_name||recipient.email)},</p><p>${escapeHtml(message)}</p>${customer?`<p><strong>Customer:</strong> ${escapeHtml(customer)}</p>`:''}${wo?`<p><a href="${appUrl}/?wo=${encodeURIComponent(wo)}">Open work order</a></p>`:''}</div>`})});
+      const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify({from:process.env.NOTIFICATION_FROM||'TrendsDesk Test <onboarding@resend.dev>',to:[recipient.email],subject:wo?`TrendsDesk action required — WO ${wo}`:'TrendsDesk notification',html:`<div style="font-family:Arial,sans-serif;max-width:560px"><h2 style="color:#075ca8">TrendsDesk</h2><p>Hello,</p>${recipient.isTestCopy?`<p style="color:#667085;font-size:12px"><strong>Test copy:</strong> intended for ${escapeHtml(targets.join(', '))}.</p>`:''}<p>${escapeHtml(message)}</p>${customer?`<p><strong>Customer:</strong> ${escapeHtml(customer)}</p>`:''}${wo?`<p><a href="${appUrl}/?wo=${encodeURIComponent(wo)}">Open work order</a></p>`:''}</div>`})});
       const result=await response.json().catch(()=>({}));
       const status=response.ok?'sent':'failed',lastError=response.ok?null:(result.message||result.error||`Resend returned HTTP ${response.status}`);
       await rest(config,`notification_deliveries?id=eq.${delivery.id}`,{method:'PATCH',body:{provider_id:result.id||null,status,attempts:1,last_error:lastError,updated_at:new Date().toISOString()}});
