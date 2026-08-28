@@ -206,6 +206,8 @@ test('legacy deleted work orders are classified into the recycle bin',()=>{
   assert.match(source,/row\.stage==='work_order_deleted'/);
   assert.match(source,/isRecycled=Boolean\(row\.deleted_at\|\|j\.deletedAt\|\|isLegacyDeleted\)/);
   assert.match(source,/if\(job\.stage==='work_order_deleted'\)/);
+  assert.match(source,/isLegacyDeleted\?'Previously deleted'/);
+  assert.doesNotMatch(source,/Deleted before the Recycle Bin upgrade/);
 });
 
 test('documents panels use one merged Linesman document and attach the parsed BPC file',()=>{

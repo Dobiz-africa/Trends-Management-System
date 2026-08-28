@@ -514,7 +514,7 @@ async function syncFromSupabase(){
       const isRecycled=Boolean(row.deleted_at||j.deletedAt||isLegacyDeleted);
       if(isRecycled){
         j.deletedAt=row.deleted_at||j.deletedAt||j.actions?.work_order_deleted?.date||row.updated_at||new Date().toISOString();
-        j.deletionReason=row.deletion_reason||j.deletionReason||(isLegacyDeleted?'Deleted before the Recycle Bin upgrade':'');
+        j.deletionReason=row.deletion_reason||j.deletionReason||(isLegacyDeleted?'Previously deleted':'');
         recycleBin[row.wo]=j;
       }else jobs[row.wo] = j;
     });
