@@ -2133,7 +2133,7 @@ async function notifyExternalRole(wo, role) {
     addLog(wo, 'Linesman notified — awaiting field documents');
     
     // CREATE NOTIFICATION FOR LINESMAN
-    notifyWithEmail('linesman', `WO ${wo} — ${job.cust} has been assigned to the Linesman. Please upload the single merged field document containing all required field reports.`, wo);
+    notifyWithEmail('linesman', `WO ${wo} — ${job.cust} has been assigned to the Linesman. Please upload the field report document containing all required field reports.`, wo);
     
     // NOTIFY ADMIN
     notifyWithEmail(['md'], `The Linesman is currently attending to field work for WO ${wo} — ${job.cust}.`, wo);
@@ -2277,7 +2277,7 @@ async function markFinalGISComplete(wo){
   job.stage='finance_draft';
   job.actions.finance_draft={date:new Date().toISOString().slice(0,10),notes:'Final GIS documents confirmed',extra:''};
   addLog(wo,'Final GIS Map and Certificate confirmed — sent to Finance');
-  notifyWithEmail(['finance'],`WO ${wo} — ${job.cust} is now waiting for Finance. Please prepare the claim batch documents.`,wo);
+  notifyWithEmail(['finance'],`WO ${wo} — ${job.cust} is waiting for you. Please prepare the claim batch documents.`,wo);
   notifyWithEmail(['md'],`WO ${wo} — ${job.cust} is now with Finance. Claim batch documents are in process.`,wo);
   markJobDirty(wo);
   await saveDBAndWait();refreshDetail();refreshAll();

@@ -175,15 +175,17 @@ test('email delivery is limited to role handoffs and uses a neutral greeting',()
   const notifyFn=app.slice(app.indexOf('function notify(roles'),app.indexOf('function addLog(',app.indexOf('function notify(roles')));
   assert.doesNotMatch(notifyFn.slice(0,notifyFn.indexOf('function notifyWithEmail')),/dispatchServerNotification/);
   assert.match(notifyFn,/function notifyWithEmail\([\s\S]*dispatchServerNotification/);
-  assert.match(app,/notifyWithEmail\('linesman',[^\n]+single merged field document/);
+  assert.match(app,/notifyWithEmail\('linesman',[^\n]+field report document containing all required field reports/);
   assert.match(app,/notifyWithEmail\(\['admin'\],[^\n]+Linesman field reports/);
-  assert.match(app,/notifyWithEmail\(\['finance'\],[^\n]+waiting for Finance/);
+  assert.match(app,/notifyWithEmail\(\['finance'\],[^\n]+is waiting for you/);
   assert.match(app,/notifyWithEmail\(\['md'\],[^\n]+Claim batch documents are in process/);
   assert.match(app,/notifyWithEmail\(\['md'\],[^\n]+Finance team has completed Claim/);
   for(const filename of ['notifications.js','notifications-local.cjs']){
     const email=fs.readFileSync(path.join(__dirname,'..','api',filename),'utf8');
     assert.match(email,/<p>Hello,<\/p>/);
+    assert.match(email,/<p>Thank you\.<\/p>/);
     assert.doesNotMatch(email,/Hello \$\{escapeHtml\(recipient/);
+    assert.doesNotMatch(email,/This automated message was sent to the/);
   }
 });
 test('local env loading accepts later local overrides without replacing OS variables',()=>{
