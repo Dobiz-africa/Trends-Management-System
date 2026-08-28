@@ -1650,7 +1650,7 @@ function setDocumentStatus(docType, jobComplete=false) {
     const docLabelMap={vo1:'VO1',vo2:'VO2',[LINESMAN_MERGED_DOC_KEY]:LINESMAN_MERGED_DOC_LABEL,works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',final_gis_report:'Final GIS Map',final_gis_cert:'Final GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
     const isDone=job.stage==='job_complete';
     const jobManagement=CU==='admin'
-      ?`<div class="job-management"><div class="job-management-copy"><div class="job-management-title">Job management</div><div class="job-management-help">Move this entire work order, including its workflow and documents, out of active lists. You can restore it later from the Recycle Bin on the Work Orders page.</div></div><button class="btn btn-rd btn-sm" onclick="confirmDeleteWorkOrder('${wo}')">🗑 Move entire job to Recycle Bin</button></div>`
+      ?`<div class="job-management"><div class="job-management-copy"><div class="job-management-title">Job management</div><div class="job-management-help">Move this work order and its documents out of active lists. You can restore it later from the Recycle Bin on the Work Orders page.</div></div><button class="btn btn-rd btn-sm" onclick="confirmDeleteWorkOrder('${wo}')">🗑 Move work order to Recycle Bin</button></div>`
       :'';
     const nextCard=isDone
       ?`<div class="na-done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><polyline points="20 6 9 17 4 12"/></svg><div class="na-done-txt">This job is complete</div></div>`
@@ -4568,7 +4568,6 @@ function confirmDeleteWorkOrder(wo){
   document.getElementById('deleteWONumber').textContent = wo;
   document.getElementById('deleteWOCustomer').textContent = job.cust || 'Unknown';
   document.getElementById('deleteWOConfirmInput').value = '';
-  const reasonEl=document.getElementById('deleteWOReason');if(reasonEl)reasonEl.value='';
   document.getElementById('deleteWOConfirmBtn').disabled = true;
   
   // Enable delete button only if user types correct WO number
@@ -4595,9 +4594,6 @@ async function deleteWorkOrder(){
   }
   
   const wo = deleteWONumber;
-  const reason=(document.getElementById('deleteWOReason')?.value||'').trim();
-  if(!reason){toast('Enter a reason for recycling this work order','rd');return;}
-  
   try {
     const job = DB.jobs[wo];
     if(!job) {
@@ -4606,13 +4602,13 @@ async function deleteWorkOrder(){
     }
     if(SB.enabled&&API_ROUTES_ENABLED){
       const {data:sessionData}=await SB.client.auth.getSession();
-      const apiResponse=await fetch('/api/work-orders',{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${sessionData?.session?.access_token||''}`},body:JSON.stringify({wo,action:'recycle',reason})});
+      const apiResponse=await fetch('/api/work-orders',{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:`Bearer ${sessionData?.session?.access_token||''}`},body:JSON.stringify({wo,action:'recycle'})});
       if(!apiResponse.ok)throw new Error((await apiResponse.json()).error||'Recycle request failed');
     }
     
     job.deletedAt = new Date().toISOString();
     job.deletedBy = CU;
-    job.deletionReason = reason;
+    job.deletionReason = '';
     job.actions = job.actions || {};
     job.actions.work_order_deleted = {
       date: new Date().toISOString().slice(0,10),

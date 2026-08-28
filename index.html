@@ -262,11 +262,10 @@
                 Type the work order number below to confirm deletion:
               </div>
               <input type="text" id="deleteWOConfirmInput" placeholder="Enter WO number to confirm" style="width:100%;padding:.5rem;margin-top:.5rem;border:1px solid var(--bd);border-radius:var(--rs);background:var(--sf1);color:var(--tx1)">
-              <textarea id="deleteWOReason" placeholder="Reason for recycling (required)" style="width:100%;padding:.5rem;margin-top:.65rem;border:1px solid var(--bd);border-radius:var(--rs);background:var(--sf1);color:var(--tx1)"></textarea>
             </div>
             <div class="modal-btns">
               <button class="btn btn-gy" onclick="closeModal('deleteWOModal')">✕ Cancel</button>
-              <button class="btn btn-rd" id="deleteWOConfirmBtn" onclick="deleteWorkOrder()" style="background:#dc3545" disabled>Move to Recycle Bin</button>
+              <button class="btn btn-rd" id="deleteWOConfirmBtn" onclick="deleteWorkOrder()" disabled>Move work order to Recycle Bin</button>
             </div>
           </div>
         </div>

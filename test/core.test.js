@@ -210,6 +210,18 @@ test('legacy deleted work orders are classified into the recycle bin',()=>{
   assert.doesNotMatch(source,/Deleted before the Recycle Bin upgrade/);
 });
 
+test('recycling a work order needs confirmation but no deletion reason',()=>{
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const api=fs.readFileSync(path.join(__dirname,'..','api','work-orders.js'),'utf8');
+  const css=fs.readFileSync(path.join(__dirname,'..','style.css'),'utf8');
+  assert.doesNotMatch(html,/deleteWOReason|Reason for recycling/);
+  assert.doesNotMatch(app,/Enter a reason for recycling|deleteWOReason/);
+  assert.doesNotMatch(api,/Deletion reason is required/);
+  assert.match(html,/Move work order to Recycle Bin/);
+  assert.match(css,/#deleteWOConfirmBtn\{[^}]*color:#fff/);
+});
+
 test('documents panels use one merged Linesman document and attach the parsed BPC file',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   assert.match(source,/const LINESMAN_MERGED_DOC_KEY='ln_merged_pdf'/);
