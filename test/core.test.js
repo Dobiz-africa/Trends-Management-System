@@ -120,10 +120,32 @@ test('follow-up document requirements are enforced',()=>{
     "ef('wi_loc',jobClaimLocation(job),'98%')"
   ])assert.match(source,new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
   assert.doesNotMatch(source,/addListJobRow/);
-  assert.match(source,/function downloadBPCSpreadsheetXLSX\(certNo\)/);
-  assert.match(source,/XLSX\.writeFile\(workbook,`BPC_Spreadsheet_/);
+  assert.match(source,/async function downloadBPCSpreadsheetXLSX\(certNo\)/);
+  assert.match(source,/workbook\.addWorksheet\('BPC Spreadsheet'/);
+  assert.match(source,/const headers=\['Item No\.'[\s\S]{0,400}'External Responsible Person'\]/);
+  assert.match(source,/cell\.border=\{/);
+  assert.match(source,/const separator=\{style:'medium'/);
+  assert.match(source,/const frame=\{style:'thick'/);
+  assert.match(source,/numFmt='#,##0\.00'/);
+  assert.match(source,/orientation:'landscape',paperSize:9,fitToPage:true/);
+  assert.match(source,/application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
   assert.match(source,/docType==='bpc_spreadsheet'[\s\S]{0,500}Download Excel/);
   assert.match(source,/docType==='bpc_spreadsheet'\?'Print \/ PDF':'Print'/);
+  assert.match(source,/function prepareWideClaimPrint\(doc,docType\)/);
+  assert.match(source,/\['list_of_jobs','bpc_spreadsheet'\]\.includes\(docType\)/);
+  assert.match(source,/min-width:0!important;table-layout:fixed!important/);
+  assert.match(source,/field\.replaceWith\(printable\)/);
+  assert.match(source,/colspan="8"/,'List of Jobs total row spans all 13 columns');
+  assert.match(source,/\.bpc-print-table thead th\{[\s\S]{0,150}white-space:nowrap!important/);
+  assert.match(source,/>Completeness<\/th>/);
+  assert.match(source,/>Date<\/th>/);
+  assert.doesNotMatch(source,/class="bpc-print-table"[\s\S]{0,3000}>Work Order Date<\/th>/);
+  assert.match(source,/ITEM<br>No\./);
+  assert.match(source,/PROJECT<br>NUMBER/);
+  assert.match(source,/PLANNED<br>START DATE/);
+  assert.match(source,/ACTUAL<br>COMPLETION DATE/);
+  assert.match(source,/\.bpc-print-table tbody td,[\s\S]{0,180}white-space:nowrap!important/);
+  assert.match(source,/\.print-field-value\{[\s\S]{0,120}white-space:nowrap/);
   const printModal=source.slice(source.indexOf('function printModal('),source.indexOf('/*',source.indexOf('function printModal(')));
   assert.doesNotMatch(printModal,/downloadBPCSpreadsheetXLSX/);
   assert.match(source,/class="invoice-meta"/);
@@ -201,6 +223,15 @@ test('production role switcher is restricted to configured admin accounts',()=>{
   assert.doesNotMatch(source,/DEVELOPER_MODE&&!IS_PRODUCTION_HOST/);
 });
 
+test('dashboard login cannot remain behind an endless loading overlay',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const loader=source.slice(source.indexOf('async function loadDashboardAfterLogin'),source.indexOf('function switchRole'));
+  assert.match(loader,/withTimeout\(syncFromSupabase\(\),15000/);
+  assert.match(loader,/finally\{[\s\S]*loadOv\.style\.display='none'/);
+  assert.doesNotMatch(loader,/await flushPendingSave\(\)/);
+  assert.match(loader,/Could not load the latest work orders/);
+});
+
 test('legacy deleted work orders are classified into the recycle bin',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   assert.match(source,/row\.stage==='work_order_deleted'/);
@@ -235,4 +266,53 @@ test('documents panels use one merged Linesman document and attach the parsed BP
   assert.match(create,/await saveDBAndWait\(\)/);
   assert.match(create,/await _uploadScanToSupabase\(num,'bpc_wo',fileToUpload\)/);
   assert.ok(create.indexOf('await saveDBAndWait()')<create.indexOf("await _uploadScanToSupabase(num,'bpc_wo',fileToUpload)"),'job is persisted before its BPC document row is attached');
+});
+
+test('VO1 and VO2 allow the final item row to be deleted',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const vo1Start=source.lastIndexOf('function deleteVO1Row(wo,idx)');
+  const vo2Start=source.lastIndexOf('function deleteVO2Row(wo,idx)');
+  const vo1=source.slice(vo1Start,vo2Start);
+  const vo2=source.slice(vo2Start,source.indexOf('/*',vo2Start));
+  assert.match(vo1,/\.vo1\.items\.splice\(idx, 1\)/);
+  assert.match(vo2,/\.vo2\.items\.splice\(idx, 1\)/);
+  assert.doesNotMatch(vo1,/length <= 1|Cannot delete the last row/);
+  assert.doesNotMatch(vo2,/length <= 1|Cannot delete the last row/);
+  assert.match(vo1,/openRowDeleteConfirm\(\(\)=>\{/);
+  assert.match(vo2,/openRowDeleteConfirm\(\(\)=>\{/);
+  assert.doesNotMatch(vo1,/confirm\('Delete this row\?'\)/);
+  assert.doesNotMatch(vo2,/confirm\('Delete this row\?'\)/);
+});
+
+test('row deletion uses a branded confirmation modal',()=>{
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  assert.match(app,/function openRowDeleteConfirm\(action\)/);
+  assert.match(app,/function closeRowDeleteConfirm\(approved\)/);
+  assert.match(html,/id="rowDeleteModal" class="overlay"/);
+  assert.match(html,/>Delete item\?<\/h3>/);
+  assert.match(html,/>Delete item<\/button>/);
+});
+
+test('authentication feedback is rendered inside the login forms',()=>{
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const auth=app.slice(app.indexOf('async function forgotPassword()'),app.indexOf('function withTimeout('));
+  assert.match(html,/id="loginFeedback" class="auth-feedback" role="alert"/);
+  assert.match(html,/id="resetFeedback" class="auth-feedback" role="alert"/);
+  assert.match(app,/function showAuthFeedback\(targetId,message,type='error'\)/);
+  assert.match(auth,/The email address or password is incorrect/);
+  assert.doesNotMatch(auth,/alert\(/);
+});
+
+test('Linesman upload interface uses clear field-report wording',()=>{
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  const dashboard=app.slice(app.indexOf('function renderLinesmanDash()'),app.indexOf('function selectLinesmanFile(',app.indexOf('function renderLinesmanDash()')));
+  assert.match(dashboard,/Upload Field Reports/);
+  assert.match(dashboard,/Field reports pending/);
+  assert.doesNotMatch(dashboard,/Upload All 6 Documents|All Documents \(Merged PDF\)|documents uploaded/);
+  assert.match(html,/>Upload Field Reports<\/h3>/);
+  assert.match(html,/>✅ Submit Field Reports<\/button>/);
+  assert.doesNotMatch(html,/Upload Field Documents \(Merged PDF\)/);
 });

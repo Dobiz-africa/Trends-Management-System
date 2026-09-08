@@ -95,14 +95,16 @@
         <label class="lf-label" for="loginEmail">Email</label>
         <div class="lf-input-wrap">
           <svg class="lf-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6L12 13 2 6"/></svg>
-          <input id="loginEmail" type="email" placeholder="your@email.com" autocomplete="email">
+          <input id="loginEmail" type="email" placeholder="your@email.com" autocomplete="email" oninput="clearAuthFeedback('loginFeedback')">
         </div>
 
         <label class="lf-label" for="loginPassword">Password</label>
         <div class="lf-input-wrap">
           <svg class="lf-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          <input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')realLogin()">
+          <input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password" oninput="clearAuthFeedback('loginFeedback')" onkeydown="if(event.key==='Enter')realLogin()">
         </div>
+
+        <div id="loginFeedback" class="auth-feedback" role="alert" aria-live="polite"></div>
 
         <button class="lf-btn" onclick="realLogin()">Sign In →</button>
 
@@ -137,13 +139,15 @@
 
         <label class="lf-label" for="resetPassword1">New Password</label>
         <div class="lf-input-wrap">
-          <input id="resetPassword1" type="password" placeholder="At least 6 characters">
+          <input id="resetPassword1" type="password" placeholder="At least 6 characters" oninput="clearAuthFeedback('resetFeedback')">
         </div>
 
         <label class="lf-label" for="resetPassword2">Confirm Password</label>
         <div class="lf-input-wrap">
-          <input id="resetPassword2" type="password" placeholder="Repeat password">
+          <input id="resetPassword2" type="password" placeholder="Repeat password" oninput="clearAuthFeedback('resetFeedback')">
         </div>
+
+        <div id="resetFeedback" class="auth-feedback" role="alert" aria-live="polite"></div>
 
         <button class="lf-btn" onclick="submitNewPassword()">Save New Password →</button>
 
@@ -240,6 +244,21 @@
     </div>
     <div style="flex:1;overflow-y:auto;padding:1.25rem" id="docModalBody"></div>
     <div style="padding:.8rem 1.25rem;border-top:1px solid var(--bd);background:var(--sf2);display:flex;gap:7px;flex-wrap:wrap" id="docModalFoot"></div>
+  </div>
+</div>
+<div id="rowDeleteModal" class="overlay" onclick="if(event.target===this)closeRowDeleteConfirm(false)" role="dialog" aria-modal="true" aria-labelledby="rowDeleteTitle">
+  <div class="modal" style="width:min(420px,calc(100vw - 32px));overflow:hidden">
+    <div style="padding:1.4rem 1.4rem .7rem;display:flex;gap:1rem;align-items:flex-start">
+      <div style="width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:rgba(239,68,68,.12);color:#ef4444;font-size:1.15rem">🗑</div>
+      <div>
+        <h3 id="rowDeleteTitle" style="margin:0 0 .45rem">Delete item?</h3>
+        <p style="margin:0;color:var(--tx2);font-size:.9rem;line-height:1.5">This item will be removed from the valuation. You can add another item afterward if needed.</p>
+      </div>
+    </div>
+    <div class="modal-btns" style="padding:1rem 1.4rem 1.25rem">
+      <button class="btn btn-gy" onclick="closeRowDeleteConfirm(false)">Cancel</button>
+      <button class="btn btn-rd" onclick="closeRowDeleteConfirm(true)">Delete item</button>
+    </div>
   </div>
 </div>
 <div id="deleteWOModal" class="overlay">
@@ -554,7 +573,7 @@
               <div id="linesmanNotifications" style="min-height:80px"></div>
             </div>
             <div class="crd" style="margin-top:1.5rem">
-              <div class="crd-hd">📤 Work Orders Awaiting Your Documents</div>
+              <div class="crd-hd">📤 Work Orders Awaiting Field Reports</div>
               <div id="linesmanPendingJobs" style="min-height:60px"></div>
             </div>
           </div>
@@ -564,17 +583,17 @@
         <!-- LINESMAN UPLOAD MODAL -->
         <div id="linesmanUploadModal" class="overlay">
           <div class="modal" style="width:640px">
-            <h3>Upload Field Documents (Merged PDF)</h3>
+            <h3>Upload Field Reports</h3>
             <div id="linesmanUploadModalSub" style="font-size:.85rem;color:var(--tx3);margin-top:-.25rem;margin-bottom:.25rem"></div>
             <div style="font-size:.8rem;color:var(--tx3);margin:.5rem 0;line-height:1.4">
-              <strong>Required documents in one PDF:</strong><br>
+              <strong>Include these field reports in one PDF:</strong><br>
               1. Handover Form · 2. E21 Test Sheet · 3. E22 Checklist · 4. E23 Test Sheet · 5. As-Built Drawing · 6. Inspection Certificate
             </div>
             <div id="linesmanUploadProgress" style="font-size:.8rem;color:var(--am);font-weight:600;margin-bottom:.5rem"></div>
             <div id="linesmanUploadButtons" style="display:flex;flex-direction:column;gap:1rem;margin:1rem 0;align-items:stretch"></div>
             <div class="modal-btns">
               <button class="btn btn-gy" onclick="closeModal('linesmanUploadModal')">Close</button>
-              <button class="btn btn-gn" id="linesmanCompleteBtn" onclick="markLinesmanDocsComplete()">✅ Mark as Complete</button>
+              <button class="btn btn-gn" id="linesmanCompleteBtn" onclick="markLinesmanDocsComplete()">✅ Submit Field Reports</button>
             </div>
           </div>
         </div>
@@ -810,6 +829,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="core.js"></script>
 <script src="rates.js"></script>
 <script src="app.js"></script>

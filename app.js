@@ -81,7 +81,7 @@ const LN_DOC_KEYS = LINESMAN_DOCS.map(d => 'ln_' + d.id);
 const LN_DOC_LABELS = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.label]));
 const LN_DOC_SHORT = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.short]));
 const LINESMAN_MERGED_DOC_KEY='ln_merged_pdf';
-const LINESMAN_MERGED_DOC_LABEL='Linesman Merged Field Documents';
+const LINESMAN_MERGED_DOC_LABEL='Linesman Field Reports';
 function linesmanDocsUploadedCount(job){
   if(job?.scans?.ln_merged_pdf)return LINESMAN_DOCS.length;
   // CRITICAL FIX: Only count documents that have COMPLETE data. A document
@@ -1462,7 +1462,7 @@ function renderInbox(){
   if(CU==='admin'){
     jobs.filter(j=>j.stage==='wo_received').forEach(j=>tasks.push({wo:j.wo,icon:'📋',name:'Create VO1 — Review BPC Work Order · WO '+j.wo,desc:j.cust+' · '+j.loc,badge:'Action Required',bc:'b-am'}));
     jobs.filter(j=>j.stage==='vo1_created').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Notify Linesman Externally — Record in System · WO '+j.wo,desc:j.cust,badge:'Next Step',bc:'b-gy'}));
-    jobs.filter(j=>j.stage==='linesman_notified').forEach(j=>{const ct=linesmanDocsUploadedCount(j);tasks.push({wo:j.wo,icon:'👷',name:'Awaiting Linesman Field Documents — WO '+j.wo,desc:j.cust+` · ${ct} of ${LINESMAN_DOCS.length} documents uploaded so far`,badge:'Waiting',bc:'b-bl'});});
+    jobs.filter(j=>j.stage==='linesman_notified').forEach(j=>{const uploaded=linesmanDocsAllUploaded(j);tasks.push({wo:j.wo,icon:'👷',name:'Awaiting Linesman Field Reports — WO '+j.wo,desc:j.cust+` · Field reports ${uploaded?'uploaded':'pending'}`,badge:'Waiting',bc:'b-bl'});});
     jobs.filter(j=>j.stage==='field_received').forEach(j=>tasks.push({wo:j.wo,icon:'📝',name:'Create VO2 from Field Findings — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
     jobs.filter(j=>j.stage==='vo2_created').forEach(j=>tasks.push({wo:j.wo,icon:'📄',name:'Prepare Works Instruction — WO '+j.wo,desc:j.cust+' · ready to instruct teams',badge:'Action Required',bc:'b-am'}));
     jobs.filter(j=>j.stage==='work_instruction_ready').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Complete Works Instruction — WO '+j.wo,desc:j.cust+' · Final GIS is next',badge:'Action Required',bc:'b-am'}));
@@ -1606,7 +1606,7 @@ function renderJobDetail(wo){
         if(st.id==='vo1_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','vo1')">View / Edit VO1</button><button class="btn btn-am btn-sm" onclick="notifyExternalRole('${wo}','linesman')">🔔 Notify Linesman (External)</button>`;
         if(st.id==='linesman_notified') {
           const ct=linesmanDocsUploadedCount(job);
-          actBtns+=`<div class="na-action-sub" style="margin:.25rem 0">👷 Waiting on Linesman — ${ct} of ${LINESMAN_DOCS.length} field documents uploaded so far</div>`;
+          actBtns+=`<div class="na-action-sub" style="margin:.25rem 0">👷 Waiting on Linesman field reports</div>`;
           if(ct>0) actBtns+=`<button class="btn btn-gy btn-sm" onclick="showLinesmanDocumentsModal('${wo}')">📄 View Uploaded So Far</button>`;
           actBtns+=`<button class="btn btn-gy btn-sm" onclick="notifyExternalRole('${wo}','linesman')">🔔 Remind Linesman</button>`;
         }
@@ -2163,7 +2163,7 @@ function showLinesmanDocumentsModal(wo) {
   const mergedPDF = job.scans && job.scans[mergedKey];
   const ct = linesmanDocsUploadedCount(job);
   
-  document.getElementById('docModalTitle').textContent = `📋 Linesman Field Documents — WO ${wo}`;
+  document.getElementById('docModalTitle').textContent = `📋 Linesman Field Reports — WO ${wo}`;
   document.getElementById('docModalBody').innerHTML = `
     <div style="padding:1rem">
       <div style="margin-bottom:1rem;font-size:.9rem;color:var(--tx2)">
@@ -2173,7 +2173,7 @@ function showLinesmanDocumentsModal(wo) {
         <div style="display:flex;gap:10px;padding:1rem;background:var(--sf2);border-radius:var(--rs);align-items:center;margin-bottom:.5rem;flex-direction:column;align-items:flex-start">
           <span style="font-size:1.8rem;margin-bottom:.5rem">📄</span>
           <span style="flex:1">
-            <div style="font-weight:600;font-size:.95rem">Merged PDF - All 6 Documents</div>
+            <div style="font-weight:600;font-size:.95rem">Linesman Field Reports</div>
             <div style="font-size:.75rem;color:var(--tx3);margin:.25rem 0">${mergedPDF.filename}</div>
             <div style="font-size:.72rem;color:var(--tx3)">Uploaded ${fd(mergedPDF.uploadedAt)}</div>
             <div style="font-size:.75rem;color:var(--tx3);margin-top:.5rem;line-height:1.4">
@@ -2188,7 +2188,7 @@ function showLinesmanDocumentsModal(wo) {
       ` : `
         <div style="padding:1rem;background:var(--sf2);border-radius:var(--rs);text-align:center;color:var(--tx3)">
           <div style="font-size:2rem;margin-bottom:.5rem">⏳</div>
-          <div style="font-size:.9rem">Waiting for Linesman to upload merged PDF with all 6 documents</div>
+          <div style="font-size:.9rem">Waiting for Linesman to upload the field reports</div>
         </div>
       `}
     </div>
@@ -3663,7 +3663,6 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
     return`<tr>
       <td style="border:1px solid #bbb;padding:2px;text-align:center;font-size:6.5pt">${i+1}</td>
       <td style="border:1px solid #bbb;padding:2px">${ei(j.projNo||j.bpcProjNo||j.wo,'98%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(j.meterNo||'','98%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'98%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${ei(CO.vendor,'98%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${eir(BWP(t.total),'98%')}</td>
@@ -3674,59 +3673,41 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
       <td style="border:1px solid #bbb;padding:2px">${ei(jobClaimLocation(j),'98%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(startDate)}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(compDate)}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(CO.name,'98%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei('BPC Engineer','98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('Poloko Moiseraela','98%')}</td>
+      <td style="border:1px solid #bbb;padding:2px">${ei('Kagiso Jeff Kewagamang','98%')}</td>
     </tr>`;
   }).join('');
 
-  const grandTotal=batchJobs.reduce((s,j)=>{const t=bestTotal(j);return s+t.total;},0);
-
   return`<div class="paper">
   <div class="doc-scroll-wrap" style="overflow-x:auto;width:100%;background:#fff">
-  <table style="width:100%;min-width:1450px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
+  <table class="bpc-print-table" style="width:100%;min-width:1450px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
     <colgroup>
-      <col style="width:32px">
-      <col style="width:70px">
-      <col style="width:56px">
-      <col style="width:190px">
-      <col style="width:52px">
-      <col style="width:80px">
-      <col style="width:34px">
-      <col style="width:78px">
-      <col style="width:78px">
-      <col style="width:100px">
-      <col style="width:130px">
-      <col style="width:78px">
-      <col style="width:78px">
-      <col style="width:190px">
-      <col style="width:140px">
+      <col style="width:4.5%"><col style="width:5.65%"><col style="width:9.62%">
+      <col style="width:5.6%"><col style="width:3.82%"><col style="width:4.5%">
+      <col style="width:3.82%"><col style="width:6.25%"><col style="width:5.45%">
+      <col style="width:15.22%"><col style="width:6.54%"><col style="width:9.22%">
+      <col style="width:9.57%"><col style="width:9.62%">
     </colgroup>
     <thead>
       <tr style="background:#d9d9d9">
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Item No.</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Project No.</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Meter No.</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Project Number</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Vendor Name</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Vendor Number</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Amount (BWP)</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">% Completion</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Work Order Date</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Amount</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Completeness</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Date</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Phase Description</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Invoice Number</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Location</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Start Date</th>
-        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Completion Date</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Planned Start Date</th>
+        <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Actual Completeness Date</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">Internal Responsible Person</th>
         <th style="border:1px solid #999;padding:3px;overflow:visible;white-space:normal">External Responsible Person</th>
       </tr>
     </thead>
     <tbody>
       ${rows}
-      <tr style="background:#d9d9d9;font-weight:bold;border-top:2px solid #999">
-        <td colspan="5" style="border:1px solid #999;padding:3px;text-align:right"><strong>TOTAL</strong></td>
-        <td style="border:1px solid #999;padding:3px;text-align:right"><strong>${BWP(grandTotal)}</strong></td>
-        <td colspan="9" style="border:1px solid #999;padding:3px"></td>
-      </tr>
     </tbody>
   </table>
   </div>
@@ -3765,37 +3746,29 @@ function docListOfJobs(job, batchJobs){
   }).join('');
   return`<div class="paper">
   <div class="doc-scroll-wrap" style="overflow-x:auto;width:100%;background:#fff">
-  <table style="width:100%;min-width:1500px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
+  <table class="jobs-print-table" style="width:100%;min-width:1500px;border-collapse:collapse;font-size:9pt;margin-top:6px;table-layout:auto">
     <colgroup>
-      <col style="width:32px">
-      <col style="width:56px">
-      <col style="width:190px">
-      <col style="width:56px">
-      <col style="width:70px">
-      <col style="width:34px">
-      <col style="width:60px">
-      <col style="width:78px">
-      <col style="width:130px">
-      <col style="width:70px">
-      <col style="width:75px">
-      <col style="width:150px">
-      <col style="width:140px">
+      <col style="width:2.63%"><col style="width:4.28%"><col style="width:14.42%">
+      <col style="width:4.28%"><col style="width:6.92%"><col style="width:6.19%">
+      <col style="width:6.26%"><col style="width:6.39%"><col style="width:17.72%">
+      <col style="width:6.52%"><col style="width:8.89%"><col style="width:10.74%">
+      <col style="width:10.76%">
     </colgroup>
     <thead>
       <tr style="background:#d9d9d9">
-        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">ITEM No.</th>
-        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">PROJECT NUMBER</th>
+        <th class="header-wrap" style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">ITEM<br>No.</th>
+        <th class="header-wrap" style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">PROJECT<br>NUMBER</th>
         <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">VENDOR NAME</th>
-        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">VENDOR NUMBER</th>
+        <th class="header-wrap" style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">VENDOR<br>NUMBER</th>
         <th style="border:1px solid #999;padding:2px 3px;text-align:right;overflow:visible;white-space:normal">AMOUNT</th>
         <th style="border:1px solid #999;padding:2px 3px;text-align:center;overflow:visible;white-space:normal">% COMPLETION</th>
-        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">PHASE DESCRIPTION</th>
+        <th class="header-wrap" style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">PHASE<br>DESCRIPTION</th>
         <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">INVOICE No.</th>
         <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">LOCATION</th>
-        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">START DATE</th>
-        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">COMPLETION DATE</th>
-        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">INTERNAL RESPONSIBLE PERSON</th>
-        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">EXTERNAL RESPONSIBLE PERSON</th>
+        <th class="header-wrap" style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">PLANNED<br>START DATE</th>
+        <th class="header-wrap" style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">ACTUAL<br>COMPLETION DATE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">INTERNAL RESPONSIBLE</th>
+        <th style="border:1px solid #999;padding:2px 3px;overflow:visible;white-space:normal">EXTERNAL RESPONSIBLE</th>
       </tr>
     </thead>
     <tbody id="loj_tbody">
@@ -3803,7 +3776,7 @@ function docListOfJobs(job, batchJobs){
       <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #999">
         <td style="border:1px solid #bbb;padding:2px 3px" colspan="4"><strong>TOTAL CLAIM</strong></td>
         <td style="border:1px solid #bbb;padding:2px 3px;text-align:right"><strong>P${BWP(total)}</strong></td>
-        <td style="border:1px solid #bbb;padding:2px 3px" colspan="7"></td>
+        <td style="border:1px solid #bbb;padding:2px 3px" colspan="8"></td>
       </tr>
     </tbody>
   </table>
@@ -3811,21 +3784,84 @@ function docListOfJobs(job, batchJobs){
   </div>`;
 }
 
-function downloadBPCSpreadsheetXLSX(certNo){
-  if(typeof XLSX==='undefined'){toast('Excel export library did not load. Check the internet connection and try again.','rd');return;}
+async function downloadBPCSpreadsheetXLSX(certNo){
+  if(typeof ExcelJS==='undefined'){toast('Excel export library did not load. Check the internet connection and try again.','rd');return;}
   const jobs=(DB.batchDocs?.[certNo]?.wos||[]).map(wo=>DB.jobs[wo]).filter(Boolean);
   if(!jobs.length){toast('No work orders found for this claim batch','rd');return;}
   const year=new Date().getFullYear();
-  const headers=['Item No.','Project No.','Meter No.','Vendor Name','Vendor Number','Amount (BWP)','% Completion','Work Order Date','Phase Description','Invoice Number','Location','Start Date','Completion Date','Internal Responsible Person','External Responsible Person'];
-  const data=jobs.map((job,index)=>[index+1,job.projNo||job.bpcProjNo||job.wo,job.meterNo||'',CO.name,CO.vendor,bestTotal(job).total,100,job.date||job.woDate||job.actions?.wo_received?.date||'',`Ph ${job.phase}-Free Con`,`INV_${certNo}.${year}`,jobClaimLocation(job),job.startDate||job.actions?.vo2_created?.date||'',job.completionDate||job.actions?.finance_draft?.date||'',CO.name,'BPC Engineer']);
-  data.push(['','','','','TOTAL',jobs.reduce((sum,job)=>sum+bestTotal(job).total,0),'','','','','','','','','']);
-  const sheet=XLSX.utils.aoa_to_sheet([headers,...data]);
-  sheet['!cols']=[7,14,12,32,14,14,13,16,20,22,30,14,16,30,28].map(w=>({wch:w}));
-  for(let row=2;row<=data.length+1;row++)if(sheet[`F${row}`])sheet[`F${row}`].z='P #,##0.00';
-  const workbook=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook,sheet,'BPC Spreadsheet');
-  XLSX.writeFile(workbook,`BPC_Spreadsheet_${String(certNo).replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`);
-  toast('Excel spreadsheet downloaded','gn');
+  const headers=['Item No.','Project Number','Vendor Name','Vendor Number','Amount','Completeness','Date','Phase Description','Invoice Number','Location','Planned Start Date','Actual Completion Date','Internal Responsible Person','External Responsible Person'];
+  const toExcelDate=value=>{
+    if(!value)return '';
+    const match=String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match?new Date(+match[1],+match[2]-1,+match[3]):value;
+  };
+  const workbook=new ExcelJS.Workbook();
+  workbook.creator='TrendsDesk';
+  workbook.company='Trends Engineering Services (PTY) Ltd';
+  workbook.created=new Date();
+  const sheet=workbook.addWorksheet('BPC Spreadsheet',{views:[{showGridLines:false}]});
+  sheet.columns=[13,16.285,27.711,16.141,11,13,11,18,15.711,43.855,18.855,26.57,27.57,27.711].map(width=>({width}));
+  sheet.addRow(headers);
+  jobs.forEach((job,index)=>sheet.addRow([
+    index+1,
+    job.projNo||job.bpcProjNo||job.wo,
+    CO.name,
+    Number(CO.vendor)||CO.vendor,
+    bestTotal(job).total,
+    100,
+    toExcelDate(job.date||job.woDate||job.actions?.wo_received?.date||''),
+    `Ph ${String(job.phase||'').replace(/^Phase\s*/i,'')}-Free Con`,
+    `INV_${certNo}.${year}`,
+    jobClaimLocation(job),
+    toExcelDate(job.startDate||job.actions?.vo2_created?.date||''),
+    toExcelDate(job.completionDate||job.actions?.finance_draft?.date||''),
+    'Poloko Moiseraela',
+    'Kagiso Jeff Kewagamang'
+  ]));
+
+  // The worksheet is deliberately wide and Excel scales it down for A4.
+  // Medium internal rules remain visible in Excel's PDF output; thin rules
+  // can disappear at that print scale even though they show on the worksheet.
+  const separator={style:'medium',color:{argb:'FF000000'}};
+  const frame={style:'thick',color:{argb:'FF000000'}};
+  const lastRow=jobs.length+1;
+  sheet.eachRow((row,rowNumber)=>{
+    row.height=rowNumber===1?31.9:15.6;
+    row.eachCell({includeEmpty:true},(cell,colNumber)=>{
+      cell.font={name:'Calibri',size:12,bold:rowNumber===1};
+      cell.alignment={vertical:'middle',wrapText:rowNumber===1};
+      if([1,4,5,6,7,9,11,12,13,14].includes(colNumber))cell.alignment.horizontal='center';
+      if(colNumber===10)cell.alignment.horizontal='left';
+      cell.border={
+        left:colNumber===1?frame:separator,
+        right:colNumber===14?frame:separator,
+        top:rowNumber===1?frame:separator,
+        bottom:rowNumber===lastRow?frame:separator
+      };
+    });
+  });
+  for(let row=2;row<=lastRow;row++){
+    sheet.getCell(row,2).numFmt='0';
+    sheet.getCell(row,5).numFmt='#,##0.00';
+    [7,11,12].forEach(col=>sheet.getCell(row,col).numFmt='dd.mm.yyyy');
+  }
+  sheet.pageSetup={orientation:'landscape',paperSize:9,fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:0.7,right:0.7,top:0.75,bottom:0.75,header:0.3,footer:0.3}};
+  sheet.pageMargins={left:0.7,right:0.7,top:0.75,bottom:0.75,header:0.3,footer:0.3};
+  sheet.printArea=`A1:N${lastRow}`;
+
+  try{
+    const buffer=await workbook.xlsx.writeBuffer();
+    const url=URL.createObjectURL(new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    const link=document.createElement('a');
+    link.href=url;
+    link.download=`BPC_Spreadsheet_${String(certNo).replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`;
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('Formatted Excel spreadsheet downloaded','gn');
+  }catch(error){
+    console.error('BPC Excel export failed',error);
+    toast('Could not create the Excel spreadsheet. Please try again.','rd');
+  }
 }
 
 function numWords(n){
@@ -3921,6 +3957,44 @@ const DOC_PRINT_CSS=`
     color:#000!important;padding:0 2px!important;
   }
   .doc-scroll-wrap{overflow-x:visible!important;width:auto!important;background:transparent!important}
+  /* Match the original wide Excel schedules and allow long values to wrap. */
+  body.wide-claim-print{padding:0}
+  body.wide-claim-print .paper{font-size:6pt;line-height:1.15}
+  body.wide-claim-print .paper table{
+    width:100%!important;min-width:0!important;table-layout:fixed!important;
+    margin:0!important;font-size:6pt!important
+  }
+  body.wide-claim-print .paper th,
+  body.wide-claim-print .paper td{
+    height:auto!important;min-height:16px;padding:2px 3px!important;
+    vertical-align:middle!important;white-space:normal!important;
+    overflow:visible!important;overflow-wrap:anywhere;word-break:normal
+  }
+  body.wide-claim-print .paper thead th{height:31px!important;font-weight:bold}
+  /* Header line breaks mirror the two original worksheets exactly. */
+  body.wide-claim-print .bpc-print-table thead th{
+    white-space:nowrap!important;overflow-wrap:normal!important;
+    word-break:normal!important;font-size:5pt!important
+  }
+  body.wide-claim-print .jobs-print-table thead th{
+    white-space:nowrap!important;overflow-wrap:normal!important;
+    word-break:normal!important;font-size:5pt!important
+  }
+  body.wide-claim-print .jobs-print-table thead th.header-wrap{
+    white-space:normal!important
+  }
+  /* Original schedules keep every data record on one horizontal line. */
+  body.wide-claim-print .bpc-print-table tbody td,
+  body.wide-claim-print .jobs-print-table tbody td{
+    white-space:nowrap!important;overflow-wrap:normal!important;
+    word-break:normal!important;font-size:4pt!important;
+    line-height:1.05!important
+  }
+  body.wide-claim-print .print-field-value{
+    display:block;width:100%;white-space:nowrap;overflow:visible;
+    overflow-wrap:normal;word-break:normal;line-height:1.05;
+    font-size:4pt;letter-spacing:-0.05px
+  }
   @page{size:PAGE_SIZE_PLACEHOLDER;margin:PAGE_MARGIN_PLACEHOLDER}
   @media print{
     body{padding:0}
@@ -3968,9 +4042,26 @@ function buildPrintableHTML(innerHtml, title, docType){
 <style>${printCss}
 body { position: relative; }
 </style>
-</head><body>
+</head><body class="${isLandscape?'wide-claim-print':''}">
 ${innerHtml}
 </body></html>`;
+}
+
+/* Inputs cannot wrap their text. Replace them only in the disposable print
+   window, leaving the live document editable and retaining its edited values. */
+function prepareWideClaimPrint(doc,docType){
+  if(!['list_of_jobs','bpc_spreadsheet'].includes(docType))return;
+  doc.querySelectorAll('.paper table input, .paper table select, .paper table textarea').forEach(field=>{
+    let value=field.value||field.getAttribute('value')||'';
+    if(field.type==='date'&&/^\d{4}-\d{2}-\d{2}$/.test(value)){
+      const [year,month,day]=value.split('-');
+      value=`${day}.${month}.${year}`;
+    }
+    const printable=doc.createElement('span');
+    printable.className='print-field-value';
+    printable.textContent=value;
+    field.replaceWith(printable);
+  });
 }
 
 /* MAIN PDF / Print function.
@@ -3981,6 +4072,7 @@ function openPrintWindow(innerHtml, title, docType){
   const w=window.open('','_blank','width=screen.width,height=screen.height,left=0,top=0,menubar=yes,toolbar=yes,scrollbars=yes');
   if(!w){ toast('Pop-up blocked — allow pop-ups for this site then try again','rd'); return; }
   w.document.open(); w.document.write(html); w.document.close();
+  prepareWideClaimPrint(w.document,docType);
   // Small delay lets images/fonts settle before print dialog opens
   w.onload=()=>{ setTimeout(()=>{ w.focus(); w.print(); },600); };
   // Fallback if onload already fired
@@ -4196,13 +4288,22 @@ function addVO2Row(wo){
 }
 
 // DELETE ROW FUNCTIONS
+let pendingRowDeleteAction=null;
+function openRowDeleteConfirm(action){
+  pendingRowDeleteAction=action;
+  openModal('rowDeleteModal');
+  setTimeout(()=>document.querySelector('#rowDeleteModal .btn-rd')?.focus(),0);
+}
+function closeRowDeleteConfirm(approved){
+  const action=pendingRowDeleteAction;
+  pendingRowDeleteAction=null;
+  closeModal('rowDeleteModal');
+  if(approved&&typeof action==='function')action();
+}
+
 function deleteVO1Row(wo,idx){
   if(!DB.jobs[wo] || !DB.jobs[wo].vo1 || !DB.jobs[wo].vo1.items) return;
-  if(DB.jobs[wo].vo1.items.length <= 1){
-    toast('Cannot delete the last row','am');
-    return;
-  }
-  if(confirm('Delete this row?')){
+  openRowDeleteConfirm(()=>{
     DB.jobs[wo].vo1.items.splice(idx, 1);
     // Re-render the entire table to make the row disappear
     const job = DB.jobs[wo];
@@ -4219,17 +4320,13 @@ function deleteVO1Row(wo,idx){
     if(tbody) tbody.innerHTML = rows;
     recalcVO1(wo);
     saveDB();
-    toast('Row deleted','gn');
-  }
+    toast('Item deleted','gn');
+  });
 }
 
 function deleteVO2Row(wo,idx){
   if(!DB.jobs[wo] || !DB.jobs[wo].vo2 || !DB.jobs[wo].vo2.items) return;
-  if(DB.jobs[wo].vo2.items.length <= 1){
-    toast('Cannot delete the last row','am');
-    return;
-  }
-  if(confirm('Delete this row?')){
+  openRowDeleteConfirm(()=>{
     DB.jobs[wo].vo2.items.splice(idx, 1);
     // Re-render the entire table to make the row disappear
     const job = DB.jobs[wo];
@@ -4246,8 +4343,8 @@ function deleteVO2Row(wo,idx){
     if(tbody) tbody.innerHTML = rows;
     recalcVO2(wo);
     saveDB();
-    toast('Row deleted','gn');
-  }
+    toast('Item deleted','gn');
+  });
 }
 
 async function createWorksValuation(wo){
@@ -4295,7 +4392,7 @@ function renderLinesmanDash(){
       : '<div style="color:var(--tx3);text-align:center;padding:2rem">No notifications yet</div>';
   }
 
-  // Work orders currently awaiting the linesman's 6 field documents
+  // Work orders currently awaiting the Linesman's field reports
   const jobsEl=document.getElementById('linesmanPendingJobs');
   if(jobsEl){
     const pending=Object.values(DB.jobs).filter(j=>j.stage==='linesman_notified');
@@ -4304,11 +4401,11 @@ function renderLinesmanDash(){
       return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:1rem;border:1px solid var(--bd);border-radius:4px;margin-bottom:.75rem;flex-wrap:wrap">
         <div>
           <div style="font-weight:600;color:var(--tx1)">WO ${j.wo} — ${j.cust}</div>
-          <div style="font-size:.78rem;color:var(--tx3);margin-top:2px">${j.loc||''} · ${ct} of ${LINESMAN_DOCS.length} documents uploaded</div>
+          <div style="font-size:.78rem;color:var(--tx3);margin-top:2px">${j.loc||''} · Field reports ${ct===LINESMAN_DOCS.length?'uploaded':'pending'}</div>
         </div>
-        <button class="btn btn-am" onclick="openLinesmanUploadModal('${j.wo}')">📤 Upload Field Documents</button>
+        <button class="btn btn-am" onclick="openLinesmanUploadModal('${j.wo}')">📤 Upload Field Reports</button>
       </div>`;
-    }).join('') : '<div style="color:var(--tx3);text-align:center;padding:1.5rem">No work orders awaiting your documents right now.</div>';
+    }).join('') : '<div style="color:var(--tx3);text-align:center;padding:1.5rem">No work orders awaiting field reports right now.</div>';
   }
 }
 
@@ -4370,7 +4467,7 @@ function renderLinesmanUploadModalContent(){
       // Merged PDF already uploaded — show it and allow replace
       btnEl.innerHTML = `<div class="btn btn-gn" style="flex-direction:column;align-items:flex-start;text-align:left;cursor:default;gap:2px;padding:1rem">
         <div style="font-size:1.5rem;margin-bottom:.5rem">📄 ✓</div>
-        <div style="font-size:.95rem;font-weight:600;word-break:break-word">All Documents (Merged PDF)</div>
+        <div style="font-size:.95rem;font-weight:600;word-break:break-word">Field Reports Uploaded</div>
         <div style="font-size:.75rem;opacity:.85;word-break:break-all;margin-top:.25rem">${mergedUpload.filename}</div>
         <div style="display:flex;gap:6px;margin-top:.75rem">
           <button class="btn btn-gy btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${allDocsKey}')">⬇ Download</button>
@@ -4381,14 +4478,14 @@ function renderLinesmanUploadModalContent(){
       // No upload yet — show single upload button
       btnEl.innerHTML = `<button class="btn btn-am" style="flex-direction:column;padding:1.5rem;font-size:1rem" onclick="selectLinesmanMergedFile('${wo}')">
         <div style="font-size:2rem;margin-bottom:.5rem">📄</div>
-        <div style="word-break:break-word">Upload All 6 Documents (Merged PDF)</div>
+        <div style="word-break:break-word">Upload Field Reports</div>
       </button>`;
     }
   }
 
   const ct=linesmanDocsUploadedCount(job);
   const progEl=document.getElementById('linesmanUploadProgress');
-  if(progEl) progEl.textContent = `${ct} of ${LINESMAN_DOCS.length} documents uploaded`;
+  if(progEl) progEl.textContent = ct===LINESMAN_DOCS.length?'Field reports uploaded':'Field reports pending';
   const completeBtn=document.getElementById('linesmanCompleteBtn');
   if(completeBtn) completeBtn.disabled = ct < LINESMAN_DOCS.length;
 }
@@ -4540,7 +4637,7 @@ async function uploadLinesmanMergedPDF(wo, file){
 
     job.fieldDocumentCoverage=LINESMAN_DOCS.map(doc=>doc.id);
 
-    addLog(wo,`All 6 field documents uploaded by Linesman as merged PDF: ${file.name}`);
+    addLog(wo,`Linesman field reports uploaded: ${file.name}`);
     markJobDirty(wo);
 
     // CRITICAL: Save to database with proper wait
@@ -4549,7 +4646,7 @@ async function uploadLinesmanMergedPDF(wo, file){
     // CRITICAL FIX: Refresh modal to show updated state
     renderLinesmanUploadModalContent();
 
-    toast(`✓ All documents uploaded: ${file.name}`);
+    toast(`✓ Field reports uploaded: ${file.name}`);
   } catch(err) {
     console.error('Upload error:', err);
     toast('Upload failed — please try again','rd');
@@ -4873,36 +4970,51 @@ async function requireAuthClient(){
   return SB.client;
 }
 
+function showAuthFeedback(targetId,message,type='error'){
+  const feedback=document.getElementById(targetId);
+  if(!feedback)return;
+  feedback.textContent=message;
+  feedback.className=`auth-feedback show ${type}`;
+}
+function clearAuthFeedback(targetId){
+  const feedback=document.getElementById(targetId);
+  if(!feedback)return;
+  feedback.textContent='';
+  feedback.className='auth-feedback';
+}
+
 async function forgotPassword(){
   const email = document.getElementById('loginEmail').value.trim();
-  if(!email){ alert('Type your email in the field above first, then click "Forgot password?"'); return; }
+  clearAuthFeedback('loginFeedback');
+  if(!email){ showAuthFeedback('loginFeedback','Enter your email address first, then select “Forgot password?”.'); return; }
   try{
     const client=await requireAuthClient();
     const { error } = await client.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin
     });
     if(error) throw error;
-    alert('Check your email for a password reset link.');
+    showAuthFeedback('loginFeedback','Password reset link sent. Please check your email.','success');
   }catch(e){
-    alert('Error: ' + (e.message || 'Could not send reset email'));
+    showAuthFeedback('loginFeedback','We could not send the reset email. Please check the address and try again.');
   }
 }
 
 async function submitNewPassword(){
   const p1 = document.getElementById('resetPassword1').value;
   const p2 = document.getElementById('resetPassword2').value;
-  if(!p1 || p1.length < 6){ alert('Password must be 6+ characters'); return; }
-  if(p1 !== p2){ alert('Passwords do not match'); return; }
+  clearAuthFeedback('resetFeedback');
+  if(!p1 || p1.length < 6){ showAuthFeedback('resetFeedback','Your password must contain at least 6 characters.'); return; }
+  if(p1 !== p2){ showAuthFeedback('resetFeedback','The passwords do not match.'); return; }
   try{
     const client=await requireAuthClient();
     const { error } = await client.auth.updateUser({ password: p1 });
     if(error) throw error;
-    alert('Password updated! Please sign in with your new password.');
     await client.auth.signOut();
     document.getElementById('resetPasswordScreen').style.display='none';
     document.getElementById('loginScreen').style.display='flex';
+    showAuthFeedback('loginFeedback','Password updated. You can now sign in with your new password.','success');
   }catch(e){
-    alert('Error: ' + (e.message || 'Could not update password'));
+    showAuthFeedback('resetFeedback','We could not update your password. Please try again.');
   }
 }
 
@@ -4910,8 +5022,9 @@ async function realLogin(){
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
 
+  clearAuthFeedback('loginFeedback');
   if(!email || !password){
-    alert('Enter email and password');
+    showAuthFeedback('loginFeedback','Enter both your email address and password.');
     return;
   }
 
@@ -4936,7 +5049,12 @@ async function realLogin(){
     loginSuccess();
 
   }catch(e){
-    alert('Login failed: ' + (e.message || 'Invalid email or password'));
+    const message=String(e?.message||'').toLowerCase();
+    showAuthFeedback('loginFeedback',message.includes('invalid login credentials')
+      ?'The email address or password is incorrect. Please try again.'
+      :message.includes('user not found')
+        ?'Your account is not ready yet. Please contact an administrator.'
+        :'Unable to sign in right now. Check your connection and try again.');
   }
 }
 
@@ -4949,7 +5067,37 @@ async function googleLogin(){
     });
     if(error) throw error;
   }catch(e){
-    alert('Google login failed: ' + e.message);
+    showAuthFeedback('loginFeedback','Google sign-in could not be completed. Please try again.');
+  }
+}
+
+function withTimeout(promise,ms,message){
+  let timer;
+  const timeout=new Promise((_,reject)=>{
+    timer=setTimeout(()=>reject(new Error(message)),ms);
+  });
+  return Promise.race([promise,timeout]).finally(()=>clearTimeout(timer));
+}
+
+async function loadDashboardAfterLogin(loadOv){
+  try{
+    await withTimeout(SB_INIT_PROMISE,8000,'The secure connection took too long to start.');
+    if(SB.enabled){
+      const tbt=document.getElementById('tbt');
+      if(tbt)tbt.textContent='Loading…';
+      await withTimeout(syncFromSupabase(),15000,'Your work orders took too long to load.');
+      subscribeRealtime();
+    }
+    addLog('', 'Signed in as ' + RN[CU]);
+    nav('dashboard');
+    renderNotifs();
+  }catch(error){
+    console.error('Dashboard load failed:',error);
+    nav('dashboard');
+    renderNotifs();
+    toast('Could not load the latest work orders. Check your connection, then refresh the page.','rd');
+  }finally{
+    if(loadOv)loadOv.style.display='none';
   }
 }
 
@@ -4983,20 +5131,10 @@ function loginSuccess(){
     if(devPanel){devPanel.style.display = 'flex';restoreDevPanelPosition();}
   }
 
-  // Load data
-  SB_INIT_PROMISE.then(async () => {
-    if(SB.enabled){
-      const tbt = document.getElementById('tbt');
-      if(tbt) tbt.textContent = 'Loading…';
-      await flushPendingSave();
-      await syncFromSupabase();
-      subscribeRealtime();
-    }
-    addLog('', 'Signed in as ' + RN[CU]);
-    nav('dashboard');
-    renderNotifs();
-    if(loadOv) loadOv.style.display = 'none';
-  });
+  // Load current server data without pushing stale browser data first.
+  // The timeout and finally block prevent a stalled browser request from
+  // leaving the loading overlay visible forever.
+  void loadDashboardAfterLogin(loadOv);
 }
 
 function switchRole(role){
@@ -5138,7 +5276,7 @@ async function restoreSession(){
         await SB.client.auth.signOut();
         if(boot) boot.style.display = 'none';
         document.getElementById('loginScreen').style.display = 'flex';
-        alert('No ClaimDesk account found for that Google account. Ask an admin for an invite link to sign up.');
+        showAuthFeedback('loginFeedback','No TrendsDesk account was found for that Google account. Please contact an administrator.');
       }
     }else{
       if(boot) boot.style.display = 'none';
