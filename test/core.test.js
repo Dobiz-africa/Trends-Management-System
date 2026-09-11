@@ -39,6 +39,22 @@ test('claim validation reports missing prerequisites',()=>{
   const problems=core.validateClaimJobs([{wo:'1',cust:'A',loc:'Mohembo West',vo2:{items:[]},scans:{gis_report:{}}}]);
   assert.equal(problems.length,3);
 });
+test('work-order locations preserve multi-word towns and exclude the next PDF label',()=>{
+  const job={
+    loc:'MOHEMBO WEST Project Consultant:',ward:'KGOSING',plotNo:'1707',
+    locationData:{village:'MOHEMBO WEST Project Consultant:',ward:'KGOSING',plotNo:'1707'}
+  };
+  assert.equal(core.cleanLocationPart(job.loc),'MOHEMBO WEST');
+  assert.equal(core.formatJobLocation(job),'MOHEMBO WEST, Ward KGOSING, Plot 1707');
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const parser=source.slice(source.indexOf('async function parseWorkOrderPDF('),source.indexOf('function resetAddWOForm('));
+  assert.match(parser,/Project Consultant\|Ward\|Plot/);
+  for(const marker of ['docVO1','docVO2','docWorksValuation','docWorksInstruction','docBPCSpreadsheet','docListOfJobs']){
+    const start=source.indexOf(`function ${marker}(`);
+    const next=source.indexOf('\nfunction ',start+10);
+    assert.match(source.slice(start,next<0?source.length:next),/jobClaimLocation\(/,`${marker} must use the canonical work-order location`);
+  }
+});
 test('Payment Certificate uses the requested Annexure wording and original footer structure',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   const payment=source.slice(source.indexOf('function docPaymentCert('),source.indexOf('/* ── INVOICE',source.indexOf('function docPaymentCert(')));
@@ -51,7 +67,7 @@ test('Finance revisions reopen saved HTML, save before print, and can replace ge
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
   assert.match(source,/storedBatchDocHTML\(certNo,docType\)\|\|generateBatchDocHTML/);
   assert.match(source,/function printModal\([\s\S]*saveBatchDocAttach\(CURRENT_CERT_NO, CURRENT_DOC_TYPE,\{quiet:true\}\)[\s\S]*serializeToHTML\(body\)/);
-  assert.match(source,/Save &amp; Replace/);
+  assert.match(source,/Save now/);
   assert.match(source,/Regenerate &amp; Replace/);
   assert.match(source,/if\(job\.stage!=='job_complete'\)[\s\S]*claim_docs_revised/);
 });
@@ -315,4 +331,45 @@ test('Linesman upload interface uses clear field-report wording',()=>{
   assert.match(html,/>Upload Field Reports<\/h3>/);
   assert.match(html,/>✅ Submit Field Reports<\/button>/);
   assert.doesNotMatch(html,/Upload Field Documents \(Merged PDF\)/);
+});
+
+test('uploaded document downloads open in a new browser tab',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const scanDownload=source.slice(source.indexOf('async function downloadScan('),source.indexOf('async function viewScanFile('));
+  const externalDownload=source.slice(source.indexOf('function downloadExternalFile('),source.indexOf('/**',source.indexOf('function downloadExternalFile(')));
+  const batchDownload=source.slice(source.indexOf('function downloadBatchScan('),source.indexOf('function recalcVO1('));
+  assert.match(scanDownload,/window\.open\('','_blank'\)/);
+  assert.match(scanDownload,/win\.location\.replace\(await scanSource\(s\)\)/);
+  assert.doesNotMatch(scanDownload,/\.download=/);
+  assert.match(externalDownload,/window\.open\(file\.data, '_blank'\)/);
+  assert.match(batchDownload,/window\.open\(s\.dataUrl,'_blank'\)/);
+});
+
+test('upload-only document cards use the real file without placeholder copies',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  assert.match(source,/const UPLOADED_ONLY_DOC_TYPES=\['bpc_wo',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert','final_gis_report','final_gis_cert'\]/);
+  const detail=source.slice(source.indexOf('function renderJobDetail('),source.indexOf('/*',source.indexOf('function renderJobDetail(')));
+  assert.match(detail,/const saved=!UPLOADED_ONLY_DOC_TYPES\.includes\(d\)/);
+  assert.match(detail,/UPLOADED_ONLY_DOC_TYPES\.includes\(d\)\?'Download':'Signed Copy'/);
+  const opener=source.slice(source.indexOf('function openDocForAction('),source.indexOf('function buildDocFoot('));
+  assert.match(opener,/UPLOADED_ONLY_DOC_TYPES\.includes\(docType\)&&job\.scans\?\.\[docType\]/);
+  assert.match(opener,/downloadScan\(wo,docType\)/);
+  assert.doesNotMatch(source,/html:\s*'GIS report uploaded'/);
+  const advance=source.slice(source.indexOf('async function advanceStage('),source.indexOf('async function saveVO2('));
+  assert.doesNotMatch(advance,/gis_ready:'gis_report'/);
+});
+
+test('editable documents autosave without advancing workflow stages',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const autosave=source.slice(source.indexOf('function setDocumentSaveStatus('),source.indexOf('// Global doc labels'));
+  assert.match(autosave,/function enableDocumentAutosave\(mode\)/);
+  assert.match(autosave,/setTimeout\(\(\)=>autosaveCurrentDocument\(\),700\)/);
+  assert.match(autosave,/saveBatchDocAttach\(CURRENT_CERT_NO,CURRENT_DOC_TYPE,\{quiet:true,autosave:true\}\)/);
+  assert.match(autosave,/saveDocToStep\(CURRENT_DOC_WO,CURRENT_DOC_TYPE,\{quiet:true,refresh:false\}\)/);
+  assert.match(autosave,/markJobDirty\(wo\)/);
+  assert.doesNotMatch(autosave,/advanceStage\(/);
+  const close=source.slice(source.indexOf('function closeModal('),source.indexOf('/* FULLSCREEN DOCUMENT VIEWER',source.indexOf('function closeModal(')));
+  assert.match(close,/autosaveCurrentDocument\(true\)/);
+  assert.doesNotMatch(close,/Close without saving/);
+  assert.match(source,/Saved automatically/);
 });

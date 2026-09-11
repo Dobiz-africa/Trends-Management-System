@@ -11,6 +11,17 @@
   const hasGISPrerequisites=job=>!!(job?.scans?.gis_report&&job?.scans?.gis_cert);
   const hasFinalGISPrerequisites=job=>!!(job?.scans?.final_gis_report&&job?.scans?.final_gis_cert);
   const canTransition=(job,to)=>!!job&&TRANSITIONS[job.stage]===to&&(to!=='vo2_created'||hasGISPrerequisites(job))&&(to!=='finance_draft'||hasFinalGISPrerequisites(job));
+  const cleanLocationPart=value=>String(value||'')
+    .replace(/\s+(?:Project\s+Consultant|Project\s+Number|Mobile\s+Number|Customer\s+Name|Contract\s+Account).*$/i,'')
+    .replace(/\s{2,}/g,' ')
+    .replace(/[,:;\s]+$/,'')
+    .trim();
+  const formatJobLocation=job=>{
+    const town=cleanLocationPart(job?.locationData?.village||job?.loc||'');
+    const ward=cleanLocationPart(job?.locationData?.ward||job?.ward||'').replace(/^Ward\s*/i,'');
+    const plot=cleanLocationPart(job?.locationData?.plotNo||job?.plotNo||'').replace(/^Plot\s*/i,'');
+    return [town,ward?`Ward ${ward}`:'',plot?`Plot ${plot}`:''].filter(Boolean).join(', ');
+  };
   function numWords(n){
     const ones=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
     const tens=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
@@ -23,5 +34,5 @@
   function validateClaimJobs(jobs){
     const problems=[];(jobs||[]).forEach(job=>{if(!job.cust||!job.loc)problems.push(`WO ${job.wo}: customer and location are required`);if(!hasGISPrerequisites(job))problems.push(`WO ${job.wo}: pre-VO2 GIS Map and Certificate are required`);if(!hasFinalGISPrerequisites(job))problems.push(`WO ${job.wo}: final GIS Map and Certificate are required`);if(!job.vo2?.items?.length)problems.push(`WO ${job.wo}: VO2 requires at least one item`);});return problems;
   }
-  return{WORKFLOW_VERSION,STAGES,TRANSITIONS,LEGACY_STAGE_MAP,migrateWorkflow,hasGISPrerequisites,hasFinalGISPrerequisites,canTransition,numWords,validateClaimJobs};
+  return{WORKFLOW_VERSION,STAGES,TRANSITIONS,LEGACY_STAGE_MAP,migrateWorkflow,hasGISPrerequisites,hasFinalGISPrerequisites,canTransition,cleanLocationPart,formatJobLocation,numWords,validateClaimJobs};
 });

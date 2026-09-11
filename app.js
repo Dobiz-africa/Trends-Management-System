@@ -81,6 +81,7 @@ const LN_DOC_KEYS = LINESMAN_DOCS.map(d => 'ln_' + d.id);
 const LN_DOC_LABELS = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.label]));
 const LN_DOC_SHORT = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.short]));
 const LINESMAN_MERGED_DOC_KEY='ln_merged_pdf';
+const UPLOADED_ONLY_DOC_TYPES=['bpc_wo',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert','final_gis_report','final_gis_cert'];
 const LINESMAN_MERGED_DOC_LABEL='Linesman Field Reports';
 function linesmanDocsUploadedCount(job){
   if(job?.scans?.ln_merged_pdf)return LINESMAN_DOCS.length;
@@ -176,7 +177,7 @@ async function parseWorkOrderPDF(input){
     const ward=get([/Ward\s*[:\s]+(.+?)(?=\s+(?:City\/Town\/Village|City\/Town|Plot\s*No|Mobile Number|Project Number)\s*:|$)/i],t).replace(/\s{2,}/g,' ').trim();
 
     // City/Town
-    const loc=get([/City\/Town\/Village\s*[:\s]+(.+?)(?=\s+(?:Ward|Plot\s*No|Mobile Number|Project Number|Customer Name|Contract Account)\s*:|$)/i,/City\/Town\s*[:\s]+(.+?)(?=\s+(?:Ward|Plot\s*No|Mobile Number|Project Number|Customer Name|Contract Account)\s*:|$)/i],t).replace(/\s{2,}/g,' ').trim();
+    const loc=get([/City\/Town\/Village\s*[:\s]+(.+?)(?=\s+(?:Project Consultant|Ward|Plot\s*No|Mobile Number|Project Number|Customer Name|Contract Account)\s*:|$)/i,/City\/Town\s*[:\s]+(.+?)(?=\s+(?:Project Consultant|Ward|Plot\s*No|Mobile Number|Project Number|Customer Name|Contract Account)\s*:|$)/i],t).replace(/\s{2,}/g,' ').trim();
 
     // Customer name — strip leading NESC prefix if present
     const custRaw=get([
@@ -477,13 +478,43 @@ function hydrateJob(j){
   return j;
 }
 function cleanClaimLocationPart(value){
-  return String(value||'').replace(/\s+Project\s+Consultant.*$/i,'').replace(/\s{2,}/g,' ').trim();
+  return window.TrendsCore.cleanLocationPart(value);
 }
 function jobClaimLocation(job){
-  const town=cleanClaimLocationPart(job?.locationData?.village||job?.loc||'');
-  const ward=cleanClaimLocationPart(job?.locationData?.ward||job?.ward||'').replace(/^Ward\s*/i,'');
-  const plot=cleanClaimLocationPart(job?.locationData?.plotNo||job?.plotNo||'').replace(/^Plot\s*/i,'');
-  return [town,ward?`Ward ${ward}`:'',plot?`Plot ${plot}`:''].filter(Boolean).join(', ');
+  return window.TrendsCore.formatJobLocation(job);
+}
+function syncSavedDocumentLocation(html,job){
+  if(!html||!job||typeof document==='undefined')return html;
+  const canonical=jobClaimLocation(job);
+  const wrapper=document.createElement('div');
+  wrapper.innerHTML=html;
+  const writeLocation=target=>{
+    if(!target)return;
+    const field=target.matches?.('input,textarea')?target:target.querySelector?.('input,textarea');
+    if(field){field.value=canonical;field.setAttribute('value',canonical);if(field.tagName==='TEXTAREA')field.textContent=canonical;}
+    else target.textContent=canonical;
+  };
+  wrapper.querySelectorAll('[data-job-location]').forEach(writeLocation);
+  wrapper.querySelectorAll('td.lbl').forEach(label=>{
+    if(/^location\s*:/i.test(label.textContent.trim()))writeLocation(label.nextElementSibling);
+  });
+  writeLocation(wrapper.querySelector('#wi_loc'));
+  return wrapper.innerHTML;
+}
+function syncBatchDocumentLocations(html,jobs){
+  if(!html||typeof document==='undefined')return html;
+  const byWO=Object.fromEntries((jobs||[]).map(job=>[String(job.wo),job]));
+  const wrapper=document.createElement('div');
+  wrapper.innerHTML=html;
+  wrapper.querySelectorAll('[data-location-wo]').forEach(cell=>{
+    const job=byWO[cell.dataset.locationWo];
+    if(!job)return;
+    const canonical=jobClaimLocation(job);
+    const field=cell.matches('input,textarea')?cell:cell.querySelector('input,textarea');
+    if(field){field.value=canonical;field.setAttribute('value',canonical);if(field.tagName==='TEXTAREA')field.textContent=canonical;}
+    else cell.textContent=canonical;
+  });
+  return wrapper.innerHTML;
 }
 
 async function syncFromSupabase(){
@@ -732,6 +763,7 @@ function newJob(data){
     date:data.date||'', projType:data.projType||'NESC',
     contract:data.contract||'', custNo:data.custNo||'', plotNo:data.plotNo||'',
     ward:data.ward||'', mobile:data.mobile||'',
+    locationData:{village:data.loc||data.location||'',ward:data.ward||'',plotNo:data.plotNo||''},
     bpcProjNo:data.bpcProjNo||'', projNo:data.projNo||'',
     meterNo:data.meterNo||'', address:data.address||'',
     createdAt:new Date().toISOString(), stage:'wo_received',
@@ -783,6 +815,8 @@ let detailWO=null;
 let selClaimJobs=new Set();
 let CURRENT_CERT_NO=null;
 let CURRENT_DOC_TYPE=null;
+let CURRENT_DOC_WO=null;
+let documentAutosaveTimer=null;
 let recordCb=null;
 let hasUnsavedChanges=false; // Track if user has unsaved edits in modals
 let jobsSearchQuery=''; // Search query for jobs
@@ -956,15 +990,15 @@ async function downloadScan(wo,docType){
   let s;
   if(wo&&DB.jobs[wo]){s=DB.jobs[wo]?.scans?.[docType];}
   if(!s){toast('No scan found to download','am');return;}
+  const win=window.open('','_blank');
+  if(!win){toast('Please allow popups to open the document','am');return;}
+  win.document.write('<title>Opening document...</title><body style="font-family:Arial,sans-serif;padding:2rem">Opening document...</body>');
   try{
-    const a=document.createElement('a');
-    a.href=await scanSource(s);
-    a.download=s.filename||docType+'.pdf';
-    a.style.display='none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }catch(e){toast('Download failed: '+e.message,'rd');}
+    win.location.replace(await scanSource(s));
+  }catch(e){
+    win.close();
+    toast('Could not open document: '+e.message,'rd');
+  }
 }
 async function viewScanFile(wo,docType){
   const s=DB.jobs[wo]?.scans?.[docType];
@@ -1685,12 +1719,14 @@ function setDocumentStatus(docType, jobComplete=false) {
   }
   
   const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',[LINESMAN_MERGED_DOC_KEY]:LINESMAN_MERGED_DOC_LABEL,vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',final_gis_report:'Final GIS Map',final_gis_cert:'Final GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
-  const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]||(job.savedDocs&&job.savedDocs[d])).length;
+  const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]||(!UPLOADED_ONLY_DOC_TYPES.includes(d)&&job.savedDocs&&job.savedDocs[d])).length;
   document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} ready`;
   document.getElementById('jdDocsList').innerHTML=visibleDocTypes.map(d=>{
     const isLinesmanDoc=d===LINESMAN_MERGED_DOC_KEY;
     const scan=job.scans[d];
-    const saved=job.savedDocs&&job.savedDocs[d];
+    // Uploaded-only documents must link to the original file, never an old
+    // generated placeholder such as "GIS report uploaded".
+    const saved=!UPLOADED_ONLY_DOC_TYPES.includes(d)&&job.savedDocs&&job.savedDocs[d];
     const hasGenerated=['vo1','vo2','works_valuation','works_instruction','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(d);
     const isMultiJob=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'].includes(d);
     const isReady=!!(scan||saved);
@@ -1709,7 +1745,7 @@ function setDocumentStatus(docType, jobComplete=false) {
         ${canView?`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','${d}')">👁 View / Print</button>`:''}
         ${isLinesmanDoc&&scan?`<button class="btn btn-gy btn-sm" onclick="viewScanFile('${wo}','${d}')">👁 View</button>`:''}
         ${saved?`<button class="btn btn-bl btn-sm" onclick="downloadSavedDoc('${wo}','${d}')">⬇ Download</button>`:''}
-        ${scan?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ ${isLinesmanDoc?'Download':'Signed'}</button>`:''}
+        ${scan?`<button class="btn btn-gn btn-sm" onclick="event.stopPropagation();downloadScan('${wo}','${d}')">⬇ ${UPLOADED_ONLY_DOC_TYPES.includes(d)?'Download':'Signed Copy'}</button>`:''}
         ${CU!=='md'&&scan&&!isLinesmanDoc?`<button class="btn btn-rd btn-sm" onclick="event.stopPropagation();removeScan('${wo}','${d}')">✕ Remove</button>`:''}
         ${CU!=='md'&&!isLinesmanDoc?`<label class="scan-upload-label" style="font-size:.72rem">📎 ${scan?'Replace':'Upload'}<input type="file" accept="image/*,application/pdf" onchange="handleScan('${wo}','${d}',this)" style="display:none"></label>`:''}
         ${isLinesmanDoc&&!scan?`<span style="font-size:.72rem;color:var(--tx3)">Awaiting Linesman upload</span>`:''}
@@ -1758,6 +1794,10 @@ function viewFinanceDoc(wo,docType){
 }
 function openDocForAction(wo,docType){
   const job=wo?DB.jobs[wo]:null;
+  if(job&&UPLOADED_ONLY_DOC_TYPES.includes(docType)&&job.scans?.[docType]){
+    downloadScan(wo,docType);
+    return;
+  }
   const financeBatchDocs=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   if(job?.claimRef&&financeBatchDocs.includes(docType)&&DB.batchDocs?.[job.claimRef]){
     viewBatchDoc(job.claimRef,docType);
@@ -1766,6 +1806,8 @@ function openDocForAction(wo,docType){
   }
   const titles={vo1:'Works Valuation (VO1)'+(wo?' · WO '+wo:''),vo2:'Variation Order (VO2)'+(wo?' · WO '+wo:''),works_valuation:'Works Valuation Document'+(wo?' · WO '+wo:''),field_report:'Linesman Field Findings'+(wo?' · WO '+wo:''),works_instruction:'Works Instruction'+(wo?' · WO '+wo:''),gis_report:'GIS Map'+(wo?' · WO '+wo:''),bpc_wo:'BPC Work Order'+(wo?' · WO '+wo:''),annexure:'Annexure to Payment Certificate'+(wo?' · WO '+wo:''),payment_cert:'Payment Certificate'+(wo?' · WO '+wo:''),invoice:'Tax Invoice'+(wo?' · WO '+wo:''),list_of_jobs:'List of Jobs Done — Trends Engineering Services',bpc_spreadsheet:'BPC Spreadsheet — Batch Claim Document'};
   document.getElementById('docModalTitle').textContent=titles[docType]||docType;
+  CURRENT_CERT_NO=null;
+  CURRENT_DOC_WO=wo;
   CURRENT_DOC_TYPE=docType; // ← ADD THIS LINE to ensure docType is tracked
 
   // For claim docs, try to find the Finance-saved version first
@@ -1811,8 +1853,13 @@ function openDocForAction(wo,docType){
     }
   }
 
+  // Location comes from the parsed work-order fields and remains authoritative
+  // even when an older saved document snapshot is reopened.
+  if(job&&!claimDocTypes.includes(docType))html=syncSavedDocumentLocation(html,job);
+
   document.getElementById('docModalBody').innerHTML=html;
   document.getElementById('docModalFoot').innerHTML=buildDocFoot(docType,job);
+  enableDocumentAutosave('job');
   openModal('docModal');
 }
 function buildDocFoot(docType,job){
@@ -1826,7 +1873,7 @@ function buildDocFoot(docType,job){
       btns+=`<button class="btn btn-gn btn-sm" onclick="downloadScan('${wo}','${docType}')">&#11015; Signed Copy</button>`;
     }
     if(!isMDView){
-      btns+=`<button class="btn btn-gn btn-sm" onclick="saveDocToStep('${wo}','${docType}')">&#128190; Save &amp; Attach</button>`;
+      btns+=`<button class="btn btn-gn btn-sm" onclick="saveDocToStep('${wo}','${docType}')">&#128190; Save now</button>`;
       btns+=`<label class="scan-upload-label">📎 Upload / Replace<input type="file" id="scan-input-modal-${wo}-${docType}" accept="image/*,application/pdf" onchange="handleScan('${wo}','${docType}',this);closeModal('docModal')" style="display:none"></label>`;
     }
   }
@@ -1847,8 +1894,9 @@ function buildDocFoot(docType,job){
   }
   if(!isMDView&&CU==='finance'&&job){
     if(docType==='payment_cert'||docType==='invoice'||docType==='annexure'||docType==='list_of_jobs'||docType==='bpc_spreadsheet')
-      btns+=`<button class="btn btn-gn btn-sm" onclick="saveDocToStep('${wo}','${docType}')">&#128190; Save &amp; Attach</button>`;
+      btns+=`<button class="btn btn-gn btn-sm" onclick="saveDocToStep('${wo}','${docType}')">&#128190; Save now</button>`;
   }
+  if(!isMDView)btns+=`<span id="docAutosaveStatus" style="margin-left:auto;align-self:center;font-size:.7rem;color:var(--tx3)">Saved automatically</span>`;
   return btns;
 }
 /* ═══════════════════════════════════════
@@ -1973,15 +2021,6 @@ async function markGISComplete(wo) {
   addLog(wo, 'GIS Map and Certificate complete — ready for VO2');
   notify(['admin', 'md'], `GIS documents complete for WO ${wo} — ${job.cust}. VO2 can now be created.`, wo);
   
-  // Auto-save GIS report document for MD to see
-  if (!job.savedDocs) job.savedDocs = {};
-  job.savedDocs['gis_report'] = {
-    html: 'GIS report uploaded',
-    savedAt: new Date().toISOString(),
-    role: CU,
-    autoSaved: true
-  };
-  
   markJobDirty(wo);
   await saveDBAndWait();
   refreshDetail();
@@ -2009,10 +2048,8 @@ function downloadExternalFile(wo, externalRole, fileIndex) {
   if (!field || !job[field] || !job[field][fileIndex]) return;
   
   const file = job[field][fileIndex];
-  const link = document.createElement('a');
-  link.href = file.data;
-  link.download = file.name;
-  link.click();
+  const win = window.open(file.data, '_blank');
+  if (!win) toast('Please allow popups to open the document', 'am');
 }
 
 /**
@@ -2299,7 +2336,6 @@ async function advanceStage(wo,newStage){
     vo2_created:'vo2',
     works_valuation_created:'works_valuation',
     work_instruction_ready:'works_instruction',
-    gis_ready:'gis_report',
   };
   const autoDocType=stageDocMap[newStage];
   if(autoDocType){
@@ -2602,6 +2638,7 @@ function storedBatchDocHTML(certNo,docType){
 }
 function viewBatchDoc(certNo,docType){
   CURRENT_CERT_NO=certNo;
+  CURRENT_DOC_WO=null;
   CURRENT_DOC_TYPE=docType;
   const batch=DB.batchDocs?.[certNo];
   const storedWOs=batch?.wos||[];
@@ -2617,11 +2654,10 @@ function viewBatchDoc(certNo,docType){
   // Reopen the authoritative saved revision. Regeneration is explicit so a
   // user's corrections are never silently overwritten just by viewing.
   let html=storedBatchDocHTML(certNo,docType)||generateBatchDocHTML(certNo,docType);
+  html=syncBatchDocumentLocations(html,batchJobs);
   if(!html){toast('Document not available','rd');return;}
   document.getElementById('docModalTitle').textContent=`${titles[docType]||docType} — Cert ${certNo}`;
   document.getElementById('docModalBody').innerHTML=html;
-  document.getElementById('docModalBody').oninput=()=>{hasUnsavedChanges=true;};
-  hasUnsavedChanges=false;
   const docOrder=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   const currentIdx=docOrder.indexOf(docType);
   const prevDoc=currentIdx>0?docOrder[currentIdx-1]:null;
@@ -2638,14 +2674,16 @@ function viewBatchDoc(certNo,docType){
       <div style="display:flex;gap:5px;flex-wrap:wrap">
         <button class="btn btn-print btn-sm" onclick="printModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>${docType==='bpc_spreadsheet'?'Print / PDF':'Print'}</button>
         ${docType==='bpc_spreadsheet'?`<button class="btn btn-gn btn-sm" onclick="downloadBPCSpreadsheetXLSX('${certNo}')">⬇ Download Excel</button>`:''}
-        ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save &amp; Replace</button>`:''}
+        ${CU!=='md'?`<button class="btn btn-gn btn-sm" onclick="saveBatchDocAttach('${certNo}','${docType}')">💾 Save now</button>`:''}
         ${CU==='finance'?`<button class="btn btn-am btn-sm" onclick="regenerateBatchDoc('${certNo}','${docType}')">↻ Regenerate &amp; Replace</button>`:''}
         ${CU==='finance'&&batch?.status==='draft'?`<button class="btn btn-gn btn-sm" onclick="saveAndFinalizeClaim('${certNo}','${docType}')">✓ Finalize Claim</button>`:''}
         ${CU!=='md'?`<label class="scan-upload-label" style="font-size:.72rem">📎 Upload / Replace<input type="file" accept="image/*,application/pdf" onchange="handleBatchScan('${certNo}','${docType}',this)" style="display:none"></label>`:''}
         ${(DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType])?`<button class="btn btn-gn btn-sm" onclick="downloadBatchScan('${certNo}','${docType}')">⬇ Signed</button>`:''}
-        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');showScreen('claims')">✕ Close — Draft Saved</button>
+        ${CU!=='md'?`<span id="docAutosaveStatus" style="align-self:center;font-size:.7rem;color:var(--tx3)">Saved automatically</span>`:''}
+        <button class="btn btn-gy btn-sm" onclick="closeModal('docModal');showScreen('claims')">✕ Close</button>
       </div>
     </div>`;
+  enableDocumentAutosave('batch');
   openModal('docModal');
 }
 
@@ -3670,7 +3708,7 @@ function docBPCSpreadsheet(jobsOrJob,certNoOverride){
       <td style="border:1px solid #bbb;padding:2px">${eid(j.date||j.woDate||j.actions?.wo_received?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:2px">${ei('Ph '+j.phase+'-Free Con','98%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${ei(invNo,'98%')}</td>
-      <td style="border:1px solid #bbb;padding:2px">${ei(jobClaimLocation(j),'98%')}</td>
+      <td data-location-wo="${j.wo}" style="border:1px solid #bbb;padding:2px">${ei(jobClaimLocation(j),'98%')}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(startDate)}</td>
       <td style="border:1px solid #bbb;padding:2px">${eid(compDate)}</td>
       <td style="border:1px solid #bbb;padding:2px">${ei('Poloko Moiseraela','98%')}</td>
@@ -3737,7 +3775,7 @@ function docListOfJobs(job, batchJobs){
       <td style="border:1px solid #bbb;padding:1px 3px;text-align:center">${inL('100','98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL('Phase '+String(j.phase||'').replace(/^Phase\s*/i,''),'98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(invNo,'98%')}</td>
-      <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(jobClaimLocation(j),'98%')}</td>
+      <td data-location-wo="${j.wo}" style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL(jobClaimLocation(j),'98%')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.date||j.actions.wo_received?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px">${inD(j.completionDate||j.actions.finance_draft?.date||'')}</td>
       <td style="border:1px solid #bbb;padding:1px 3px;white-space:normal;overflow:visible">${inL('Kagiso Jeff Kewagamang','98%')}</td>
@@ -3872,8 +3910,47 @@ function numWords(n){
    LIVE RECALC
 ═══════════════════════════════════════ */
 
-/* ─── FIX 9: Save doc to step & download ─── */
-function saveDocToStep(wo,docType){
+/* ─── DOCUMENT DRAFT AUTOSAVE ─── */
+function setDocumentSaveStatus(text,state='saved'){
+  const el=document.getElementById('docAutosaveStatus');
+  if(!el)return;
+  el.textContent=text;
+  el.style.color=state==='saving'?'var(--am)':state==='error'?'var(--rd)':'var(--gn)';
+}
+function enableDocumentAutosave(mode){
+  const body=document.getElementById('docModalBody');
+  if(!body)return;
+  clearTimeout(documentAutosaveTimer);
+  body.dataset.autosave=CU==='md'?'':mode;
+  body.oninput=body.dataset.autosave?()=>{
+    hasUnsavedChanges=true;
+    setDocumentSaveStatus('Saving…','saving');
+    clearTimeout(documentAutosaveTimer);
+    documentAutosaveTimer=setTimeout(()=>autosaveCurrentDocument(),700);
+  }:null;
+  hasUnsavedChanges=false;
+}
+function autosaveCurrentDocument(immediate=false){
+  const body=document.getElementById('docModalBody');
+  if(!body?.dataset.autosave||!hasUnsavedChanges)return;
+  clearTimeout(documentAutosaveTimer);
+  try{
+    if(body.dataset.autosave==='batch'&&CURRENT_CERT_NO&&CURRENT_DOC_TYPE){
+      saveBatchDocAttach(CURRENT_CERT_NO,CURRENT_DOC_TYPE,{quiet:true,autosave:true});
+    }else if(body.dataset.autosave==='job'&&CURRENT_DOC_WO&&CURRENT_DOC_TYPE){
+      saveDocToStep(CURRENT_DOC_WO,CURRENT_DOC_TYPE,{quiet:true,refresh:false});
+    }
+    hasUnsavedChanges=false;
+    setDocumentSaveStatus('Saved automatically');
+  }catch(error){
+    console.error('Document autosave failed',error);
+    setDocumentSaveStatus('Could not save','error');
+    if(immediate)toast('Could not save the latest document changes','rd');
+  }
+}
+
+/* Save the current document draft without completing its workflow stage. */
+function saveDocToStep(wo,docType,options={}){
   const job=DB.jobs[wo];if(!job)return;
   if(!job.savedDocs)job.savedDocs={};
   // If the doc modal is currently open with this doc, capture edited values
@@ -3886,11 +3963,16 @@ function saveDocToStep(wo,docType){
     html=buildDoc(docType,job);
   }
   job.savedDocs[docType]={html,savedAt:new Date().toISOString(),role:CU,autoSaved:true};
-  addLog(wo,`Document saved: ${docType} by ${RN[CU]}`);
-  notify(['md'],`New document saved for WO ${wo}: ${docLabels[docType]||docType} — click to view`,wo);
+  markJobDirty(wo);
+  if(!options.quiet){
+    addLog(wo,`Document saved: ${docType} by ${RN[CU]}`);
+    notify(['md'],`New document saved for WO ${wo}: ${docLabels[docType]||docType} — click to view`,wo);
+  }
   saveDB();
-  toast('✓ Document saved and attached — MD can now view it','gn');
-  refreshDetail();
+  hasUnsavedChanges=false;
+  setDocumentSaveStatus('Saved automatically');
+  if(!options.quiet)toast('✓ Document saved','gn');
+  if(options.refresh!==false)refreshDetail();
 }
 
 // Global doc labels for notifications
@@ -4149,7 +4231,8 @@ function saveBatchDocAttach(certNo,docType,options={}){
   if(batch){
     batch.docs=batch.docs||{};
     const previous=batch.docs[docType];
-    const revision=(typeof previous==='object'&&previous?.revision||0)+1;
+    const previousRevision=typeof previous==='object'&&previous?.revision||0;
+    const revision=options.autosave?Math.max(previousRevision,1):previousRevision+1;
     batch.docs[docType]={html:currentHtml,savedAt:new Date().toISOString(),editedBy:CU,revision};
     batch.updatedAt=new Date().toISOString();
     const legacyMap={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};
@@ -4164,6 +4247,7 @@ function saveBatchDocAttach(certNo,docType,options={}){
       autoSaved:false,
       certNo:certNo
     };
+    markJobDirty(job.wo);
   });
   // Also store in batchSaved
   if(!DB.batchSaved)DB.batchSaved={};
@@ -4172,6 +4256,7 @@ function saveBatchDocAttach(certNo,docType,options={}){
   if(!options.quiet)notify(['admin','md'],`Finance saved ${(docLabels&&docLabels[docType])||docType} for Claim ${certNo} — available to view`,batchJobs[0]?.wo||'');
   saveDB();
   hasUnsavedChanges=false;
+  setDocumentSaveStatus('Saved automatically');
   if(!options.quiet)toast(`✓ ${(docLabels&&docLabels[docType])||docType} saved & replaced — this revision will be used for Print/PDF`,'gn');
   // Check if all 5 are now saved
   const all=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
@@ -4197,8 +4282,8 @@ function handleBatchScan(certNo,docType,input){
 function downloadBatchScan(certNo,docType){
   const s=DB.batchScans&&DB.batchScans['bs_'+certNo+'_'+docType];
   if(!s){toast('No scan','am');return;}
-  const a=document.createElement('a');a.href=s.dataUrl;a.download=s.filename||docType+'.pdf';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  const win=window.open(s.dataUrl,'_blank');
+  if(!win)toast('Please allow popups to open the document','am');
 }
 
 function recalcVO1(wo){
@@ -4825,9 +4910,11 @@ function printModal(){
 ═══════════════════════════════════════ */
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){
-  // Warn if there are unsaved changes in the modal
-  if(hasUnsavedChanges&&id==='docModal'){
-    if(!confirm('You have unsaved changes. Close without saving?')){return;}
+  if(id==='docModal'){
+    autosaveCurrentDocument(true);
+    clearTimeout(documentAutosaveTimer);
+    const body=document.getElementById('docModalBody');
+    if(body){body.oninput=null;delete body.dataset.autosave;}
   }
   hasUnsavedChanges=false;
   document.getElementById(id).classList.remove('open');
@@ -4891,6 +4978,10 @@ function openDocFullscreen(){
   document.getElementById('docFSTitle').textContent=title;
   // Copy live form values, not stale input attributes, into fullscreen.
   document.getElementById('docFSBody').innerHTML=serializeToHTML(body);
+  document.getElementById('docFSBody').oninput=()=>{
+    hasUnsavedChanges=true;
+    setDocumentSaveStatus('Saving…','saving');
+  };
   document.getElementById('docFullscreenModal').style.display='flex';
   document.body.style.overflow='hidden';
 }
@@ -4907,6 +4998,7 @@ function syncFullscreenToModal(){
 
 function closeDocFullscreen(){
   syncFullscreenToModal();
+  autosaveCurrentDocument(true);
   document.getElementById('docFullscreenModal').style.display='none';
   document.body.style.overflow='auto';
 }
