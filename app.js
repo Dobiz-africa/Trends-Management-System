@@ -81,7 +81,7 @@ const LN_DOC_KEYS = LINESMAN_DOCS.map(d => 'ln_' + d.id);
 const LN_DOC_LABELS = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.label]));
 const LN_DOC_SHORT = Object.fromEntries(LINESMAN_DOCS.map(d => ['ln_' + d.id, d.short]));
 const LINESMAN_MERGED_DOC_KEY='ln_merged_pdf';
-const UPLOADED_ONLY_DOC_TYPES=['bpc_wo',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert','final_gis_report','final_gis_cert'];
+const UPLOADED_ONLY_DOC_TYPES=['bpc_wo',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert'];
 const LINESMAN_MERGED_DOC_LABEL='Linesman Field Reports';
 function linesmanDocsUploadedCount(job){
   if(job?.scans?.ln_merged_pdf)return LINESMAN_DOCS.length;
@@ -313,7 +313,6 @@ const STAGES = [
   {id:'vo2_created',              lbl:'Variation Order (VO2) Created',             role:'admin'},
   {id:'works_valuation_created',  lbl:'Works Valuation Document Created',          role:'admin'},
   {id:'work_instruction_ready',   lbl:'Works Instruction Prepared',                role:'admin'},
-  {id:'final_gis_pending',        lbl:'Final GIS Map & Certificate Required',       role:'admin'},
   {id:'finance_draft',            lbl:'Finance Claim Draft',                       role:'finance'},
   {id:'claim_docs_ready',         lbl:'Claim Finalized by Finance',                role:'finance'},
   {id:'job_complete',             lbl:'Job Recorded as Complete',                  role:'md'},
@@ -329,9 +328,6 @@ function migrateWorkflow(job){
 function hasGISPrerequisites(job){
   return window.TrendsCore.hasGISPrerequisites(job);
 }
-function hasFinalGISPrerequisites(job){
-  return window.TrendsCore.hasFinalGISPrerequisites(job);
-}
 function canTransition(job,to){
   return window.TrendsCore.canTransition(job,to);
 }
@@ -343,7 +339,7 @@ function stagePct(id){ const i=stageIdx(id); if(i<0)return 0; return Math.round(
 function stageBadge(id){
   if(id==='job_complete')return'b-gn';
   if(['gis_ready','claim_docs_ready'].includes(id))return'b-bl';
-  if(['finance_draft','work_instruction_ready','final_gis_pending'].includes(id))return'b-am';
+  if(['finance_draft','work_instruction_ready'].includes(id))return'b-am';
   return'b-gy';
 }
 
@@ -351,7 +347,6 @@ const STAGE_DOCS = {
   wo_received:'bpc_wo', vo1_created:'vo1', linesman_notified:null, field_received:null,
   gis_ready:'gis_report,gis_cert',
   vo2_created:'vo2', works_valuation_created:'works_valuation', work_instruction_ready:'works_instruction', 
-  final_gis_pending:'final_gis_report,final_gis_cert',
   finance_draft:'annexure,payment_cert,invoice,list_of_jobs,bpc_spreadsheet',
   claim_docs_ready:'annexure,payment_cert,invoice,list_of_jobs,bpc_spreadsheet',
 };
@@ -587,6 +582,13 @@ async function syncFromSupabase(){
       };
     });
 
+    let repairedBatchMembership=false;
+    Object.keys(DB.recycleBin||{}).forEach(wo=>{
+      const involved=Object.values(DB.batchDocs||{}).some(batch=>(batch.wos||[]).includes(wo));
+      if(involved){removeWorkOrderFromClaimBatches(wo);repairedBatchMembership=true;}
+    });
+    if(repairedBatchMembership)saveDB();
+
     const seq = (metaR.data||[]).find(m=>m.key==='certSeq');
     if(seq && seq.value!=null) DB.certSeq = Number(seq.value)||DB.certSeq;
 
@@ -685,7 +687,18 @@ async function _pushNow(){
       docs:{...(b.docs||{}),_meta:{status:b.status||'draft',version:b.version||1,fields:b.fields||{},updatedAt:b.updatedAt||new Date().toISOString()}},
       scans:b.scans||{},
     }));
-    if(batchRows.length) await c.from('claim_batches').upsert(batchRows, {onConflict:'id'});
+    if(batchRows.length){
+      if(API_ROUTES_ENABLED){
+        const {data}=await c.auth.getSession();
+        for(const batch of batchRows){
+          const response=await fetch('/api/claims',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+(data?.session?.access_token||'')},body:JSON.stringify({batchId:batch.id,action:'save_batch',batch})});
+          if(!response.ok){const result=await response.json();throw new Error(result.error||'Could not save claim batch');}
+        }
+      }else{
+        const {error:batchErr}=await c.from('claim_batches').upsert(batchRows,{onConflict:'id'});
+        if(batchErr)throw batchErr;
+      }
+    }
 
     if(DB.certSeq!=null) await c.from('app_meta').upsert({key:'certSeq', value:DB.certSeq}, {onConflict:'key'});
   }catch(e){
@@ -1057,7 +1070,7 @@ function renderAdminDash(){
   el.style.display='block';
   const jobs=Object.values(DB.jobs);
   const ADMIN_NEEDS=[  // stages where admin must act
-    'wo_received','vo1_created','field_received','gis_ready','vo2_created','work_instruction_ready','final_gis_pending','claim_docs_ready'
+    'wo_received','vo1_created','field_received','gis_ready','vo2_created','work_instruction_ready','claim_docs_ready'
   ];
   const EXTERNAL_WAITING=[  // waiting on linesman/teams
     'linesman_notified'
@@ -1070,9 +1083,9 @@ function renderAdminDash(){
   document.getElementById('a-prog').textContent=waiting.length;
   document.getElementById('a-val').textContent=P(val);
 
-  const taskIcons={wo_received:'📋',vo1_created:'📤',field_received:'📝',gis_ready:'🗺️',vo2_created:'👷',work_instruction_ready:'📄',final_gis_pending:'🗺️',claim_docs_ready:'✅'};
+  const taskIcons={wo_received:'📋',vo1_created:'📤',field_received:'📝',gis_ready:'🗺️',vo2_created:'👷',work_instruction_ready:'📄',claim_docs_ready:'✅'};
   const taskLabels={wo_received:'Create VO1 — Review uploaded WO',vo1_created:'Notify Linesman (external) — Record in system',field_received:'Create VO2 — field documents received from Linesman',vo2_created:'Works Valuation',work_complete:'Notify GIS Consultant (external)',claim_docs_ready:'Review Finance Docs — Record Job as Complete'};
-  const taskBadges={wo_received:'b-rd',vo1_created:'b-am',field_received:'b-am',gis_ready:'b-am',vo2_created:'b-am',work_instruction_ready:'b-am',final_gis_pending:'b-am',claim_docs_ready:'b-gn'};
+  const taskBadges={wo_received:'b-rd',vo1_created:'b-am',field_received:'b-am',gis_ready:'b-am',vo2_created:'b-am',work_instruction_ready:'b-am',claim_docs_ready:'b-gn'};
   const tasksEl=document.getElementById('a-tasks');
   if(!needsAction.length){tasksEl.innerHTML='<div style="padding:1.25rem;text-align:center;color:var(--gn);font-size:.82rem">✓ No pending actions right now</div>';}
   else{tasksEl.innerHTML=needsAction.map(j=>`
@@ -1168,8 +1181,8 @@ function renderMDDash(){
   document.getElementById('m-docs').textContent=claimReady.length;
   document.getElementById('m-val').textContent=P(val);
 
-  const MD_STEPS=[{sid:'vo1_created',dt:'vo1',lbl:'VO1'},{sid:'gis_ready',dt:'gis_report',lbl:'GIS 1'},{sid:'vo2_created',dt:'vo2',lbl:'VO2'},{sid:'works_valuation_created',dt:'works_valuation',lbl:'WV'},{sid:'work_instruction_ready',dt:'works_instruction',lbl:'WI'},{sid:'final_gis_pending',dt:'final_gis_report',lbl:'GIS 2'}];
-  const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Awaiting Pre-VO2 GIS',gis_ready:'Pre-VO2 GIS Complete',vo2_created:'Creating VO2',works_valuation_created:'Works Valuation',work_instruction_ready:'Works Instruction',final_gis_pending:'Awaiting Final GIS',finance_draft:'Finance Draft',claim_docs_ready:'Pending Completion',job_complete:'Complete',work_order_deleted:'Deleted'};
+  const MD_STEPS=[{sid:'vo1_created',dt:'vo1',lbl:'VO1'},{sid:'gis_ready',dt:'gis_report',lbl:'GIS 1'},{sid:'vo2_created',dt:'vo2',lbl:'VO2'},{sid:'works_valuation_created',dt:'works_valuation',lbl:'WV'},{sid:'work_instruction_ready',dt:'works_instruction',lbl:'WI'}];
+  const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Awaiting Pre-VO2 GIS',gis_ready:'Pre-VO2 GIS Complete',vo2_created:'Creating VO2',works_valuation_created:'Works Valuation',work_instruction_ready:'Works Instruction',finance_draft:'Finance Draft',claim_docs_ready:'Pending Completion',job_complete:'Complete',work_order_deleted:'Deleted'};
 
   function dpills(j){
     const saved=j.savedDocs||{},scans=j.scans||{};
@@ -1186,7 +1199,7 @@ function renderMDDash(){
     const t=jTotal(j,j.vo2&&j.vo2.items&&j.vo2.items.length?'vo2':'vo1');
     const isDone=j.stage==='job_complete';
     const isReady=['finance_draft','claim_docs_ready'].includes(j.stage);
-    const isBusy=['field_received','work_instruction_ready','final_gis_pending'].includes(j.stage);
+    const isBusy=['field_received','work_instruction_ready'].includes(j.stage);
     const pct=stagePct(j.stage);
     const acc=isDone?'#1a8a56':isReady?'#1a50b0':isBusy?'#c47000':'#888';
     const accBg=isDone?'#E4F5EA':isReady?'#E4EEFB':isBusy?'#FAF0DB':'#ECEFF1';
@@ -1379,7 +1392,7 @@ function renderJobs(){
   document.getElementById('jobs-add-btn').innerHTML=CU==='admin'?`<button class="btn btn-am btn-sm" onclick="openModal('addWOModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Work Order</button>`:'';
   const jobs=getFilteredJobs();
   if(!jobs.length){document.getElementById('jobsList').innerHTML='<div style="padding:2rem;text-align:center;color:var(--tx3)">No work orders yet. Click Add Work Order to begin.</div>';return;}
-  const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Awaiting Pre-VO2 GIS',gis_ready:'Pre-VO2 GIS Complete',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Complete Works Instruction',final_gis_pending:'Awaiting Final GIS',finance_draft:'Finance Draft',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
+  const ST_LBL={wo_received:'Awaiting VO1',vo1_created:'Linesman Notification',linesman_notified:'Linesman Survey',field_received:'Awaiting Pre-VO2 GIS',gis_ready:'Pre-VO2 GIS Complete',vo2_created:'Works Valuation',works_valuation_created:'Works Instruction',work_instruction_ready:'Complete Works Instruction',finance_draft:'Finance Draft',claim_docs_ready:'Pending Completion',job_complete:'Complete'};
   const GRADS=[
     'linear-gradient(145deg,#0a4a28 0%,#1a8a56 100%)',
     'linear-gradient(145deg,#6b3600 0%,#c47000 100%)',
@@ -1395,7 +1408,7 @@ function renderJobs(){
     const pct=stagePct(j.stage);
     const isDone=j.stage==='job_complete';
     const isReady=['finance_draft','claim_docs_ready'].includes(j.stage);
-    const isBusy=['field_received','work_instruction_ready','final_gis_pending'].includes(j.stage);
+    const isBusy=['field_received','work_instruction_ready'].includes(j.stage);
     const bl=isDone?'Complete':isReady?'Ready to Claim':isBusy?'In Progress':'Active';
     return`<div class="wo-sc" style="background:${GRADS[idx%GRADS.length]}" onclick="openJobDetail('${j.wo}')">
       <span class="wo-sc-arrow">↗</span>
@@ -1499,8 +1512,7 @@ function renderInbox(){
     jobs.filter(j=>j.stage==='linesman_notified').forEach(j=>{const uploaded=linesmanDocsAllUploaded(j);tasks.push({wo:j.wo,icon:'👷',name:'Awaiting Linesman Field Reports — WO '+j.wo,desc:j.cust+` · Field reports ${uploaded?'uploaded':'pending'}`,badge:'Waiting',bc:'b-bl'});});
     jobs.filter(j=>j.stage==='field_received').forEach(j=>tasks.push({wo:j.wo,icon:'📝',name:'Create VO2 from Field Findings — WO '+j.wo,desc:j.cust,badge:'Action Required',bc:'b-am'}));
     jobs.filter(j=>j.stage==='vo2_created').forEach(j=>tasks.push({wo:j.wo,icon:'📄',name:'Prepare Works Instruction — WO '+j.wo,desc:j.cust+' · ready to instruct teams',badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='work_instruction_ready').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Complete Works Instruction — WO '+j.wo,desc:j.cust+' · Final GIS is next',badge:'Action Required',bc:'b-am'}));
-    jobs.filter(j=>j.stage==='final_gis_pending').forEach(j=>tasks.push({wo:j.wo,icon:'🗺️',name:'Upload Final GIS Map & Certificate — WO '+j.wo,desc:j.cust+' · Required before Finance',badge:'Action Required',bc:'b-am'}));
+    jobs.filter(j=>j.stage==='work_instruction_ready').forEach(j=>tasks.push({wo:j.wo,icon:'📤',name:'Complete Works Instruction — WO '+j.wo,desc:j.cust+' · ready for Finance',badge:'Action Required',bc:'b-am'}));
     jobs.filter(j=>j.stage==='claim_docs_ready').forEach(j=>tasks.push({wo:j.wo,icon:'✅',name:'Finance Docs Ready — Record Job Complete · WO '+j.wo,desc:j.cust+' · all documents ready',badge:'Final Step',bc:'b-gn'}));
   }
   if(CU==='finance'){
@@ -1626,7 +1638,7 @@ function renderJobDetail(wo){
       linesman_notified:'Record linesman findings',field_received:'Upload GIS Map and Certificate',
       gis_ready:'Create VO2 from field findings',
       vo2_created:'Create Works Valuation document',works_valuation_created:'Prepare Works Instruction',
-      work_instruction_ready:'Complete Works Instruction',final_gis_pending:'Upload the final GIS Map and Certificate before Finance',finance_draft:'Finance prepares and reviews draft claim',
+      work_instruction_ready:'Complete Works Instruction',finance_draft:'Finance prepares and reviews draft claim',
       claim_docs_ready:'Manager records job as complete',
       job_complete:'Job is fully complete',
     };
@@ -1654,13 +1666,7 @@ function renderJobDetail(wo){
         if(st.id==='gis_ready') actBtns+=`<button class="btn btn-am btn-sm" onclick="showGISDocumentsModal('${wo}')">View GIS Documents</button><button class="btn btn-am" onclick="openDocForAction('${wo}','vo2')">Create VO2</button>`;
         if(st.id==='vo2_created') actBtns+=`<button class="btn btn-am" onclick="createWorksValuation('${wo}')">Create Works Valuation</button>`;
         if(st.id==='works_valuation_created') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_valuation')">View Works Valuation</button><button class="btn btn-am btn-sm" onclick="advanceStageWV('${wo}')">Confirm & Proceed</button>`;
-        if(st.id==='work_instruction_ready') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-gn btn-sm" onclick="advanceStageWI('${wo}')">Complete & Send to Final GIS</button>`;
-        if(st.id==='final_gis_pending') {
-          const hasFinalMap=!!job.scans?.final_gis_report, hasFinalCert=!!job.scans?.final_gis_cert;
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','final_gis_report')">📎 ${hasFinalMap?'Replace':'Upload'} Final GIS Map</button>`;
-          actBtns+=`<button class="btn btn-am btn-sm" onclick="openExternalUpload('${wo}','final_gis_certificate')">📎 ${hasFinalCert?'Replace':'Upload'} Final GIS Certificate</button>`;
-          if(hasFinalMap&&hasFinalCert)actBtns+=`<button class="btn btn-gn" onclick="markFinalGISComplete('${wo}')">✓ Confirm Final GIS & Send to Finance</button>`;
-        }
+        if(st.id==='work_instruction_ready') actBtns+=`<button class="btn btn-am btn-sm" onclick="openDocForAction('${wo}','works_instruction')">View Works Instruction</button><button class="btn btn-gn btn-sm" onclick="advanceStageWI('${wo}')">Complete & Send to Finance</button>`;
         if(st.id==='finance_draft') actBtns+=`<span class="badge b-am">Finance drafting claim</span>`;
         if(st.id==='claim_docs_ready') actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><span class="badge b-am">Awaiting Manager completion</span>`;
         if(st.id==='job_complete') actBtns+=`<span class="badge b-gn">Job complete — ${action?.date||''}</span><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','list_of_jobs')">View List of Jobs</button>`;
@@ -1671,7 +1677,7 @@ function renderJobDetail(wo){
     if(isMD&&st.id==='claim_docs_ready'){
       actBtns+=`<button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','payment_cert')">View Payment Cert</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','invoice')">View Invoice</button><button class="btn btn-gy btn-sm" onclick="openDocForAction('${wo}','annexure')">View Annexure</button><button class="btn btn-gn" onclick="openRecord('${wo}','job_complete','Record: Job Complete','All claim documents are ready. Record this job as complete.')">Record Job Complete</button>`;
     }
-    const mdStepDocs={vo1_created:['vo1'],field_received:[LINESMAN_MERGED_DOC_KEY],gis_ready:['gis_report','gis_cert'],vo2_created:['vo2'],works_valuation_created:['works_valuation'],work_instruction_ready:['works_instruction'],final_gis_pending:['final_gis_report','final_gis_cert'],claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']};
+    const mdStepDocs={vo1_created:['vo1'],field_received:[LINESMAN_MERGED_DOC_KEY],gis_ready:['gis_report','gis_cert'],vo2_created:['vo2'],works_valuation_created:['works_valuation'],work_instruction_ready:['works_instruction'],claim_docs_ready:['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet']};
 
 const docsRequireSignature=['works_instruction','works_valuation','payment_cert'];
 const docsAutoComplete=['annexure','invoice','gis_cert','list_of_jobs','bpc_spreadsheet'];
@@ -1681,7 +1687,7 @@ function setDocumentStatus(docType, jobComplete=false) {
   if(docsAutoComplete.includes(docType)) return 'COMPLETE';
   return 'GENERATED';
 }
-    const docLabelMap={vo1:'VO1',vo2:'VO2',[LINESMAN_MERGED_DOC_KEY]:LINESMAN_MERGED_DOC_LABEL,works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',final_gis_report:'Final GIS Map',final_gis_cert:'Final GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
+    const docLabelMap={vo1:'VO1',vo2:'VO2',[LINESMAN_MERGED_DOC_KEY]:LINESMAN_MERGED_DOC_LABEL,works_valuation:'Works Valuation',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',annexure:'Annexure',payment_cert:'Payment Cert',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Sheet'};
     const isDone=job.stage==='job_complete';
     const jobManagement=CU==='admin'
       ?`<div class="job-management"><div class="job-management-copy"><div class="job-management-title">Job management</div><div class="job-management-help">Move this work order and its documents out of active lists. You can restore it later from the Recycle Bin on the Work Orders page.</div></div><button class="btn btn-rd btn-sm" onclick="confirmDeleteWorkOrder('${wo}')">🗑 Move work order to Recycle Bin</button></div>`
@@ -1703,7 +1709,7 @@ function setDocumentStatus(docType, jobComplete=false) {
   })();
 
   // Documents panel - FILTERED BY ROLE
-  const allDocTypes=['bpc_wo','vo1',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert','vo2','works_valuation','works_instruction','final_gis_report','final_gis_cert','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  const allDocTypes=['bpc_wo','vo1',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert','vo2','works_valuation','works_instruction','annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   let visibleDocTypes = [...allDocTypes];
   if(CU === 'finance') {
     // Finance only sees generated claim documents
@@ -1718,9 +1724,10 @@ function setDocumentStatus(docType, jobComplete=false) {
     visibleDocTypes = [...allDocTypes];
   }
   
-  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',[LINESMAN_MERGED_DOC_KEY]:LINESMAN_MERGED_DOC_LABEL,vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',final_gis_report:'Final GIS Map',final_gis_cert:'Final GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
+  const localDocLabels={bpc_wo:'BPC Work Order (from BPC email)',vo1:'Works Valuation (VO1)',[LINESMAN_MERGED_DOC_KEY]:LINESMAN_MERGED_DOC_LABEL,vo2:'Variation Order (VO2)',works_valuation:'Works Valuation Document',works_instruction:'Works Instruction',gis_report:'Pre-VO2 GIS Map',gis_cert:'Pre-VO2 GIS Certificate',annexure:'Annexure to Payment Certificate',payment_cert:'Payment Certificate',invoice:'Tax Invoice',list_of_jobs:'List of Jobs Done',bpc_spreadsheet:'BPC Spreadsheet'};
   const docsReadyCt=visibleDocTypes.filter(d=>job.scans[d]||(!UPLOADED_ONLY_DOC_TYPES.includes(d)&&job.savedDocs&&job.savedDocs[d])).length;
   document.getElementById('jdDocsCount').textContent=`${docsReadyCt} of ${visibleDocTypes.length} ready`;
+  visibleDocTypes=visibleDocTypes.filter(d=>job.scans[d]||(!UPLOADED_ONLY_DOC_TYPES.includes(d)&&job.savedDocs?.[d]));
   document.getElementById('jdDocsList').innerHTML=visibleDocTypes.map(d=>{
     const isLinesmanDoc=d===LINESMAN_MERGED_DOC_KEY;
     const scan=job.scans[d];
@@ -1734,7 +1741,7 @@ function setDocumentStatus(docType, jobComplete=false) {
     const statusText=isLinesmanDoc?(scan?'Uploaded':'Pending'):(scan?'Signed Copy':saved?'Soft Copy':'Pending');
     const iconClass=scan?'uploaded':saved?'generated':'pending';
     // MD and everyone can view if saved or scan exists, or if generated doc type
-    const canView=hasGenerated&&(!isMultiJob||job.claimRef);
+    const canView=!!saved;
     return`<div class="doc-card">
       <div class="doc-card-top">
         <div class="doc-card-icon ${iconClass}">${scan?'✓':saved?'📄':'⏳'}</div>
@@ -2298,27 +2305,16 @@ async function advanceStageWV(wo){
 }
 async function advanceStageWI(wo){
   const job=DB.jobs[wo];if(!job)return;
-  job.stage='final_gis_pending';
-  job.actions.final_gis_pending={date:new Date().toISOString().slice(0,10),notes:'Works Instruction prepared; awaiting final GIS documents',extra:''};
+  job.stage='finance_draft';
+  job.actions.finance_draft={date:new Date().toISOString().slice(0,10),notes:'Works Instruction prepared; sent to Finance',extra:''};
   job.documentStatuses.works_instruction='pending_signature';
-  addLog(wo,'Works Instruction prepared — awaiting final GIS Map and Certificate');
-  notify(['admin','md'],`WO ${wo} — ${job.cust} requires final GIS documents before Finance.`,wo);
+  addLog(wo,'Works Instruction prepared — sent to Finance');
+  notifyWithEmail(['finance'],'WO '+wo+' — '+job.cust+' is waiting for you. Please prepare the claim batch documents.',wo);
+  notifyWithEmail(['md'],'WO '+wo+' — '+job.cust+' is now with Finance. Claim batch documents are in process.',wo);
   markJobDirty(wo);
   await saveDBAndWait();closeModal('docModal');
   refreshDetail();refreshAll();
-  toast('Works Instruction ready — upload the final GIS Map and Certificate');
-}
-async function markFinalGISComplete(wo){
-  const job=DB.jobs[wo];if(!job)return;
-  if(!hasFinalGISPrerequisites(job)){toast('Upload both the Final GIS Map and Final GIS Certificate first','rd');return;}
-  job.stage='finance_draft';
-  job.actions.finance_draft={date:new Date().toISOString().slice(0,10),notes:'Final GIS documents confirmed',extra:''};
-  addLog(wo,'Final GIS Map and Certificate confirmed — sent to Finance');
-  notifyWithEmail(['finance'],`WO ${wo} — ${job.cust} is waiting for you. Please prepare the claim batch documents.`,wo);
-  notifyWithEmail(['md'],`WO ${wo} — ${job.cust} is now with Finance. Claim batch documents are in process.`,wo);
-  markJobDirty(wo);
-  await saveDBAndWait();refreshDetail();refreshAll();
-  toast('Final GIS confirmed — sent to Finance','gn');
+  toast('Works Instruction ready — sent to Finance');
 }
 async function advanceStage(wo,newStage){
   const job=DB.jobs[wo];if(!job)return;
@@ -2399,6 +2395,7 @@ async function saveVO2(wo){
 ═══════════════════════════════════════ */
 function renderClaims(){
   restoreClaimBatchState();
+  const generator=document.getElementById('claimGeneratorPanel');if(generator)generator.style.display=CU==='finance'?'block':'none';
   renderClaimDrafts();
   // Finance owns a permanent claim pool. A work order remains selectable after
   // its first batch and after Admin records it complete, allowing repeat or
@@ -2422,12 +2419,14 @@ function renderClaimDrafts(){
   const el=document.getElementById('claimDrafts');if(!el)return;
   const order=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
   const labels={annexure:'Annexure',payment_cert:'Payment Certificate',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Spreadsheet'};
-  const batches=Object.values(DB.batchDocs||{}).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
-  if(!batches.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="crd"><div class="crd-hd"><div class="crd-hd-l">Existing Claim Batches — Finance Access</div></div>${batches.map(b=>{
-    const resume=order.includes(b.lastViewedDoc)?b.lastViewedDoc:'annexure',reviewed=new Set(b.viewedDocs||[]).size,finalized=b.status==='finalized';
-    return`<div class="tbl-row" style="grid-template-columns:1fr 120px 130px 150px;align-items:center"><div><strong>Cert ${b.id}</strong><small style="display:block;color:var(--tx3)">${(b.wos||[]).length} work order(s) · Continue at ${labels[resume]}</small></div><span class="badge ${finalized?'b-gn':'b-am'}">${finalized?'Finalized':'Draft'}</span><span style="font-size:.72rem;color:var(--tx2)">${reviewed} of ${order.length} reviewed</span><div style="display:flex;gap:5px"><button class="btn btn-am btn-sm" onclick="viewBatchDoc('${b.id}','${resume}')">Continue</button>${!finalized?`<button class="btn btn-gn btn-sm" onclick="finalizeClaim('${b.id}')">Finalize</button>`:''}</div></div>`;
-  }).join('')}</div>`;
+  const batches=Object.values(DB.batchDocs||{}).filter(batch=>(batch.wos||[]).length).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
+  if(!batches.length){el.innerHTML='<div class="crd"><div style="padding:1rem;color:var(--tx3)">No claim batches have been generated yet.</div></div>';return;}
+  el.innerHTML='<div class="crd"><div class="crd-hd"><div class="crd-hd-l">Claim Batches</div></div>'+batches.map(b=>{
+    const finalized=b.status==='finalized';
+    const workOrders=(b.wos||[]).join(', ');
+    const docButtons=order.map(type=>'<button class="btn btn-gy btn-sm" onclick="viewBatchDoc(\''+b.id+'\',\''+type+'\')">'+labels[type]+'</button>').join('');
+    return '<div style="padding:.85rem 1rem;border-bottom:1px solid var(--bd)"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><strong>Cert '+b.id+'</strong><small style="display:block;color:var(--tx3);margin-top:3px">Work orders: '+(workOrders||'None')+'</small></div><span class="badge '+(finalized?'b-gn':'b-am')+'">'+(finalized?'Finalized':'Draft')+'</span></div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:.65rem">'+docButtons+'<button class="btn btn-gn btn-sm" onclick="downloadBPCSpreadsheetXLSX(\''+b.id+'\')">Download BPC Excel</button>'+(CU==='finance'?'<button class="btn btn-am btn-sm" onclick="viewBatchDoc(\''+b.id+'\',\''+(b.lastViewedDoc||'annexure')+'\')">Edit batch</button>':'')+(CU==='finance'&&!finalized?'<button class="btn btn-gn btn-sm" onclick="finalizeClaim(\''+b.id+'\')">Finalize</button>':'')+'</div></div>';
+  }).join('')+'</div>';
 }
 function toggleClaim(wo,e){if(e)e.stopPropagation();selClaimJobs.has(wo)?selClaimJobs.delete(wo):selClaimJobs.add(wo);saveClaimBatchState();renderClaims();}
 function updateClaimSummary(){
@@ -2580,9 +2579,7 @@ async function finalizeClaim(certNo){
     // checkpoints before the standardized scan keys existed; their completed
     // workflow stage is authoritative evidence that the checkpoint was passed.
     const passedPreGIS=stageIdx(job.stage)>=stageIdx('vo2_created');
-    const passedFinalGIS=stageIdx(job.stage)>=stageIdx('finance_draft');
     if(!hasGISPrerequisites(job)&&!passedPreGIS)problems.push(`WO ${job.wo}: Pre-VO2 GIS Map and Certificate are required`);
-    if(!hasFinalGISPrerequisites(job)&&!passedFinalGIS)problems.push(`WO ${job.wo}: Final GIS Map and Certificate are required`);
     if(!job.vo2?.items?.length)problems.push(`WO ${job.wo}: VO2 requires at least one item`);
     if(!isFinite(bestTotal(job).total)||bestTotal(job).total<=0)problems.push(`WO ${job.wo}: claim total must be positive`);
   });
@@ -3547,7 +3544,7 @@ function docPaymentCert(job, batchJobs){
     <tr><td style="width:80px;padding:2px 5px;font-weight:bold;text-decoration:underline;vertical-align:top">Remarks</td><td style="padding:2px 5px"><input class="ef ef-b" aria-label="Remarks line 1" value="" style="width:100%;border-bottom:1px solid #000"></td></tr>
     <tr><td></td><td style="padding:2px 5px"><input class="ef ef-b" aria-label="Remarks line 2" value="" style="width:100%;border-bottom:1px solid #000"></td></tr>
   </table>
-  <div style="margin:15px 5px 16px;font-size:8.5pt">We hereby certify that the value of work shown is correct and recommended of payment in full of the amount shown</div>
+  <div style="margin:15px 5px 16px;font-size:8.5pt">We hereby certify that the value of work shown is correct and recommended for payment in full of the amount shown</div>
   <table style="width:100%;border-collapse:collapse;font-size:8.5pt;margin-top:5px">
     <tr><td style="width:145px;padding:5px">Certificate Prepared by:</td><td style="width:290px;padding:5px"><input class="ef ef-b" aria-label="Certificate Prepared by" value="" style="width:100%;border-bottom:1px solid #000"></td><td></td></tr>
     <tr><td></td><td style="padding:0 5px 13px;font-size:7.5pt;font-weight:bold">for Botswana Power Corporation</td><td></td></tr>
@@ -3932,7 +3929,7 @@ function enableDocumentAutosave(mode){
 }
 function autosaveCurrentDocument(immediate=false){
   const body=document.getElementById('docModalBody');
-  if(!body?.dataset.autosave||!hasUnsavedChanges)return;
+  if(!body?.dataset.autosave||(!hasUnsavedChanges&&!immediate))return;
   clearTimeout(documentAutosaveTimer);
   try{
     if(body.dataset.autosave==='batch'&&CURRENT_CERT_NO&&CURRENT_DOC_TYPE){
@@ -4216,13 +4213,13 @@ function saveBatchDocAttach(certNo,docType,options={}){
   // Save the current edited state of the doc and attach to all jobs in this batch
   const fullscreen=document.getElementById('docFullscreenModal');
   if(fullscreen?.style.display==='flex'&&typeof syncFullscreenToModal==='function')syncFullscreenToModal();
-  const batchJobs=Object.values(DB.jobs).filter(j=>j.claimRef===certNo&&j.vo1&&j.vo1.items);
+  const batch=DB.batchDocs?.[certNo];
+  const batchJobs=(batch?.wos||[]).map(wo=>DB.jobs[wo]).filter(j=>j?.vo1?.items);
   if(!batchJobs.length){toast('No jobs found for this batch','rd');return;}
   // Serialize all input values into attributes before capturing HTML
   const modalBody=document.getElementById('docModalBody');
   serializeFormValues(modalBody);
   const currentHtml=modalBody.innerHTML;
-  const batch=DB.batchDocs?.[certNo];
   if(batch){
     batch.lastViewedDoc=docType;
     batch.viewedDocs=Array.from(new Set([...(batch.viewedDocs||[]),docType]));
@@ -4765,6 +4762,35 @@ function confirmDeleteWorkOrder(wo){
   openModal('deleteWOModal');
 }
 
+function removeWorkOrderFromClaimBatches(wo){
+  const docTypes=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  Object.entries(DB.batchDocs||{}).forEach(([certNo,batch])=>{
+    if(!(batch.wos||[]).includes(wo))return;
+    batch.wos=batch.wos.filter(batchWO=>batchWO!==wo);
+    if(!batch.wos.length){
+      batch.status='archived';
+      batch.updatedAt=new Date().toISOString();
+      return;
+    }
+    const remainingJobs=batch.wos.map(batchWO=>DB.jobs[batchWO]).filter(Boolean);
+    batch.jobs=remainingJobs;
+    batch.docs=batch.docs||{};
+    docTypes.forEach(docType=>{
+      const html=generateBatchDocHTML(certNo,docType);
+      const previous=batch.docs[docType];
+      const revision=(typeof previous==='object'&&previous?.revision||0)+1;
+      batch.docs[docType]={html,generatedAt:new Date().toISOString(),revision};
+      const legacyMap={annexure:'annexure',payment_cert:'paymentCert',invoice:'invoice',list_of_jobs:'listOfJobs',bpc_spreadsheet:'bpcSpreadsheet'};
+      batch[legacyMap[docType]]=html;
+      remainingJobs.forEach(remainingJob=>{
+        remainingJob.savedDocs=remainingJob.savedDocs||{};
+        remainingJob.savedDocs[docType]={html,status:batch.status||'draft',savedAt:new Date().toISOString(),role:CU,autoSaved:true,certNo};
+        markJobDirty(remainingJob.wo);
+      });
+    });
+    batch.updatedAt=new Date().toISOString();
+  });
+}
 async function deleteWorkOrder(){
   if(CU!=='admin'){toast('Only administrators can recycle work orders','rd');return;}
   const deleteWONumber = document.getElementById('deleteWONumber').textContent;
@@ -4798,6 +4824,7 @@ async function deleteWorkOrder(){
       deletedBy: CU
     };
     
+    removeWorkOrderFromClaimBatches(wo);
     addLog(wo, `Work Order DELETED from system by ${CU}`);
     markJobDirty(wo);
     
@@ -5017,22 +5044,41 @@ function printDocFS(){
 /* ═══════════════════════════════════════
    NAVIGATION
 ═══════════════════════════════════════ */
+let recycleBinOpen=false;
+function toggleRecycleBin(){
+  recycleBinOpen=!recycleBinOpen;
+  const list=document.getElementById('a-recycle');
+  const button=document.getElementById('recycleToggle');
+  if(list)list.style.display=recycleBinOpen?'block':'none';
+  if(button)button.textContent=recycleBinOpen?'Hide deleted work orders':'View deleted work orders';
+}
+function renderDocuments(){
+  const el=document.getElementById('documentsList');if(!el)return;
+  const docTypes=['annexure','payment_cert','invoice','list_of_jobs','bpc_spreadsheet'];
+  const labels={annexure:'Annexure',payment_cert:'Payment Certificate',invoice:'Invoice',list_of_jobs:'List of Jobs',bpc_spreadsheet:'BPC Spreadsheet'};
+  const batches=Object.values(DB.batchDocs||{}).filter(batch=>(batch.wos||[]).length).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
+  const batchHTML=batches.map(b=>'<div style="padding:.8rem 1rem;border-bottom:1px solid var(--bd)"><strong>Cert '+b.id+'</strong><small style="display:block;color:var(--tx3);margin:.2rem 0 .55rem">Work orders: '+((b.wos||[]).join(', ')||'None')+'</small><div style="display:flex;gap:5px;flex-wrap:wrap">'+docTypes.map(type=>'<button class="btn btn-gy btn-sm" onclick="viewBatchDoc(\''+b.id+'\',\''+type+'\')">'+labels[type]+'</button>').join('')+'<button class="btn btn-gn btn-sm" onclick="downloadBPCSpreadsheetXLSX(\''+b.id+'\')">Download BPC Excel</button></div></div>').join('');
+  const jobs=Object.values(DB.jobs).filter(j=>!j.deletedAt&&((j.savedDocs&&Object.keys(j.savedDocs).length)||(j.scans&&Object.keys(j.scans).length)));
+  const jobHTML=jobs.map(j=>'<div class="tbl-row" style="grid-template-columns:100px 1fr 140px"><span class="mono">'+j.wo+'</span><span>'+j.cust+'</span><button class="btn btn-gy btn-sm" onclick="openJobDetail(\''+j.wo+'\')">Open documents</button></div>').join('');
+  el.innerHTML='<div class="crd" style="margin-bottom:1rem"><div class="crd-hd"><div class="crd-hd-l">Claim Batch Documents</div></div>'+(batchHTML||'<div style="padding:1rem;color:var(--tx3)">No batch documents generated yet.</div>')+'</div><div class="crd"><div class="crd-hd"><div class="crd-hd-l">Work Order Documents</div></div>'+(jobHTML||'<div style="padding:1rem;color:var(--tx3)">No work order documents available yet.</div>')+'</div>';
+}
 function nav(screen){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('act'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('act'));
   document.getElementById('sc-'+screen)?.classList.add('act');
-  const titles={dashboard:'Dashboard',jobs:'Work Orders',inbox:'Inbox',claims:'Claim Batch',rates:'Rates Sheet',actlog:'Activity Log',jobdetail:'Job Detail'};
+  const titles={dashboard:'Dashboard',jobs:'Work Orders',inbox:'Inbox',claims:'Claim Batches',documents:'Documents',rates:'Rates Sheet',actlog:'Activity Log',jobdetail:'Job Detail'};
   document.getElementById('tbt').textContent=titles[screen]||screen;
   document.getElementById('n-'+screen)?.classList.add('act');
   if(screen==='dashboard'){renderDashboard();}
   if(screen==='jobs'){renderJobs();}
   if(screen==='inbox'){renderInbox();}
   if(screen==='claims'){renderClaims();}
+  if(screen==='documents'){renderDocuments();}
   if(screen==='rates'){renderRates();}
   if(screen==='actlog'){renderActLog();}
   if(screen==='jobdetail'&&detailWO){renderJobDetail(detailWO);}
 }
-function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs();renderClaims();}
+function refreshAll(){renderDashboard();renderJobs();renderInbox();renderNotifs();renderClaims();renderDocuments();}
 
 async function resetDatabase(){
   if(confirm('⚠️ DELETE ALL DATA? This cannot be undone. You will lose all work orders, jobs, and batches.')){
@@ -5211,11 +5257,11 @@ function loginSuccess(){
 
   const show = id => {const e = document.getElementById(id); if(e) e.style.display = 'flex';};
   const hide = id => {const e = document.getElementById(id); if(e) e.style.display = 'none';};
-  ['n-inbox','n-claims','n-rates','n-actlog','n-jobdetail'].forEach(hide);
+  ['n-inbox','n-claims','n-documents','n-rates','n-actlog','n-jobdetail'].forEach(hide);
 
-  if(CU === 'admin'){show('n-inbox'); show('n-rates'); show('n-actlog');}
-  if(CU === 'finance'){show('n-inbox'); show('n-claims');}
-  if(CU === 'md'){show('n-actlog'); show('n-jobs'); show('n-claims');}
+  if(CU === 'admin'){show('n-inbox'); show('n-documents'); show('n-rates'); show('n-actlog');}
+  if(CU === 'finance'){show('n-inbox'); show('n-claims'); show('n-documents');}
+  if(CU === 'md'){show('n-actlog'); show('n-jobs'); show('n-claims'); show('n-documents');}
   if(CU === 'linesman'){show('n-inbox');}
 
   if(window.DEVELOPER_MODE){
@@ -5237,11 +5283,11 @@ function switchRole(role){
 
   const show = id => {const e = document.getElementById(id); if(e) e.style.display = 'flex';};
   const hide = id => {const e = document.getElementById(id); if(e) e.style.display = 'none';};
-  ['n-inbox','n-claims','n-rates','n-actlog','n-jobdetail'].forEach(hide);
+  ['n-inbox','n-claims','n-documents','n-rates','n-actlog','n-jobdetail'].forEach(hide);
 
-  if(CU === 'admin'){show('n-inbox'); show('n-rates'); show('n-actlog');}
-  if(CU === 'finance'){show('n-inbox'); show('n-claims');}
-  if(CU === 'md'){show('n-actlog'); show('n-jobs'); show('n-claims');}
+  if(CU === 'admin'){show('n-inbox'); show('n-documents'); show('n-rates'); show('n-actlog');}
+  if(CU === 'finance'){show('n-inbox'); show('n-claims'); show('n-documents');}
+  if(CU === 'md'){show('n-actlog'); show('n-jobs'); show('n-claims'); show('n-documents');}
   if(CU === 'linesman'){show('n-inbox');}
 
   nav('dashboard');

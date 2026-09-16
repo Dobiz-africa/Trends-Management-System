@@ -2,6 +2,9 @@ const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
 const {handleNotification}=require('./api/notifications-local.cjs');
+let claimHandlerPromise,workOrderHandlerPromise;
+const getClaimHandler=()=>claimHandlerPromise||(claimHandlerPromise=import('./api/claims.js').then(module=>module.default));
+const getWorkOrderHandler=()=>workOrderHandlerPromise||(workOrderHandlerPromise=import('./api/work-orders.js').then(module=>module.default));
 
 const root=__dirname;
 const port=Number(process.env.PORT||4173);
@@ -34,7 +37,25 @@ const server=http.createServer(async(req,res)=>{
   const requestUrl=new URL(req.url,'http://localhost');
   if(requestUrl.pathname==='/api/config'){
     res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
-    return res.end(JSON.stringify({SUPABASE_URL:process.env.SUPABASE_URL||'',SUPABASE_ANON_KEY:process.env.SUPABASE_ANON_KEY||'',SCANS_BUCKET:process.env.SCANS_BUCKET||'claimdesk-scans',DEV_ROLE_SWITCH_EMAILS:process.env.DEV_ROLE_SWITCH_EMAILS||'',API_ROUTES_ENABLED:false,EMAIL_ROUTES_ENABLED:true}));
+    return res.end(JSON.stringify({SUPABASE_URL:process.env.SUPABASE_URL||'',SUPABASE_ANON_KEY:process.env.SUPABASE_ANON_KEY||'',SCANS_BUCKET:process.env.SCANS_BUCKET||'claimdesk-scans',DEV_ROLE_SWITCH_EMAILS:process.env.DEV_ROLE_SWITCH_EMAILS||'',API_ROUTES_ENABLED:true,EMAIL_ROUTES_ENABLED:true}));
+  }
+  if(requestUrl.pathname==='/api/work-orders'){
+    if(req.method!=='PATCH')return sendJson(res,405,{error:'Method not allowed'});
+    try{
+      req.body=await readJson(req);
+      res.status=status=>({json:body=>sendJson(res,status,body)});
+      const handler=await getWorkOrderHandler();
+      return await handler(req,res);
+    }catch(error){console.error('Local work-order request failed:',error.message);return sendJson(res,error.status||500,{error:error.message||'Server error'});}
+  }
+  if(requestUrl.pathname==='/api/claims'){
+    if(!['POST','PATCH'].includes(req.method))return sendJson(res,405,{error:'Method not allowed'});
+    try{
+      req.body=await readJson(req);
+      res.status=status=>({json:body=>sendJson(res,status,body)});
+      const handler=await getClaimHandler();
+      return await handler(req,res);
+    }catch(error){console.error('Local claim request failed:',error.message);return sendJson(res,error.status||500,{error:error.message||'Server error'});}
   }
   if(requestUrl.pathname==='/api/notifications'){
     if(req.method!=='POST')return sendJson(res,405,{error:'Method not allowed'});

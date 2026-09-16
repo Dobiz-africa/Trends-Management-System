@@ -3,14 +3,13 @@
   if(typeof module==='object'&&module.exports)module.exports=api;
   else root.TrendsCore=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
-  const WORKFLOW_VERSION=3;
-  const STAGES=['wo_received','vo1_created','linesman_notified','field_received','gis_ready','vo2_created','works_valuation_created','work_instruction_ready','final_gis_pending','finance_draft','claim_docs_ready','job_complete'];
+  const WORKFLOW_VERSION=4;
+  const STAGES=['wo_received','vo1_created','linesman_notified','field_received','gis_ready','vo2_created','works_valuation_created','work_instruction_ready','finance_draft','claim_docs_ready','job_complete'];
   const TRANSITIONS=Object.freeze(Object.fromEntries(STAGES.map((stage,index)=>[stage,index<STAGES.length-1?STAGES[index+1]:null])));
-  const LEGACY_STAGE_MAP=Object.freeze({gis_notified_early:'field_received',gis_complete_early:'gis_ready',teams_notified:'work_instruction_ready',work_complete:'work_instruction_ready',gis_notified:'final_gis_pending',gis_complete:'final_gis_pending'});
+  const LEGACY_STAGE_MAP=Object.freeze({gis_notified_early:'field_received',gis_complete_early:'gis_ready',teams_notified:'work_instruction_ready',work_complete:'work_instruction_ready',final_gis_pending:'finance_draft',gis_notified:'finance_draft',gis_complete:'finance_draft'});
   const migrateWorkflow=job=>{if(!job)return job;if(LEGACY_STAGE_MAP[job.stage]){job.legacyStage=job.stage;job.stage=LEGACY_STAGE_MAP[job.stage];}job.workflowVersion=WORKFLOW_VERSION;return job;};
   const hasGISPrerequisites=job=>!!(job?.scans?.gis_report&&job?.scans?.gis_cert);
-  const hasFinalGISPrerequisites=job=>!!(job?.scans?.final_gis_report&&job?.scans?.final_gis_cert);
-  const canTransition=(job,to)=>!!job&&TRANSITIONS[job.stage]===to&&(to!=='vo2_created'||hasGISPrerequisites(job))&&(to!=='finance_draft'||hasFinalGISPrerequisites(job));
+  const canTransition=(job,to)=>!!job&&TRANSITIONS[job.stage]===to&&(to!=='vo2_created'||hasGISPrerequisites(job));
   const cleanLocationPart=value=>String(value||'')
     .replace(/\s+(?:Project\s+Consultant|Project\s+Number|Mobile\s+Number|Customer\s+Name|Contract\s+Account).*$/i,'')
     .replace(/\s{2,}/g,' ')
@@ -32,7 +31,7 @@
     return `${parts.join(' ')} pula${thebe?' and '+under1000(thebe)+' thebe':''} only`.replace(/^./,c=>c.toUpperCase());
   }
   function validateClaimJobs(jobs){
-    const problems=[];(jobs||[]).forEach(job=>{if(!job.cust||!job.loc)problems.push(`WO ${job.wo}: customer and location are required`);if(!hasGISPrerequisites(job))problems.push(`WO ${job.wo}: pre-VO2 GIS Map and Certificate are required`);if(!hasFinalGISPrerequisites(job))problems.push(`WO ${job.wo}: final GIS Map and Certificate are required`);if(!job.vo2?.items?.length)problems.push(`WO ${job.wo}: VO2 requires at least one item`);});return problems;
+    const problems=[];(jobs||[]).forEach(job=>{if(!job.cust||!job.loc)problems.push(`WO ${job.wo}: customer and location are required`);if(!hasGISPrerequisites(job))problems.push(`WO ${job.wo}: pre-VO2 GIS Map and Certificate are required`);if(!job.vo2?.items?.length)problems.push(`WO ${job.wo}: VO2 requires at least one item`);});return problems;
   }
-  return{WORKFLOW_VERSION,STAGES,TRANSITIONS,LEGACY_STAGE_MAP,migrateWorkflow,hasGISPrerequisites,hasFinalGISPrerequisites,canTransition,cleanLocationPart,formatJobLocation,numWords,validateClaimJobs};
+  return{WORKFLOW_VERSION,STAGES,TRANSITIONS,LEGACY_STAGE_MAP,migrateWorkflow,hasGISPrerequisites,canTransition,cleanLocationPart,formatJobLocation,numWords,validateClaimJobs};
 });

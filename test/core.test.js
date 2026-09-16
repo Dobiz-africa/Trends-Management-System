@@ -5,7 +5,7 @@ const path=require('node:path');
 const core=require('../core.js');
 
 test('canonical workflow excludes removed operational gates',()=>{
-  assert.deepEqual(core.STAGES,['wo_received','vo1_created','linesman_notified','field_received','gis_ready','vo2_created','works_valuation_created','work_instruction_ready','final_gis_pending','finance_draft','claim_docs_ready','job_complete']);
+  assert.deepEqual(core.STAGES,['wo_received','vo1_created','linesman_notified','field_received','gis_ready','vo2_created','works_valuation_created','work_instruction_ready','finance_draft','claim_docs_ready','job_complete']);
 });
 test('legacy stages migrate without deleting actions',()=>{
   const job={stage:'work_complete',actions:{work_complete:{date:'2026-08-01'}}};core.migrateWorkflow(job);
@@ -15,11 +15,11 @@ test('VO2 requires both GIS documents',()=>{
   const job={stage:'gis_ready',scans:{gis_report:{}}};assert.equal(core.canTransition(job,'vo2_created'),false);
   job.scans.gis_cert={};assert.equal(core.canTransition(job,'vo2_created'),true);
 });
-test('Finance requires the separate final GIS documents',()=>{
-  const job={stage:'final_gis_pending',scans:{gis_report:{},gis_cert:{},final_gis_report:{}}};
-  assert.equal(core.canTransition(job,'finance_draft'),false);
-  job.scans.final_gis_cert={};
+test('Works Instruction proceeds directly to Finance and legacy final GIS jobs migrate',()=>{
+  const job={stage:'work_instruction_ready',scans:{gis_report:{},gis_cert:{}}};
   assert.equal(core.canTransition(job,'finance_draft'),true);
+  const legacy={stage:'final_gis_pending'};core.migrateWorkflow(legacy);
+  assert.equal(legacy.stage,'finance_draft');
 });
 test('saving VO2 refreshes job detail to expose the next action',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
@@ -37,7 +37,7 @@ test('amount in words handles pula and thebe',()=>{
 });
 test('claim validation reports missing prerequisites',()=>{
   const problems=core.validateClaimJobs([{wo:'1',cust:'A',loc:'Mohembo West',vo2:{items:[]},scans:{gis_report:{}}}]);
-  assert.equal(problems.length,3);
+  assert.equal(problems.length,2);
 });
 test('work-order locations preserve multi-word towns and exclude the next PDF label',()=>{
   const job={
@@ -61,7 +61,7 @@ test('Payment Certificate uses the requested Annexure wording and original foote
   assert.match(payment,/Value of Work Completed \(see Annexure\)<\/td>/);
   assert.doesNotMatch(payment,/Value of Work Completed \(see Annexure \$\{/);
   for(const marker of ['Amount Due','Remarks line 1','Remarks line 2','Certificate Prepared by','Certificate Approved by','Transmission &amp; Distribution:'])assert.match(payment,new RegExp(marker));
-  assert.match(payment,/correct and recommended of payment in full of the amount shown/);
+  assert.match(payment,/correct and recommended for payment in full of the amount shown/);
 });
 test('Finance revisions reopen saved HTML, save before print, and can replace generated copies',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
@@ -172,7 +172,6 @@ test('follow-up document requirements are enforced',()=>{
   assert.match(source,/fullscreen\?\.style\.display==='flex'[\s\S]{0,100}syncFullscreenToModal/);
   const finalize=source.slice(source.indexOf('async function finalizeClaim('),source.indexOf('/**',source.indexOf('async function finalizeClaim(')));
   assert.match(finalize,/passedPreGIS=stageIdx\(job\.stage\)>=stageIdx\('vo2_created'\)/);
-  assert.match(finalize,/passedFinalGIS=stageIdx\(job\.stage\)>=stageIdx\('finance_draft'\)/);
 });
 test('fullscreen printing serializes and persists the fullscreen editor',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
@@ -347,7 +346,7 @@ test('uploaded document downloads open in a new browser tab',()=>{
 
 test('upload-only document cards use the real file without placeholder copies',()=>{
   const source=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
-  assert.match(source,/const UPLOADED_ONLY_DOC_TYPES=\['bpc_wo',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert','final_gis_report','final_gis_cert'\]/);
+  assert.match(source,/const UPLOADED_ONLY_DOC_TYPES=\['bpc_wo',LINESMAN_MERGED_DOC_KEY,'gis_report','gis_cert'\]/);
   const detail=source.slice(source.indexOf('function renderJobDetail('),source.indexOf('/*',source.indexOf('function renderJobDetail(')));
   assert.match(detail,/const saved=!UPLOADED_ONLY_DOC_TYPES\.includes\(d\)/);
   assert.match(detail,/UPLOADED_ONLY_DOC_TYPES\.includes\(d\)\?'Download':'Signed Copy'/);
@@ -372,4 +371,63 @@ test('editable documents autosave without advancing workflow stages',()=>{
   assert.match(close,/autosaveCurrentDocument\(true\)/);
   assert.doesNotMatch(close,/Close without saving/);
   assert.match(source,/Saved automatically/);
+});
+
+test('completed work orders are reusable across independent claim batches and old drafts recover',()=>{
+  const api=fs.readFileSync(path.join(__dirname,'..','api','claims.js'),'utf8');
+  assert.match(api,/\['finance_draft','claim_docs_ready','job_complete'\]\.includes\(row\.stage\)/);
+  assert.doesNotMatch(api,/row\.claim_ref===batchId/);
+  assert.match(api,/claim_batches\?id=eq\./);
+  assert.match(api,/Could not recover this claim batch/);
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const save=app.slice(app.indexOf('function saveBatchDocAttach('),app.indexOf('// Also store in batchSaved',app.indexOf('function saveBatchDocAttach(')));
+  assert.match(save,/\(batch\?\.wos\|\|\[\]\)\.map\(wo=>DB\.jobs\[wo\]\)/);
+  assert.doesNotMatch(save,/j\.claimRef===certNo/);
+});
+
+test('documents navigation exposes exact generated batches and recycle list is collapsed',()=>{
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+  assert.match(html,/id="n-documents"/);
+  assert.match(html,/id="sc-documents"/);
+  assert.match(app,/function renderDocuments\(\)/);
+  assert.match(app,/viewBatchDoc/);
+  assert.match(app,/Download BPC Excel/);
+  assert.match(html,/id="a-recycle" style="display:none"/);
+  assert.match(app,/function toggleRecycleBin\(\)/);
+  assert.match(app,/const canView=!!saved/);
+  assert.match(app,/visibleDocTypes=visibleDocTypes\.filter/);
+  assert.match(app,/\(!hasUnsavedChanges&&!immediate\)/);
+});
+test('local claim batches persist through the authenticated server route',()=>{
+  const server=fs.readFileSync(path.join(__dirname,'..','dev-server.cjs'),'utf8');
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const api=fs.readFileSync(path.join(__dirname,'..','api','claims.js'),'utf8');
+  assert.match(server,/pathname==='\/api\/claims'/);
+  assert.match(server,/API_ROUTES_ENABLED:true/);
+  assert.match(app,/action:'save_batch'/);
+  assert.match(app,/if\(batchErr\)throw batchErr/);
+  assert.match(api,/action==='save_batch'/);
+  assert.match(api,/docs:batch\.docs\|\|\{\}/);
+});
+test('local recycle and restore use the authenticated work-order route',()=>{
+  const server=fs.readFileSync(path.join(__dirname,'..','dev-server.cjs'),'utf8');
+  assert.match(server,/pathname==='\/api\/work-orders'/);
+  assert.match(server,/import\('\.\/api\/work-orders\.js'\)/);
+  const api=fs.readFileSync(path.join(__dirname,'..','api','work-orders.js'),'utf8');
+  assert.match(api,/authenticate\(req,\['admin'\]\)/);
+  assert.match(api,/\['recycle','restore'\]\.includes\(action\)/);
+});
+test('recycling removes work-order involvement from claim batches',()=>{
+  const app=fs.readFileSync(path.join(__dirname,'..','app.js'),'utf8');
+  const api=fs.readFileSync(path.join(__dirname,'..','api','work-orders.js'),'utf8');
+  assert.match(app,/function removeWorkOrderFromClaimBatches\(wo\)/);
+  assert.match(app,/batch\.wos=batch\.wos\.filter\(batchWO=>batchWO!==wo\)/);
+  assert.match(app,/generateBatchDocHTML\(certNo,docType\)/);
+  assert.match(app,/batch\.status='archived'/);
+  assert.match(app,/Object\.keys\(DB\.recycleBin\|\|\{\}\)\.forEach/);
+  assert.match(app,/filter\(batch=>\(batch\.wos\|\|\[\]\)\.length\)/);
+  assert.match(api,/claim_batches\?select=id,wos/);
+  assert.match(api,/body:\{wos:remaining\}/);
+  assert.match(api,/claim_versions\?batch_id=eq\./);
 });
